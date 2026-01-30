@@ -1,36 +1,32 @@
 # AI Study Library
 
-This repository serves as a central hub for advanced study in Software Engineering and Artificial Intelligence Foundations. It leverages modern AI tools, specifically LLMs like NotebookLM, Claude, Gemini, and others, to act as cognitive amplifiers for learning.
+This repository serves as a personal knowledge base and study companion for mastering AI engineering, model interactions, and core software development foundations. It integrates evidence-based learning strategies with practical resources for maximizing the utility of Large Language Models (LLMs).
 
-## 🚀 Purpose
+## 📂 Project Structure
 
-The goal of this library is to move beyond passive reading and into active, scientifically-backed learning methodologies (Active Recall, Spaced Repetition, Interleaving) augmented by AI. It provides:
+The library is organized into three main sections:
 
-*   **Structured Study Plans**: Rigorous roadmaps covering Algorithms, System Design, Backend Engineering, and AI integration.
-*   **Prompt Engineering Library**: A collection of high-performance prompts to turn LLMs into Socratic tutors, code reviewers, and architectural critics.
-*   **Documentation**: Guides on how to effectively interact with long-running agents and optimize AI-assisted workflows.
+### 1. `ai/docs/`
+Documentation and best practices for interacting with specific AI models.
+- **Claude:** Guides on interaction, effective harnessing of long-running agents, and prompting best practices.
 
-## 📂 Repository Structure
+### 2. `ai/prompts/`
+A collection of optimized prompts and meta-prompts designed to improve the performance of various models.
+- **Improvement:** Meta-prompts specifically crafted to refine and optimize inputs for Claude, Codex, Gemini, and Grok.
 
-*   `ai/study/`: Core study plans and methodologies.
-    *   `basics-study-plan.md`: A comprehensive 12-week plan covering CS fundamentals to System Design, integrating NotebookLM.
-*   `ai/prompts/`: Optimized prompts for various AI models.
-    *   `improvement/`: Templates to refine and improve prompts for specific models (Claude, Gemini, Codex, etc.).
-*   `ai/docs/`: Documentation and best practices.
-    *   `claude/`: Specific guides for interacting with Anthropic's Claude.
+### 3. `ai/study/`
+Structured study plans and educational resources.
+- **Basics Study Plan:** A comprehensive guide covering Computer Science foundations (Algorithms, Data Structures), Backend Engineering, and System Design. It incorporates neuroscientific learning principles like Active Recall and Spaced Repetition, utilizing tools like NotebookLM as a cognitive partner.
+- **Tools:** Generators for Product Requirement Documents (PRDs) and Technical Review guidelines.
 
-## 🛠️ Methodology
+## 🚀 Key Concepts
 
-This project advocates for a "Cyborg" learning approach:
-1.  **Source of Truth**: Standard rigorous textbooks (CLRS, OSTEP, DDIA).
-2.  **Cognitive Partner**: Using AI (NotebookLM) not just to summarize, but to challenge, quiz, and connect concepts.
-3.  **Active Practice**: Code implementation and "Mock Design Sessions" with AI feedback.
+- **Active Learning:** The study plans encourage active engagement (teaching back, solving problems) rather than passive consumption.
+- **Prompt Engineering:** The repository treats prompts as code, with versioning and optimization strategies for different model architectures.
+- **Cognitive Amplification:** Using AI tools not just to generate code, but to deepen understanding of complex concepts.
 
-## 🏁 Getting Started
+## 🛠 Usage
 
-1.  Review the `ai/study/basics-study-plan.md` to understand the learning roadmap.
-2.  Explore `ai/prompts/` to find tools that assist your current study focus.
-3.  Use the guides in `ai/docs/` to refine your interaction with AI agents.
-
----
-*Maintained by Rodrigo.*
+1.  **Study:** Follow the `basics-study-plan.md` for a rigorous CS and Engineering curriculum.
+2.  **Optimize:** Use the prompts in `ai/prompts/improvement/` to refine your instructions to AI agents.
+3.  **Reference:** Consult `ai/docs/` for model-specific interaction patterns and best practices.
