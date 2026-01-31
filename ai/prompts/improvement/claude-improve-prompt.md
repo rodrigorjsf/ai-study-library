@@ -20,6 +20,7 @@ Optimize prompts for Claude 4.5/Opus 4.5 across **single-shot tasks** and **long
 # SECTION A: SINGLE-SHOT OPTIMIZATION
 
 ## INPUT
+
 <original_prompt>
 [PROMPT TO OPTIMIZE]
 </original_prompt>
@@ -35,36 +36,43 @@ Optimize prompts for Claude 4.5/Opus 4.5 across **single-shot tasks** and **long
 ### 🔴 CRITICAL - Apply if missing
 
 **Be Explicit & Specific**
+
 - Claude 4.x is LITERAL - vague requests get minimal responses
 - Bad: "Create a dashboard"
 - Good: "Create an analytics dashboard with 5+ charts, user filtering, and export functionality"
 
 **Provide Context (The "Why")**
+
 - Explain WHY a constraint matters - Claude generalizes from reasoning
 - Bad: "Never use ellipses"
 - Good: "This will be read by TTS, so avoid ellipses which can't be pronounced"
 
 **Clear Success Criteria**
+
 - First sentence = exact task
 - Define output format with examples
 - Specify what to AVOID (often more important than what to include)
 
 **XML Structure for Complex Inputs**
+
 ```xml
 <documents>...</documents>
 <examples>...</examples>
 <instructions>...</instructions>
 ```
+
 Use when: Multiple input types, need to separate data from instructions
 
 ### 🟡 CONDITIONAL - Apply when beneficial
 
 **Prefilling** (start Claude's response)
+
 ```
 User: Generate JSON for user profile
 Assistant: {
   "user_id":
 ```
+
 When: Need specific format, prevent preambles, enforce structure
 
 **Chain of Thought**
@@ -74,6 +82,7 @@ How: "Think through this step-by-step" or "Before answering, analyze:"
 **Few-Shot Examples**
 When: Pattern isn't obvious from description  
 Use: 2-3 examples max (Claude 4.x learns FAST)
+
 ```xml
 <examples>
 <example>
@@ -92,14 +101,17 @@ NOT for: Generic roles (assistant, expert, professional)
 **Prompt Chaining** (break into subtasks)
 When: >3 distinct steps or requires intermediate validation  
 Pattern:
+
 1. Extract → 2. Analyze → 3. Synthesize → 4. Format
 
 **Long Context (>100k tokens)**
+
 - Put reference docs in `<documents>` tags
 - Place instructions AFTER documents (Claude reads last messages more carefully)
 - Use: "Focus only on sections X and Y" to guide attention
 
 **Tool Specification**
+
 ```xml
 <tool_guidelines>
 - Use web_search for: current events, post-Jan-2025 data
@@ -121,9 +133,11 @@ Pattern:
 ## STEP 4: MODEL-SPECIFIC TUNING
 
 ### Opus 4.5 Specific
+
 **Problem**: Overeagerness, over-engineering, unnecessary abstractions
 
 **Solution**: Add explicit constraints
+
 ```text
 Avoid over-engineering. Only make changes directly requested. Keep solutions minimal.
 Don't add features, refactor code, or make "improvements" beyond what was asked.
@@ -131,11 +145,13 @@ Don't create helpers or abstractions for one-time operations.
 ```
 
 ### Haiku 4.5 Specific
+
 **Problem**: May need more explicit step-by-step guidance
 
 **Solution**: Break down complex tasks into numbered steps
 
 ### All Claude 4.x Models
+
 **Problem**: Can be overly literal with examples
 
 **Solution**: Ensure examples align EXACTLY with desired behavior
@@ -154,6 +170,7 @@ Don't create helpers or abstractions for one-time operations.
 ## CORE PROBLEM
 
 Agents working across multiple context windows face:
+
 1. **No memory** between sessions
 2. **Tendency to one-shot** complex tasks (leading to half-finished work)
 3. **Premature completion** (declaring victory too early)
@@ -168,6 +185,7 @@ Agents working across multiple context windows face:
 **Required setup:**
 
 1. **Feature list** (tests.json or features.json)
+
 ```json
 {
   "tests": [
@@ -187,7 +205,8 @@ Agents working across multiple context windows face:
 }
 ```
 
-2. **Progress tracking** (claude-progress.txt)
+1. **Progress tracking** (claude-progress.txt)
+
 ```text
 Session 1 (2025-01-30 14:23):
 - Set up initial React project structure
@@ -202,7 +221,8 @@ Session 2 (2025-01-30 16:45):
 - Next: Implement user authentication
 ```
 
-3. **Init script** (init.sh)
+1. **Init script** (init.sh)
+
 ```bash
 #!/bin/bash
 # Start development servers and run basic smoke test
@@ -211,7 +231,8 @@ sleep 5
 npm run test:smoke
 ```
 
-4. **Git repository**
+1. **Git repository**
+
 ```bash
 git init
 git add .
@@ -219,6 +240,7 @@ git commit -m "Initial project setup by initializer agent"
 ```
 
 **Initializer prompt template:**
+
 ```text
 You are setting up a project that will be worked on by multiple coding agents across many context windows.
 
@@ -249,6 +271,7 @@ Focus on creating a framework that enables incremental, verifiable progress.
 **Purpose**: Make incremental progress, leave clean state
 
 **Session startup checklist:**
+
 ```text
 Every coding session must start with:
 
@@ -262,6 +285,7 @@ Every coding session must start with:
 ```
 
 **Session completion checklist:**
+
 ```text
 Before ending a session:
 
@@ -276,6 +300,7 @@ Before ending a session:
 ```
 
 **Coding agent prompt template:**
+
 ```text
 You are continuing work on a long-running project across multiple context windows.
 
@@ -308,19 +333,23 @@ Context awareness: Your context will be compacted/refreshed automatically. Do no
 ## STATE MANAGEMENT BEST PRACTICES
 
 ### Use JSON for structured data
+
 - Test results, feature lists, configuration
 - Claude is less likely to corrupt JSON than Markdown
 
 ### Use plain text for progress notes
+
 - Freeform, human-readable
 - Easy to scan and understand
 
 ### Use git for code versioning
+
 - Provides rollback points
 - Clear history of what changed
 - Claude 4.5 excels at using git for state tracking
 
 ### Emphasize incremental progress
+
 ```text
 Work on ONE feature at a time. Complete it fully before moving to the next.
 Prefer 5 small, complete features over 1 large, half-finished feature.
@@ -338,6 +367,7 @@ Prefer 5 small, complete features over 1 large, half-finished feature.
    - Unit test frameworks
 
 2. **Explicit testing instructions**
+
 ```text
 TESTING REQUIREMENTS:
 - Test ALL features as a real user would (not just code inspection)
@@ -346,7 +376,8 @@ TESTING REQUIREMENTS:
 - If test fails, fix the bug before moving to next feature
 ```
 
-3. **Smoke tests in init.sh**
+1. **Smoke tests in init.sh**
+
 ```bash
 # Basic test that runs on every session start
 npm run dev &
@@ -369,20 +400,21 @@ Your context window will be automatically compacted as it approaches limit, allo
 
 ## AVOIDING COMMON FAILURES
 
-| Problem | Initializer Solution | Coding Agent Solution |
-|---------|---------------------|----------------------|
-| Declares victory too early | Create comprehensive feature list (50+ tests) | Read feature list, choose ONE failing test |
-| Leaves broken code | Set up git + progress tracking | Start session by testing basics, end with clean commit |
-| Marks features done prematurely | Create structured test format | Only mark passing after thorough verification |
-| Wastes time on setup | Write init.sh script | Run init.sh at session start |
-| One-shots complex features | Emphasize incremental work in instructions | Explicitly: "ONE feature at a time" |
-| Ignores past work | Set up progress.txt and git | Read progress notes and git log at startup |
+| Problem                         | Initializer Solution                          | Coding Agent Solution                                  |
+|---------------------------------|-----------------------------------------------|--------------------------------------------------------|
+| Declares victory too early      | Create comprehensive feature list (50+ tests) | Read feature list, choose ONE failing test             |
+| Leaves broken code              | Set up git + progress tracking                | Start session by testing basics, end with clean commit |
+| Marks features done prematurely | Create structured test format                 | Only mark passing after thorough verification          |
+| Wastes time on setup            | Write init.sh script                          | Run init.sh at session start                           |
+| One-shots complex features      | Emphasize incremental work in instructions    | Explicitly: "ONE feature at a time"                    |
+| Ignores past work               | Set up progress.txt and git                   | Read progress notes and git log at startup             |
 
 ## ADVANCED: MULTI-AGENT ARCHITECTURES
 
 **Open question**: Single general agent vs. specialized agents?
 
 Potential specialized agents:
+
 - Testing agent (runs comprehensive test suites)
 - QA agent (code review, quality checks)
 - Cleanup agent (refactoring, documentation)
@@ -395,6 +427,7 @@ Potential specialized agents:
 # OUTPUT FORMAT (Both Sections)
 
 ### 📋 Optimized Prompt
+
 ```
 [Clean, executable prompt - no placeholders]
 ```
@@ -402,22 +435,27 @@ Potential specialized agents:
 ### 🔧 Optimization Summary
 
 **Applied Techniques:**
+
 - [Technique]: [Why it improves performance]
 
 **Removed:**
+
 - [What was cut and why]
 
 **Expected Improvement:**
+
 - Clarity: [Specific ambiguity resolved]
 - Reliability: [How consistency improves]
 
 ### ⚙️ Usage Guidance
 
 **For single-shot (Section A):**
+
 - When to iterate: [scenarios]
 - Tool recommendations: [if applicable]
 
 **For long-running (Section B):**
+
 - Session duration: [recommended length]
 - When to start new context: [trigger conditions]
 - Monitoring: [what to check between sessions]
@@ -427,6 +465,7 @@ Potential specialized agents:
 # VALIDATION CHECKLIST
 
 **Single-Shot Tasks:**
+
 - [ ] First sentence clearly states task
 - [ ] Success criteria are measurable
 - [ ] Examples align with desired behavior
@@ -436,6 +475,7 @@ Potential specialized agents:
 - [ ] Chain of thought for multi-step reasoning
 
 **Long-Running Agents:**
+
 - [ ] Initializer prompt creates: tests.json, progress.txt, init.sh, git repo
 - [ ] Coding agent prompt has startup checklist
 - [ ] Coding agent prompt has completion checklist
@@ -449,21 +489,25 @@ Potential specialized agents:
 # APPENDIX: CLAUDE 4.x MODEL DIFFERENCES
 
 ### Opus 4.5
+
 **Strengths**: Most capable, best at complex reasoning, frontend design  
 **Weaknesses**: Can over-engineer, add unnecessary abstractions  
 **Tuning**: Add explicit minimalism constraints
 
 ### Sonnet 4.5
+
 **Strengths**: Balanced speed/quality, good for most tasks  
 **Weaknesses**: May need more explicit instructions than Opus  
 **Tuning**: Be very explicit about desired behavior
 
 ### Haiku 4.5
+
 **Strengths**: Fast, cost-effective  
 **Weaknesses**: Needs more structured guidance  
 **Tuning**: Break complex tasks into smaller steps
 
 ### All Models
+
 - More literal than previous Claude versions
 - Excellent at following explicit instructions
 - Pay close attention to examples (make them perfect)
