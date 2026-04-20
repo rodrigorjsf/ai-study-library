@@ -33,6 +33,9 @@ daily-ctl test-notes
 
 # 5. Adicione o alias ao Fish shell
 echo "alias daily-ctl='bash ~/daily-summaries/daily-ctl.sh'" >> ~/.config/fish/config.fish
+
+# 6. Teste um run real
+daily-ctl run-date 2025-02-11
 ```
 
 ## Onde encontrar os resumos
