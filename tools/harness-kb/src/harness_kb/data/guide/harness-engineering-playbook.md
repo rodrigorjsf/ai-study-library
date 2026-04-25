@@ -200,7 +200,7 @@ The graphify run on 2026-04-25 produced:
 9. Lost in the Middle (Liu et al., TACL 2024) — 11 edges
 10. Cursor IDE Official Documentation README — 10 edges
 
-**Communities** (top by size, all 21 in `graphify-out/GRAPH_REPORT.md`):
+**Communities** (top by size, all 21 in `[bundled at data/graph/GRAPH_REPORT.md]`):
 - 0: Cursor Agent Tooling (64 nodes)
 - 1: Agent Orchestration & Plugins (57 nodes)
 - 2: Agent Skills Standard (55 nodes)
@@ -1029,10 +1029,8 @@ A harness is failing when:
 
 ### Knowledge Graph
 
-- `graphify-out/GRAPH_REPORT.md` — full report, communities, god nodes
-- `graphify-out/graph.html` — interactive visualization
+- `[bundled at data/graph/GRAPH_REPORT.md]` — full report, communities, god nodes
 - `harness-kb graph` (bundled graph) — raw graph data for programmatic queries
-- `graphify-out/manifest.json` — corpus snapshot for incremental `--update`
 
 ---
 
@@ -1081,7 +1079,7 @@ Future related work could include:
 
 ## Appendix — Per-Topic Graphify Queries (LLM Agent Lookup Index)
 
-This appendix lists, for each major topic in the document, the most useful graphify queries an LLM agent can run against `harness-kb graph + harness-kb wiki` to retrieve authoritative context. The graph was built from `ai/docs/` (476 nodes, 665 edges, 21 communities); node names below are real names from `graphify-out/GRAPH_REPORT.md`. Three query forms:
+This appendix lists, for each major topic in the document, the most useful graphify queries an LLM agent can run against `harness-kb graph + harness-kb wiki` to retrieve authoritative context. The graph was built from `ai/docs/` (476 nodes, 665 edges, 21 communities); node names below are real names from `[bundled at data/graph/GRAPH_REPORT.md]`. Three query forms:
 
 ```
 harness-kb graph query "<question>"            # BFS traversal — broad context (default)
