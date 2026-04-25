@@ -133,9 +133,11 @@ grep -n 'humanlayer/' dev/research/2026-04-25-harness-engineering-research.md \
 grep -nE 'humanlayer.*:[0-9]+' dev/research/2026-04-25-harness-engineering-research.md
 # Expect: zero output
 
-# 3. Repo URL appears exactly once
+# 3. Repo URL appears in the two expected places (frontmatter + Case Study lead)
 grep -cE 'github\.com/humanlayer/humanlayer' dev/research/2026-04-25-harness-engineering-research.md
-# Expect: 1
+# Expect: 2 — one in frontmatter `sources:` line, one in Case Study lead paragraph.
+# (Earlier draft of this spec said 1; corrected after implementation revealed the frontmatter
+# entry must coexist with the lead-paragraph occurrence.)
 
 # 4. Appendix queries still validate against graph.json
 jq -r '.nodes[].label' graphify-out/graph.json | sort -u > /tmp/labels.txt

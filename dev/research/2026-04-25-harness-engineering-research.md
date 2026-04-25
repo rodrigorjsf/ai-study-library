@@ -110,7 +110,7 @@ Hook contract: JSON in/out via stdin/stdout, stderr for messages, `set -euo pipe
 
 **CI eval layer** runs 4-6 deterministic prompt-contract cases per release: contract-string presence checks (every SKILL.md must contain `## Context Contract`), mirror-parity for every `<plugin>/<x>` vs `.claude/<x>` pair, hook section-schema regex. No LLM calls — pure file reads and regex. Wired into a GitHub Actions workflow that blocks merge on failure.
 
-This canonical pattern represents the **heavy-stack** equilibrium. The HumanLayer instantiation (next section) is the **lean-shell** equilibrium — same operating priorities, very different artifact mass.
+This canonical pattern represents the **heavy-stack** equilibrium. The HumanLayer Case Study (below) is the **lean-shell** equilibrium — same operating priorities, very different artifact mass.
 
 ### `ai/docs/` Thematic Map
 
