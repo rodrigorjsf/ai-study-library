@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.0 (unreleased)
+## v0.1.0 (2026-04-25)
 
 ### Added
 - `manifest.py`: `Manifest` dataclass + load/save helpers + `get_data_dir()`.

@@ -51,7 +51,7 @@ data/
 │   ├── README.md
 │   ├── agent-protocols/
 │   ├── agentic-engineering/
-│   └── … (all 17 themes)
+│   └── … (all 16 themes)
 ├── graph/
 │   ├── graph.json             verbatim from graphify-out/graph.json
 │   └── GRAPH_REPORT.md        verbatim from graphify-out/GRAPH_REPORT.md

@@ -8,7 +8,7 @@ Provide a portable, version-pinned Python package — `harness-kb` — that give
 
 Consumer projects install one package (`pipx install harness-kb`) and run one command (`harness-kb init`) to wire the tool into their CLAUDE.md so agents always reach for it when working on agent / harness / context-engineering topics. No external skill, no external repo, no network calls at runtime.
 
-The package bundles four assets: the `ai/docs/` corpus (~272K words across 17 themes), the `graphify-out/` knowledge graph (graph.json + community wiki pages), and the harness-engineering playbook adapted from the research doc (~1500 lines, ~30K tokens).
+The package bundles four assets: the `ai/docs/` corpus (~272K words across 16 themes), the `graphify-out/` knowledge graph (graph.json + community wiki pages), and the harness-engineering playbook adapted from the research doc (~1500 lines, ~30K tokens).
 
 ## Install
 
@@ -41,7 +41,7 @@ Run as an MCP server (preferred for agents):
 
 ## What's bundled
 
-The package ships four frozen assets inside the wheel: the `ai/docs/` corpus (~272K words, approximately 2-3 MB across 17 themes), the knowledge graph (`graph.json`, ~500 KB-1 MB) plus auto-generated wiki pages (~200-500 KB), and the harness-engineering playbook (~110 KB, adapted from the research doc). The BM25 index adds ~1-2 MB pickled. Total wheel size ~5-8 MB. Refresh = upgrade the package version; the `harness-kb --version` output names the source-repo commit SHA the bundle was built from.
+The package ships four frozen assets inside the wheel: the `ai/docs/` corpus (~272K words, approximately 2-3 MB across 16 themes), the knowledge graph (`graph.json`, ~500 KB-1 MB) plus auto-generated wiki pages (~200-500 KB), and the harness-engineering playbook (~110 KB, adapted from the research doc). The BM25 index adds ~1-2 MB pickled. Total wheel size ~5-8 MB. Refresh = upgrade the package version; the `harness-kb --version` output names the source-repo commit SHA the bundle was built from.
 
 ## Documentation
 
