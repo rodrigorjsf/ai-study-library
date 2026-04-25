@@ -6,3 +6,6 @@ build/
 dist/
 .coverage
 htmlcov/
+.venv/
+uv.lock
+
