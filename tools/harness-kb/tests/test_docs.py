@@ -8,6 +8,13 @@ from harness_kb.search import BM25SearchIndex
 from harness_kb import docs as docs_module
 
 
+@pytest.fixture(autouse=True)
+def _reset_index_cache():
+    docs_module._index_cache = None
+    yield
+    docs_module._index_cache = None
+
+
 @pytest.fixture
 def fake_data_dir(tmp_path: Path, monkeypatch) -> Path:
     """Build a minimal data dir resembling the bundle and patch get_data_dir."""
