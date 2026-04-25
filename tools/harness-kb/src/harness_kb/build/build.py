@@ -115,8 +115,11 @@ def _build_index(out_dir: Path) -> int:
 
 def _post_validate(out_dir: Path) -> None:
     pb = out_dir / "guide" / _PLAYBOOK_FILENAME
-    if "/graphify" in pb.read_text():
+    text = pb.read_text()
+    if "/graphify" in text:
         raise BuildError("post-build validation: /graphify residual in playbook")
+    if "graphify-out/" in text:
+        raise BuildError("post-build validation: graphify-out/ residual in playbook")
     BM25SearchIndex.load(
         out_dir / "index" / "bm25_index.pkl",
         out_dir / "index" / "chunks.json",

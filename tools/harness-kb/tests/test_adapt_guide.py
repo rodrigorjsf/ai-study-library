@@ -59,3 +59,38 @@ def test_post_adapt_no_graphify_residual():
     assert "/graphify" not in out
     assert "graphify-out/" not in out
     assert "harness-kb" in out
+
+
+def test_replace_graphify_out_graph_report():
+    src = 'all 21 in `graphify-out/GRAPH_REPORT.md`'
+    out = adapt(src)
+    assert "graphify-out/GRAPH_REPORT.md" not in out
+    assert "data/graph/GRAPH_REPORT.md" in out
+
+
+def test_remove_graphify_out_graph_html_bullet_line():
+    src = "### Knowledge Graph\n\n- `graphify-out/graph.html` — interactive visualization\n- next item\n"
+    out = adapt(src)
+    assert "graphify-out/graph.html" not in out
+    assert "next item" in out
+
+
+def test_remove_graphify_out_manifest_json_bullet_line():
+    src = "### Knowledge Graph\n\n- `graphify-out/manifest.json` — corpus snapshot for incremental `--update`\n- next item\n"
+    out = adapt(src)
+    assert "graphify-out/manifest.json" not in out
+    assert "next item" in out
+
+
+def test_post_adapt_no_graphify_out_residual_new_patterns():
+    # All three new graphify-out/ patterns in one shot
+    src = (
+        "all 21 in `graphify-out/GRAPH_REPORT.md`\n"
+        "- `graphify-out/graph.html` — interactive visualization\n"
+        "- `graphify-out/manifest.json` — corpus snapshot for incremental `--update`\n"
+        "Other text here.\n"
+    )
+    out = adapt(src)
+    assert "graphify-out/" not in out
+    assert "data/graph/GRAPH_REPORT.md" in out
+    assert "Other text here." in out

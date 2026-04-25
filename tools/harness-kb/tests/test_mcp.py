@@ -68,3 +68,26 @@ def test_guide_get_without_confirm_returns_warning(monkeypatch):
 def test_build_server_returns_object():
     server = build_server()
     assert server is not None
+
+
+def test_async_list_tools_dispatch():
+    # Exercises the _list_tools async handler that MCP clients actually call via the
+    # server's request-handler registry.  We retrieve the registered handler for
+    # ListToolsRequest directly (server.request_handlers is a public dict keyed on
+    # request-type classes) and invoke it with asyncio.run — no extra dependency needed.
+    import asyncio
+    from mcp.types import ListToolsRequest, Tool
+
+    server = build_server()
+    handler = server.request_handlers[ListToolsRequest]
+
+    req = ListToolsRequest(method="tools/list")
+    result = asyncio.run(handler(req))
+
+    # The handler returns a ServerResult wrapping ListToolsResult; tools live at .root.tools
+    tools = result.root.tools
+    assert isinstance(tools, list), "expected a list of Tool objects"
+    assert len(tools) == 16, f"expected 16 tools, got {len(tools)}"
+    assert all(isinstance(t, Tool) for t in tools), "all items must be Tool instances"
+    tool_names = {t.name for t in tools}
+    assert tool_names == set(ALL_TOOL_NAMES)

@@ -12,7 +12,15 @@ _RULES: list[tuple[re.Pattern, str]] = [
     (re.compile(r"`?graphify-out/wiki/([A-Za-z0-9_\-+]+?)\.md`?"), r"`harness-kb wiki get \1`"),
     # graphify-out/graph.json (or graphify-out/) → harness-kb graph
     (re.compile(r"`?graphify-out/graph\.json`?"), r"`harness-kb graph` (bundled graph)"),
+    # graphify-out/GRAPH_REPORT.md → bundled location description (used in three contexts)
+    (re.compile(r"`?graphify-out/GRAPH_REPORT\.md`?"), r"`[bundled at data/graph/GRAPH_REPORT.md]`"),
+    # graphify-out/graph.html — NOT bundled; delete the entire bullet line
+    (re.compile(r"^- `?graphify-out/graph\.html`?[^\n]*\n", re.MULTILINE), r""),
+    # graphify-out/manifest.json — NOT bundled; delete the entire bullet line
+    (re.compile(r"^- `?graphify-out/manifest\.json`?[^\n]*\n", re.MULTILINE), r""),
     (re.compile(r"`?graphify-out/`?(?=[\s.,)])"), r"`harness-kb graph + harness-kb wiki`"),
+    # graphify-out/<anything> catch-all (must come after specific rules above)
+    (re.compile(r"`?graphify-out/[^\s`'\")\]]+`?"), r"`harness-kb graph + harness-kb wiki`"),
     # generic /graphify mention not caught above (fail-safe)
     (re.compile(r"/graphify\b"), r"harness-kb"),
 ]
