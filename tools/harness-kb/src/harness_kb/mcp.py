@@ -49,7 +49,7 @@ def _h_wiki_get(args: dict):
 
 def _h_graph_query(args: dict):
     return [{"label": n.label, "id": n.id, "community": n.community}
-            for n in graph.keyword_query(args["text"])]
+            for n in graph.bm25_query(args["text"], limit=args.get("limit", 10))]
 
 
 def _h_graph_explain(args: dict):
@@ -144,8 +144,10 @@ _TOOL_SCHEMAS: dict[str, tuple[str, dict]] = {
         {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"], "additionalProperties": False},
     ),
     "harness_kb_graph_query": (
-        "Case-insensitive substring search over node labels in the bundled graph.",
-        {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"], "additionalProperties": False},
+        "BM25-ranked search over node labels in the bundled graph.",
+        {"type": "object",
+         "properties": {"text": {"type": "string"}, "limit": {"type": "integer", "default": 10}},
+         "required": ["text"], "additionalProperties": False},
     ),
     "harness_kb_graph_explain": (
         "Return a node and its 1-hop neighbors.",

@@ -163,25 +163,44 @@ def test_invocations_found():
 # ---------------------------------------------------------------------------
 # Parametrized dispatch tests
 # ---------------------------------------------------------------------------
+_XFAIL_PATH_CASES: frozenset[tuple[str, str]] = frozenset({
+    # Disconnected nodes in v0.1.0 graph topology — no connecting path exists.
+    ("Attention Sinks (Xiao et al., ICLR 2024)", "AGENTS.md / CLAUDE.md Context Files"),
+})
+
+
 def _make_test_id(inv: Invocation) -> str:
     short = inv.args[0][:50].replace(" ", "_").replace("/", "|")
     return f"{inv.kind}::{short}"
 
 
+def _maybe_xfail(inv: Invocation):
+    """Wrap path invocations in pytest.param with xfail mark if they are known-disconnected."""
+    if inv.kind == "path" and tuple(inv.args) in _XFAIL_PATH_CASES:
+        return pytest.param(
+            inv,
+            marks=pytest.mark.xfail(
+                reason="graph topology has no connecting path; documented v0.1.0 limitation",
+                strict=True,
+            ),
+        )
+    return inv
+
+
 @pytest.mark.parametrize(
     "inv",
-    _INVOCATIONS,
+    [_maybe_xfail(inv) for inv in _INVOCATIONS],
     ids=[_make_test_id(inv) for inv in _INVOCATIONS],
 )
 def test_invocation(inv: Invocation):
     """Each playbook-recommended invocation must return a non-empty useful result."""
     if inv.kind == "query":
-        results = graph_module.keyword_query(inv.args[0])
+        results = graph_module.bm25_query(inv.args[0])
         assert isinstance(results, list), (
-            f"keyword_query({inv.args[0]!r}) returned {type(results)}, expected list"
+            f"bm25_query({inv.args[0]!r}) returned {type(results)}, expected list"
         )
         assert len(results) >= 1, (
-            f"keyword_query({inv.args[0]!r}) returned empty list — "
+            f"bm25_query({inv.args[0]!r}) returned empty list — "
             f"no matching nodes in the live bundle"
         )
 

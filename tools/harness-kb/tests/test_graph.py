@@ -1,5 +1,6 @@
 # tools/harness-kb/tests/test_graph.py
 import json
+import re
 from pathlib import Path
 import pytest
 
@@ -90,3 +91,42 @@ def test_community_nodes(fake_graph):
 
 def test_community_unknown_returns_empty(fake_graph):
     assert graph_module.community_nodes("nope") == []
+
+
+# ---------------------------------------------------------------------------
+# bm25_query tests (TDD: RED first, then GREEN after implementation)
+# ---------------------------------------------------------------------------
+
+def test_bm25_query_returns_ranked_nodes_for_natural_language_question(fake_graph):
+    """BM25 should find 'Agent Skills Standard' when asked about 'agent skills'."""
+    results = graph_module.bm25_query("agent skills")
+    assert len(results) >= 1, (
+        f"bm25_query('agent skills') returned empty list — expected to find 'Agent Skills Standard'"
+    )
+    top_label = results[0].label.lower()
+    query_tokens = {"agent", "skills"}
+    label_tokens = set(re.findall(r"\w+", top_label))
+    assert query_tokens & label_tokens, (
+        f"Top result label {results[0].label!r} tokens {label_tokens} have no overlap "
+        f"with query tokens {query_tokens}"
+    )
+
+
+def test_bm25_query_zero_results_for_garbage(fake_graph):
+    """BM25 should return empty list for nonsense input."""
+    results = graph_module.bm25_query("asdfqwerty12345")
+    assert results == [], f"Expected [], got {results!r}"
+
+
+def test_bm25_query_respects_limit(fake_graph):
+    """BM25 with limit=1 should return at most 1 result."""
+    results = graph_module.bm25_query("context", limit=1)
+    assert len(results) <= 1, f"Expected ≤1 result with limit=1, got {len(results)}"
+
+
+def test_bm25_query_returns_list_of_graph_nodes(fake_graph):
+    """BM25 should return GraphNode instances."""
+    results = graph_module.bm25_query("smart zone")
+    assert all(isinstance(r, graph_module.GraphNode) for r in results), (
+        f"Not all results are GraphNode: {results!r}"
+    )
