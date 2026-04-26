@@ -14,6 +14,7 @@ The package bundles four assets: the `ai/docs/` corpus (~272K words across 16 th
 
 ```bash
 pipx install harness-kb
+pipx install git+https://github.com/<you>/ai-study-library.git#subdirectory=tools/harness-kb
 ```
 
 ## Quickstart
@@ -54,3 +55,54 @@ The package ships four frozen assets inside the wheel: the `ai/docs/` corpus (~2
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Pending
+
+Need publish to PyPI. Currently only local checkout + git tag.  
+                                                                                   
+  Steps:
+                                                                                                                                               
+  1. PyPI account + API token
+    - Register: https://pypi.org/account/register/                                                                                             
+    - Create scoped token: https://pypi.org/manage/account/token/                                                                              
+  2. Verify package name available                                                                                                             
+  curl -sI https://pypi.org/pypi/harness-kb/json | head -1                                                                                     
+  2. 404 = free. 200 = taken (need rename in pyproject.toml).                                                                                  
+  3. Build artifacts                                                                                                                           
+  cd tools/harness-kb                                                                                                                          
+  uv build                                                                                                                                     
+  ls dist/   # harness_kb-0.1.0-py3-none-any.whl + harness_kb-0.1.0.tar.gz                    
+  3. package-data = ["data/**/*"] glob bundles 11 MB data into wheel. Verify with unzip -l dist/*.whl | head -20.                              
+  4. Test upload first (TestPyPI)                                                                                                              
+  uv publish --publish-url https://test.pypi.org/legacy/ --token <test-token>                                                                  
+  pipx install --index-url https://test.pypi.org/simple/ harness-kb                                                                            
+  5. Real upload                                                                                                                               
+  uv publish --token <pypi-token>                                                                                                              
+  5. Or pip install twine && twine upload dist/*.                                                                                              
+  6. Now works:                                                                                                                                
+  pipx install harness-kb                                                                                                                      
+                                                                                                                                               
+  Gotchas:                                                                                    
+  - PyPI 100 MB per-file limit — 11 MB wheel fine                                                                                              
+  - Name harness-kb may be taken; check first                                                                                                  
+  - Once uploaded, version 0.1.0 is permanent (cannot re-upload same version; must bump)
+  - Bundle inside wheel = consumers download 11 MB on install                                                                                  
+  - Plan flagged PyPI as out-of-scope v0.1.0; this is post-v0.1.0 work                                                                         
+                                                                                                                                               
+  Alternative skip-PyPI: pipx install git+https://github.com/<you>/ai-study-library.git#subdirectory=tools/harness-kb — works afte
+  pipx install --index-url https://test.pypi.org/simple/ harness-kb
+  5. Real upload
+  uv publish --token <pypi-token>
+  5. Or pip install twine && twine upload dist/*.
+  6. Now works:
+  pipx install harness-kb
+
+  Gotchas:
+  - PyPI 100 MB per-file limit — 11 MB wheel fine
+  - Name harness-kb may be taken; check first
+  - Once uploaded, version 0.1.0 is permanent (cannot re-upload same version; must bump)
+  - Bundle inside wheel = consumers download 11 MB on install
+  - Plan flagged PyPI as out-of-scope v0.1.0; this is post-v0.1.0 work
+
+  Alternative skip-PyPI: pipx install git+https://github.com/<you>/ai-study-library.git#subdirectory=tools/harness-kb — works
+  after pushing repo public.
