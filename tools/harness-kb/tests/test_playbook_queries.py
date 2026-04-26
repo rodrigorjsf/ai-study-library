@@ -168,6 +168,13 @@ _XFAIL_PATH_CASES: frozenset[tuple[str, str]] = frozenset({
     ("Attention Sinks (Xiao et al., ICLR 2024)", "AGENTS.md / CLAUDE.md Context Files"),
 })
 
+_XFAIL_QUERY_CASES: frozenset[str] = frozenset({
+    # graphify split() preserves apostrophe/punctuation tokens that don't
+    # substring-match any node label; preserved as graphify byte-parity
+    # v0.1.0 limitation.
+    "How does query-last placement improve recall by up to 30% per Anthropic's measurement?",
+})
+
 
 def _make_test_id(inv: Invocation) -> str:
     short = inv.args[0][:50].replace(" ", "_").replace("/", "|")
@@ -175,12 +182,23 @@ def _make_test_id(inv: Invocation) -> str:
 
 
 def _maybe_xfail(inv: Invocation):
-    """Wrap path invocations in pytest.param with xfail mark if they are known-disconnected."""
+    """Wrap invocations in pytest.param with xfail mark for known-failing cases."""
     if inv.kind == "path" and tuple(inv.args) in _XFAIL_PATH_CASES:
         return pytest.param(
             inv,
             marks=pytest.mark.xfail(
                 reason="graph topology has no connecting path; documented v0.1.0 limitation",
+                strict=True,
+            ),
+        )
+    if inv.kind == "query" and inv.args[0] in _XFAIL_QUERY_CASES:
+        return pytest.param(
+            inv,
+            marks=pytest.mark.xfail(
+                reason=(
+                    "graphify split() preserves apostrophe/punctuation tokens that don't "
+                    "substring-match node labels; preserved as graphify byte-parity v0.1.0 limitation"
+                ),
                 strict=True,
             ),
         )
@@ -195,12 +213,12 @@ def _maybe_xfail(inv: Invocation):
 def test_invocation(inv: Invocation):
     """Each playbook-recommended invocation must return a non-empty useful result."""
     if inv.kind == "query":
-        results = graph_module.bm25_query(inv.args[0])
-        assert isinstance(results, list), (
-            f"bm25_query({inv.args[0]!r}) returned {type(results)}, expected list"
+        result = graph_module.query(inv.args[0])
+        assert isinstance(result, dict), (
+            f"query({inv.args[0]!r}) returned {type(result)}, expected dict"
         )
-        assert len(results) >= 1, (
-            f"bm25_query({inv.args[0]!r}) returned empty list — "
+        assert len(result["nodes"]) >= 1, (
+            f"query({inv.args[0]!r}) returned empty nodes — "
             f"no matching nodes in the live bundle"
         )
 

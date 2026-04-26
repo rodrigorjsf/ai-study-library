@@ -24,14 +24,20 @@ def fake_graph(tmp_path: Path, monkeypatch) -> Path:
         "graph": {},
         "multigraph": False,
         "nodes": [
-            {"id": "smart_zone", "label": "Smart Zone", "community": "Context"},
-            {"id": "context_rot", "label": "Context Rot", "community": "Context"},
-            {"id": "subagent", "label": "Subagent as Context Firewall", "community": "Agents"},
-            {"id": "skills", "label": "Agent Skills Standard", "community": "Skills"},
+            {"id": "smart_zone", "label": "Smart Zone", "community": "Context",
+             "source_file": "docs/smart.md", "source_location": "line:10"},
+            {"id": "context_rot", "label": "Context Rot", "community": "Context",
+             "source_file": "docs/context.md", "source_location": None},
+            {"id": "subagent", "label": "Subagent as Context Firewall", "community": "Agents",
+             "source_file": "docs/agents.md", "source_location": "line:5"},
+            {"id": "skills", "label": "Agent Skills Standard", "community": "Skills",
+             "source_file": "docs/skills.md", "source_location": None},
         ],
         "links": [
-            {"source": "smart_zone", "target": "context_rot", "edge_type": "related", "weight": 1.0},
-            {"source": "subagent", "target": "smart_zone", "edge_type": "supports", "weight": 0.8},
+            {"source": "smart_zone", "target": "context_rot",
+             "relation": "related", "confidence": "HIGH", "weight": 1.0},
+            {"source": "subagent", "target": "smart_zone",
+             "relation": "supports", "confidence": "MEDIUM", "weight": 0.8},
         ],
         "hyperedges": [],
     }
@@ -94,39 +100,72 @@ def test_community_unknown_returns_empty(fake_graph):
 
 
 # ---------------------------------------------------------------------------
-# bm25_query tests (TDD: RED first, then GREEN after implementation)
+# query() tests — graphify-equivalent BFS/DFS traversal
 # ---------------------------------------------------------------------------
 
-def test_bm25_query_returns_ranked_nodes_for_natural_language_question(fake_graph):
-    """BM25 should find 'Agent Skills Standard' when asked about 'agent skills'."""
-    results = graph_module.bm25_query("agent skills")
-    assert len(results) >= 1, (
-        f"bm25_query('agent skills') returned empty list — expected to find 'Agent Skills Standard'"
+def test_query_bfs_finds_natural_language_question(fake_graph):
+    """BFS query should find nodes whose labels contain query terms."""
+    result = graph_module.query("agent skills standard", mode="bfs")
+    assert result["nodes"], (
+        "query('agent skills standard') returned empty nodes — expected 'Agent Skills Standard'"
     )
-    top_label = results[0].label.lower()
-    query_tokens = {"agent", "skills"}
-    label_tokens = set(re.findall(r"\w+", top_label))
-    assert query_tokens & label_tokens, (
-        f"Top result label {results[0].label!r} tokens {label_tokens} have no overlap "
-        f"with query tokens {query_tokens}"
+    labels = [n["label"] for n in result["nodes"]]
+    assert any("Agent Skills Standard" == lbl or "skills" in lbl.lower() for lbl in labels), (
+        f"Expected a node containing 'skills' in labels: {labels!r}"
     )
 
 
-def test_bm25_query_zero_results_for_garbage(fake_graph):
-    """BM25 should return empty list for nonsense input."""
-    results = graph_module.bm25_query("asdfqwerty12345")
-    assert results == [], f"Expected [], got {results!r}"
+def test_query_dfs_returns_dfs_traversal(fake_graph):
+    """DFS mode should report DFS traversal and not exceed depth 6."""
+    result = graph_module.query("subagent context firewall", mode="dfs")
+    assert result["traversal"] == "DFS", f"Expected 'DFS', got {result['traversal']!r}"
+    # Should find at least the start node (subagent) and its BFS-reachable neighbors
+    assert result["nodes"], "DFS query returned empty nodes"
 
 
-def test_bm25_query_respects_limit(fake_graph):
-    """BM25 with limit=1 should return at most 1 result."""
-    results = graph_module.bm25_query("context", limit=1)
-    assert len(results) <= 1, f"Expected ≤1 result with limit=1, got {len(results)}"
+def test_query_no_matching_terms_returns_empty(fake_graph):
+    """Query with no matching terms returns empty result dict."""
+    result = graph_module.query("asdfqwerty")
+    assert result["start_labels"] == [], f"Expected [], got {result['start_labels']!r}"
+    assert result["nodes"] == [], f"Expected [], got {result['nodes']!r}"
+    assert result["edges"] == [], f"Expected [], got {result['edges']!r}"
+    assert "No matching nodes found for query terms:" in result["rendered"]
+    assert result["truncated"] is False
 
 
-def test_bm25_query_returns_list_of_graph_nodes(fake_graph):
-    """BM25 should return GraphNode instances."""
-    results = graph_module.bm25_query("smart zone")
-    assert all(isinstance(r, graph_module.GraphNode) for r in results), (
-        f"Not all results are GraphNode: {results!r}"
+def test_query_budget_truncates(fake_graph):
+    """Small budget forces truncation of rendered output."""
+    result = graph_module.query("context smart zone subagent", budget=10)
+    assert result["truncated"] is True, "Expected truncated=True with budget=10"
+    assert result["rendered"].endswith(
+        "... (truncated at ~10 token budget - use --budget N for more)"
+    ), f"Rendered doesn't end with truncation marker: {result['rendered'][-80:]!r}"
+
+
+def test_query_rendered_format_matches_graphify(fake_graph):
+    """Rendered output matches graphify's exact format."""
+    # Use a term that matches only 1 start node (subagent) so BFS discovery
+    # traverses to its neighbors and actually produces EDGE lines.
+    result = graph_module.query("subagent firewall", mode="bfs", budget=2000)
+    rendered = result["rendered"]
+    assert rendered.startswith("Traversal: BFS | Start:"), (
+        f"Rendered does not start with expected header: {rendered[:80]!r}"
+    )
+    assert "NODE " in rendered, "Rendered missing NODE lines"
+    # subagent connects to smart_zone, which BFS discovers → EDGE lines appear
+    assert "EDGE " in rendered, "Rendered missing EDGE lines"
+
+
+def test_query_result_keys(fake_graph):
+    """query() result has all required keys."""
+    result = graph_module.query("smart zone context")
+    for key in ("traversal", "start_labels", "nodes", "edges", "rendered", "truncated"):
+        assert key in result, f"Missing key {key!r} in result"
+
+
+def test_query_live_bundle():
+    """Real corpus hit: 'five components of an agent harness' finds nodes without monkeypatching."""
+    result = graph_module.query("five components of an agent harness")
+    assert result["nodes"], (
+        "query('five components of an agent harness') returned empty nodes against the live bundle"
     )

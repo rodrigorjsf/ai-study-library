@@ -115,15 +115,11 @@ main.add_command(graph_cmd, name="graph")
 
 @graph_cmd.command("query")
 @click.argument("text")
-@click.option("--limit", default=10, type=int, help="Maximum number of results to return.")
-@click.option("--dfs", is_flag=True, default=False, hidden=True,
-              help="(no-op; reserved for future traversal modes)")
-@click.option("--budget", default=None, type=int, hidden=True,
-              help="(no-op; reserved for future traversal modes)")
-def graph_query_cmd(text: str, limit: int, dfs: bool, budget: int | None) -> None:
-    payload = [{"label": n.label, "id": n.id, "community": n.community}
-               for n in graph.bm25_query(text, limit=limit)]
-    _print_json(payload)
+@click.option("--dfs", is_flag=True, default=False, help="DFS traversal (default: BFS)")
+@click.option("--budget", default=2000, type=int, help="Token budget for output")
+def graph_query_cmd(text: str, dfs: bool, budget: int) -> None:
+    result = graph.query(text, mode=("dfs" if dfs else "bfs"), budget=budget)
+    click.echo(result["rendered"])
 
 
 @graph_cmd.command("explain")

@@ -79,3 +79,23 @@ def test_build_subcommand_help_directly():
     assert result.exit_code == 0
     assert "--source" in result.output
     assert "--out-dir" in result.output
+
+
+def test_graph_query_outputs_traversal_header():
+    """graph query should print a Traversal: header (graphify-compatible format)."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["graph", "query", "agent harness components"])
+    assert result.exit_code == 0, f"Non-zero exit code: {result.output}"
+    assert "Traversal:" in result.output, (
+        f"Expected 'Traversal:' header in output, got: {result.output[:200]!r}"
+    )
+
+
+def test_graph_query_dfs_flag():
+    """graph query --dfs should report DFS traversal."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["graph", "query", "--dfs", "agent harness"])
+    assert result.exit_code == 0
+    assert "Traversal: DFS" in result.output, (
+        f"Expected 'Traversal: DFS' in output, got: {result.output[:200]!r}"
+    )

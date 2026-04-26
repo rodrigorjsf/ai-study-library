@@ -65,6 +65,26 @@ def test_guide_get_without_confirm_returns_warning(monkeypatch):
     assert "warning" in out
 
 
+def test_graph_query_schema_has_dfs_and_budget():
+    """harness_kb_graph_query schema should expose dfs and budget properties."""
+    from harness_kb.mcp import _TOOL_SCHEMAS
+    _desc, schema = _TOOL_SCHEMAS["harness_kb_graph_query"]
+    props = schema["properties"]
+    assert "text" in props, "Missing 'text' property"
+    assert "dfs" in props, "Missing 'dfs' property"
+    assert "budget" in props, "Missing 'budget' property"
+    assert props["dfs"]["type"] == "boolean"
+    assert props["budget"]["type"] == "integer"
+
+
+def test_graph_query_handler_returns_traversal_result():
+    """_h_graph_query should return a dict with traversal, nodes, edges, rendered keys."""
+    result = _tool_handlers["harness_kb_graph_query"]({"text": "agent harness components"})
+    assert isinstance(result, dict), f"Expected dict, got {type(result)}"
+    for key in ("traversal", "start_labels", "nodes", "edges", "rendered", "truncated"):
+        assert key in result, f"Missing key {key!r} in result"
+
+
 def test_build_server_returns_object():
     server = build_server()
     assert server is not None

@@ -48,8 +48,11 @@ def _h_wiki_get(args: dict):
 
 
 def _h_graph_query(args: dict):
-    return [{"label": n.label, "id": n.id, "community": n.community}
-            for n in graph.bm25_query(args["text"], limit=args.get("limit", 10))]
+    return graph.query(
+        question=args["text"],
+        mode=("dfs" if args.get("dfs") else "bfs"),
+        budget=int(args.get("budget", 2000)),
+    )
 
 
 def _h_graph_explain(args: dict):
@@ -144,9 +147,13 @@ _TOOL_SCHEMAS: dict[str, tuple[str, dict]] = {
         {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"], "additionalProperties": False},
     ),
     "harness_kb_graph_query": (
-        "BM25-ranked search over node labels in the bundled graph.",
+        "Run a graphify-equivalent BFS or DFS traversal of the bundled knowledge graph for a natural-language question. Returns ranked subgraph nodes + edges + rendered text. Use `dfs: true` for path-tracing; default is BFS.",
         {"type": "object",
-         "properties": {"text": {"type": "string"}, "limit": {"type": "integer", "default": 10}},
+         "properties": {
+             "text": {"type": "string"},
+             "dfs": {"type": "boolean", "default": False},
+             "budget": {"type": "integer", "default": 2000},
+         },
          "required": ["text"], "additionalProperties": False},
     ),
     "harness_kb_graph_explain": (
