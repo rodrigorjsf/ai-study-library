@@ -11,5 +11,9 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "agent-customizer@agent-engineering-toolkit": true,
+    "skill-creator@claude-plugins-official": true
   }
 }
