@@ -1,6 +1,6 @@
 ---
 name: dream
-description: Memory consolidation: orient, gather session/transcript signal, merge+prune topic files, update MEMORY.md. Trigger: dream, consolidate, sync memory. Flags: --project (default), --user.
+description: Reflective memory consolidation pass — orients on existing memories, gathers recent signal from session logs and transcripts, merges new facts into topic files, and prunes the index. Use whenever the user asks to dream, consolidate memories, reflect on recent sessions, sync memory, tidy `MEMORY.md`, or do an end-of-session memory review. Also trigger this proactively when the user signals they're wrapping up a long working session and would benefit from durable notes carried into future sessions. Accepts `--project` (project memory) and `--user` (global user memory).
 argument-hint: "[--project] [--user]"
 model: opus
 effort: xhigh
@@ -51,95 +51,22 @@ If none exist, **stop and ask the user** which path to use (or whether to create
 - User says phrases like: "dream", "consolidate memories", "do a memory pass", "review what you remember", "sync memory before I switch projects", "tidy `MEMORY.md`".
 - Autonomously, when wrapping up a long session that produced multiple corrections, validated approaches, or new project facts that future sessions would benefit from. Announce the intent before writing — do not silently rewrite memory.
 
+### Inline vs background execution
+
+Two distinct execution paths exist:
+
+- **`/dream` (this skill, inline)** — runs synchronously in the main thread. Blocks until the consolidation pass finishes. Use when the user explicitly wants the result before continuing, or when the session is wrapping up and the user is idle.
+- **`@dreamer` subagent** — runs the same pass in a background subagent so the main thread stays free. Use when the user asks for "dream in background", "consolidate while I work", or any autonomous invocation that should not block ongoing work.
+
+For autonomous invocations during active work, prefer spawning `@dreamer` to avoid stealing the main thread. When the user explicitly types `/dream`, honor the inline path.
+
 ## When not to use
 
 - Single-fact saves. If the user just said "remember that X", write that one memory directly per the auto-memory rules in the system prompt — no full dream pass required.
 - During the middle of a task. A dream is a reflective pass, not a way to organize in-flight scratch work. Use a plan or task list for that.
 - When the user asks to *forget* something. Find and remove the specific entry; don't sweep the whole memory.
 
----
-
-## Executor procedure
-
-**You** (the executor, running this skill inline) complete these steps synchronously, then stop. Do not enter the consolidation phases yourself.
-
-### Step 1 — Parse flags
-
-Identify which scopes are requested. Default to `--project` if no flag is given.
-
-### Step 2 — Resolve absolute paths
-
-The subagent cannot access `pwd` or expand `~`. Resolve everything now:
-
-- **Project scope:** run `pwd` to get the working directory, derive the project slug, and expand the full path. Example: `pwd` → `/home/rodrigo/Workspace/ai-study-library` → memory dir → `/home/rodrigo/.claude/projects/-home-rodrigo-Workspace-ai-study-library/memory/`.
-- **User scope:** probe the three candidate paths. If none exist, **stop here and ask the user** — the subagent cannot ask interactively. Once confirmed, use the absolute path.
-- **Never pass `~` or relative paths** in the subagent prompt.
-
-### Step 3 — Summarize current-session signal
-
-The subagent has no access to this conversation's history. Extract any durable signal now and prepare a `## Current session notes` block to inject into the prompt. Include:
-
-- Corrections or validated preferences the user expressed in this session.
-- New project facts, references to external systems, or decisions made.
-- Anything else that a future session should know.
-
-If the current conversation has no notable durable signal, write: `No notable session signal — standard consolidation pass only.`
-
-### Step 4 — Build the subagent prompt
-
-Assemble the prompt as follows:
-
-```
-You are running a Dream — Memory Consolidation pass.
-
-## Scope
-<project | user | project + user>
-
-## Memory directory
-<fully resolved absolute path(s)>
-
-## Transcripts source
-<fully resolved absolute path(s)>
-
-## Current session notes
-<content from Step 3>
-
----
-
-<embed the full "Subagent template" section below verbatim, starting from "Source of truth for memory format">
-```
-
-For `--project --user`: include both paths and instruct the subagent to run two sequential passes (project first, then user). The final report must cover each scope separately.
-
-### Step 5 — Spawn the subagent
-
-```
-Agent(
-  model="opus",
-  run_in_background=true,
-  description="Dream — memory consolidation (<scope> — <resolved-path>)",
-  prompt=<assembled prompt from Step 4>
-)
-```
-
-Include in the prompt: "Run all five phases completely. Do not skip or short-circuit any phase. Read every file the phases specify."
-
-### Step 6 — Announce and stop
-
-Tell the user in one message:
-- Which scope is running
-- The resolved memory path(s)
-- That they'll receive a notification when consolidation is complete
-
-Then stop. Do not read any memory files, do not execute any consolidation phase yourself.
-
----
-
-## Subagent template
-
-> Embed the content below verbatim in the Agent prompt (Step 4 above).
-
-### Source of truth for memory format
+## Source of truth for memory format
 
 Your system prompt's **auto-memory** section is authoritative for:
 
@@ -153,7 +80,7 @@ Re-read those rules before writing. This skill orchestrates the *pass*; the syst
 
 ---
 
-### Phase 1 — Orient
+## Phase 1 — Orient
 
 For the chosen scope:
 
@@ -165,19 +92,15 @@ For the chosen scope:
 
 If `MEMORY.md` doesn't exist, plan to create it during Phase 4. If the memory directory itself doesn't exist, `mkdir -p` it.
 
-### Phase 2 — Gather recent signal
+## Phase 2 — Gather recent signal
 
-Look for new information worth persisting. The executor has already injected a `## Current session notes` block at the top of this prompt — treat it as a primary source alongside the sources below.
+Look for new information worth persisting. Sources, in priority order:
 
-Sources, in priority order:
+1. **Session logs.** If `logs/YYYY/MM/DD/<id>-<title>.md` files exist, read the most recent 1–3 days. Each line is prefix-coded — `>` user, `<` assistant, `.` tool call. The filename title tells you what the session was about, so you can skip irrelevant ones cheaply.
 
-1. **Current session notes.** Read the `## Current session notes` block injected by the executor. These are pre-extracted durable signals from the triggering session that you cannot access directly.
+2. **Drifted memories.** Look at existing topic files and ask: does anything here contradict what I see in the project right now? Renamed files, removed flags, superseded decisions — note them for Phase 3 fixes.
 
-2. **Session logs.** If `logs/YYYY/MM/DD/<id>-<title>.md` files exist, read the most recent 1–3 days. Each line is prefix-coded — `>` user, `<` assistant, `.` tool call. The filename title tells you what the session was about, so you can skip irrelevant ones cheaply.
-
-3. **Drifted memories.** Look at existing topic files and ask: does anything here contradict what I see in the project right now? Renamed files, removed flags, superseded decisions — note them for Phase 3 fixes.
-
-4. **Transcript search (narrow).** Transcripts are large JSONL files. Never read them whole. Grep for narrow terms only when you already suspect something matters:
+3. **Transcript search (narrow).** Transcripts are large JSONL files. Never read them whole. Grep for narrow terms only when you already suspect something matters:
 
    ```bash
    grep -rn "<narrow term>" <transcripts-source> --include="*.jsonl" | tail -50
@@ -185,9 +108,11 @@ Sources, in priority order:
 
    Examples of "narrow terms": a specific error message, a flag name, a person's name, a Linear/Jira ticket ID. Don't grep generic words like "bug" or "fix".
 
+4. **The current conversation.** If invoked at the end of a session, the most valuable signal is often what the user said in this very conversation — corrections, validated choices, new project facts, references to external systems. Treat the conversation history as a source.
+
 Stay in budget. You're harvesting durable signal, not transcribing recent activity. If nothing new is worth saving, that's a valid outcome — say so in the summary.
 
-### Phase 3 — Consolidate
+## Phase 3 — Consolidate
 
 For each thing worth remembering, write or update a memory file at the top level of the memory directory.
 
@@ -197,7 +122,7 @@ For each thing worth remembering, write or update a memory file at the top level
 - **Delete contradicted facts at the source.** If an old memory says X and the project now does Y, fix the file — don't append a footnote.
 - **Don't save what doesn't belong.** Code patterns, file paths, project structure, recent diffs, debugging recipes, anything already in `CLAUDE.md` — these are derivable from the codebase or git, not memory material. The auto-memory exclusion list applies here in full.
 
-### Phase 4 — Prune and index
+## Phase 4 — Prune and index
 
 Update `<memory-dir>/MEMORY.md`:
 
@@ -210,7 +135,7 @@ Update `<memory-dir>/MEMORY.md`:
 
 If `MEMORY.md` did not exist before this pass, create it now from the topic files present.
 
-### Phase 5 — Reconcile with `CLAUDE.md` (optional, scope-aware)
+## Phase 5 — Reconcile with `CLAUDE.md` (optional, scope-aware)
 
 If the project has a `CLAUDE.md` (project scope) or the user has a global `~/.claude/CLAUDE.md` (user scope), do a quick reconciliation pass:
 
@@ -221,7 +146,7 @@ This phase is best-effort. Skip it cleanly if no `CLAUDE.md` is present.
 
 ---
 
-### Final report
+## Final report
 
 Return a brief summary covering:
 
@@ -233,25 +158,25 @@ Return a brief summary covering:
 
 If nothing changed because memories were already tight, say exactly that. A clean dream that finds nothing to do is a valid result, not a failure.
 
-### Examples
+## Examples
 
 **Example 1 — explicit project pass**
 
 > User: `/dream --project`
 
-→ Executor resolves project slug from `pwd`, expands memory path to absolute form, extracts session notes, spawns opus background agent with full template embedded. Announces: "Dream started — project scope at `/home/rodrigo/.claude/projects/-home-…/memory/`. You'll be notified when done."
+→ Resolve project slug from `pwd`. Run all four phases against `~/.claude/projects/<slug>/memory/`. Read transcripts from the same project only.
 
 **Example 2 — both scopes**
 
 > User: `/dream --project --user`
 
-→ Executor resolves both paths (probing user-memory candidates inline), spawns one background agent instructed to run two sequential passes. Final report covers each scope separately.
+→ Run the project pass first, then the user pass. Report each separately so the user can see which scope changed what.
 
 **Example 3 — autonomous invocation at end of session**
 
 > User (after a 90-minute session with several corrections): "ok I'm done for today, anything else before I close?"
 
-→ Offer: "Want me to dream a project pass to consolidate today's corrections into memory? I'd update X and Y." Wait for confirmation before spawning.
+→ Offer: "Want me to spawn `@dreamer` to consolidate today's corrections into memory in the background? I'd update X and Y." Wait for confirmation before spawning. Prefer `@dreamer` over inline `/dream` for autonomous invocations so the user isn't blocked.
 
 **Example 4 — single fact, skill should NOT trigger**
 
