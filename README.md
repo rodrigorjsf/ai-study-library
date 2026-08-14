@@ -20,9 +20,9 @@ A collection of optimized prompts and meta-prompts designed to improve the perfo
 
 ### 3. `ai/rules/`
 
-Rules written to steer coding agents, with frontmatter `paths` globs so the host tool loads them only for matching files.
+Rules written to steer coding agents, organized by the tool that loads them — the guidance is shared, only the activation metadata differs.
 
-- **Java Concurrency & `static`:** decision rule for `static` in high-RPM services on Java 25 — shared state, virtual threads, DynamoDB/Redis clients, and OpenTelemetry.
+- **Java Concurrency & `static`:** decision rule for `static` in high-RPM services on Java 25 — shared state, virtual threads, DynamoDB/Redis clients, and OpenTelemetry. Available for Claude Code (`paths` globs) and for Cursor as an `.mdc` project rule set to *Apply Intelligently*.
 
 ### 4. `ai/examples/`
 

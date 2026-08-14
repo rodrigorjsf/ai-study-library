@@ -1,8 +1,10 @@
 # Static / concurrency enforcement — executable examples
 
-Reference implementations that make [`ai/rules/java-concurrency-static.md`](../../../rules/java-concurrency-static.md)
-executable in CI. The rule file guides the agent; these files stop a regression from
-merging. A rule that is not enforced by the build is a suggestion.
+Reference implementations that make the Java concurrency & `static` rule
+([Claude](../../../rules/claude/java-concurrency-static.md) ·
+[Cursor](../../../rules/cursor/java-concurrency-static.mdc)) executable in CI. The rule
+file guides the agent; these files stop a regression from merging. A rule that is not
+enforced by the build is a suggestion.
 
 ## Contents
 
