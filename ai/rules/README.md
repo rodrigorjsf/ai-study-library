@@ -38,31 +38,42 @@ paths:
 ### Installing the Cursor variant
 
 Copy to `.cursor/rules/java-concurrency-static.mdc` in the target repo. Cursor derives the
-rule type from the frontmatter fields, and this one is deliberately **Apply Intelligently**:
-
-```yaml
----
-description: <what the rule covers and when it is relevant>
-alwaysApply: false
----
-```
+rule type from which frontmatter fields are present:
 
 | Rule type | Frontmatter |
 | --- | --- |
 | Always Apply | `alwaysApply: true` |
-| **Apply Intelligently** | **`description` set, `alwaysApply: false`, no `globs`** |
-| Apply to Specific Files | `globs` set |
+| Apply Intelligently | `description` set, `alwaysApply: false`, **no** `globs` |
+| **Apply to Specific Files** | **`globs` set** — what this rule uses |
 | Apply Manually | none of the three — invoked with `@java-concurrency-static` |
 
-Intelligent activation was chosen over globs on purpose: the rule is about a *decision*
-(should this be `static` at all?), not about a file type. Under `globs: **/*.java` it would
-be injected into every trivial Java edit and burn context on a getter rename; under a
-description the agent pulls it in when the work actually touches shared state, monitors,
-virtual threads, or client lifecycle. The cost is that the description carries the whole
-activation burden — it names the concrete triggers (`static`, `synchronized`,
-`ThreadLocal`, virtual threads, DynamoDB/Redis/Kafka/HTTP clients, OTEL) rather than
-describing the document, so keep it specific if you edit it.
+This rule is scoped to Java sources and build files, so it attaches only when one of them
+is in context:
 
-The `.mdc` extension is what enables frontmatter — a plain `.md` file in `.cursor/rules/`
-is a valid rule but has no activation metadata. Cursor's own guidance is to keep rules
-under 500 lines and split anything larger into composable rules; this one is ~110.
+```yaml
+---
+description: <what the rule covers and when it is relevant>
+globs: **/*.java,**/pom.xml,**/build.gradle,**/build.gradle.kts
+alwaysApply: false
+---
+```
+
+Setting `globs` makes the file match the trigger, not the agent's judgement. The
+`description` is kept anyway — it is what the settings UI shows and what `@`-mention
+discovery reads — but it no longer drives activation. If you would rather have the agent
+decide by relevance (it pulls the rule in on shared state, monitors, virtual threads or
+client lifecycle, and skips it on a getter rename, at the cost of sometimes not pulling it
+in at all), delete the `globs` line and the rule reverts to Apply Intelligently.
+
+### Frontmatter gotchas
+
+- **Do not quote the glob list.** `globs: "**/*.java,**/pom.xml"` is read as one literal
+  pattern containing a comma and matches nothing. Comma-separated and unquoted is correct.
+- That means the frontmatter is **not strict YAML** — a bare `*` is an alias indicator, so
+  a standard YAML parser rejects `globs: **/*.java`. Cursor parses it with its own reader
+  and its UI writes it exactly this way; do not "fix" it to a YAML list.
+- Braces are not relied on: `**/build.gradle{,.kts}` is written out as two patterns.
+- The extension must be `.mdc`. A plain `.md` in `.cursor/rules/` is still a valid rule but
+  carries no activation metadata.
+- Cursor's guidance is to keep a rule under 500 lines and split anything larger into
+  composable rules; this one is ~110.

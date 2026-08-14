@@ -22,7 +22,7 @@ A collection of optimized prompts and meta-prompts designed to improve the perfo
 
 Rules written to steer coding agents, organized by the tool that loads them — the guidance is shared, only the activation metadata differs.
 
-- **Java Concurrency & `static`:** decision rule for `static` in high-RPM services on Java 25 — shared state, virtual threads, DynamoDB/Redis clients, and OpenTelemetry. Available for Claude Code (`paths` globs) and for Cursor as an `.mdc` project rule set to *Apply Intelligently*.
+- **Java Concurrency & `static`:** decision rule for `static` in high-RPM services on Java 25 — shared state, virtual threads, DynamoDB/Redis clients, and OpenTelemetry. Available for Claude Code and for Cursor as an `.mdc` project rule — both scoped by globs to Java sources and build files.
 
 ### 4. `ai/examples/`
 

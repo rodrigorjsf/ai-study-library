@@ -1,5 +1,6 @@
 ---
 description: Java 25 concurrency and `static` safety for high-RPM microservices. Apply when writing, reviewing or refactoring Java that declares `static` fields or methods, uses `synchronized`, `ThreadLocal`, `volatile` or virtual threads, or that holds a DynamoDB, Redis, HTTP or Kafka client; also when instrumenting those calls with OpenTelemetry, or when adding ArchUnit / Error Prone enforcement for these patterns. Decides whether something should be `static` at all, and gives the replacement pattern plus the argument to use in code review.
+globs: **/*.java,**/pom.xml,**/build.gradle,**/build.gradle.kts
 alwaysApply: false
 ---
 
