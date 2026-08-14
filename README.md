@@ -4,7 +4,7 @@ This repository serves as a personal knowledge base and study companion for mast
 
 ## 📂 Project Structure
 
-The library is organized into three main sections:
+The library is organized into the following main sections:
 
 ### 1. `ai/docs/`
 
@@ -18,7 +18,19 @@ A collection of optimized prompts and meta-prompts designed to improve the perfo
 
 - **Improvement:** Meta-prompts specifically crafted to refine and optimize inputs for Claude, Codex, Gemini, and Grok.
 
-### 3. `ai/study/`
+### 3. `ai/rules/`
+
+Rules written to steer coding agents, with frontmatter `paths` globs so the host tool loads them only for matching files.
+
+- **Java Concurrency & `static`:** decision rule for `static` in high-RPM services on Java 25 — shared state, virtual threads, DynamoDB/Redis clients, and OpenTelemetry.
+
+### 4. `ai/examples/`
+
+Executable reference implementations for the rules above — a rule the build does not enforce is only a suggestion.
+
+- **`java/static-concurrency-enforcement/`:** ArchUnit test suites (v1 and v2, the latter frozen against a baseline) plus an Error Prone `BugChecker` that covers the `synchronized` blocks ArchUnit cannot see in bytecode.
+
+### 5. `ai/study/`
 
 Structured study plans and educational resources.
 
