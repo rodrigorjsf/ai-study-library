@@ -131,3 +131,11 @@ i. **Models:** sonnet default; opus for orchestrators, gatekeeper, critics; no h
 ## Review
 
 (to be filled after execution)
+
+## User clarification (2026-10-02)
+
+Each stage has its **own orchestrator**, executed at **different times in fresh sessions/windows**.
+→ Gate duties live inside each stage orchestrator: **entry gate** (validate upstream handoff on disk; refuse with
+`rejected`/`blocked`) + **exit gate** (stage critic + own checklist before writing the handoff).
+`pipeline-gatekeeper` is dropped as a required role; traceability owner stays as a shared worker.
+Handoff files on disk are the only memory between stages → their schemas must be self-contained.
