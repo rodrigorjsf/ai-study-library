@@ -30,7 +30,13 @@ Executable reference implementations for the rules above — a rule the build do
 
 - **`java/static-concurrency-enforcement/`:** ArchUnit test suites (v1 and v2, the latter frozen against a baseline) plus an Error Prone `BugChecker` that covers the `synchronized` blocks ArchUnit cannot see in bytecode.
 
-### 5. `ai/study/`
+### 5. `ai/agents/`
+
+Claude Code subagents.
+
+- **`product-pipeline/`:** 35 research-backed personas that take an idea through Discovery → PRD → Architecture → Tasks. Each stage has its own orchestrator, run in a fresh session (`claude --agent <stage>-orchestrator`), plus specialists, a stage critic and a shared cross-cutting pool (security, privacy/LGPD, accessibility, SRE, FinOps, analytics, traceability). Each persona states acceptance criteria and refusal criteria (`blocked` / `rejected` / `out_of_scope`). The folder also ships a preloaded conventions skill, default gate rubrics and install/run/lint scripts. See [`ai/agents/product-pipeline/README.md`](ai/agents/product-pipeline/README.md); the research behind it is in [`dev/research/2026-10-02-agentic-pipeline-personas-research.md`](dev/research/2026-10-02-agentic-pipeline-personas-research.md).
+
+### 6. `ai/study/`
 
 Structured study plans and educational resources.
 
