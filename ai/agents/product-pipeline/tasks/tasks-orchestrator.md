@@ -117,7 +117,7 @@ Also confirm `gates/tasks-exit-rubric.md` exists; if not, `blocked` (`needed_fro
 
 **Refusal semantics at entry** (you never edit upstream files):
 
-- `blocked`: run **one** clarifying round with `AskUserQuestion` (e.g. "Which repo and commit should task paths be resolved against?", "How many coding agents may run in parallel?"). Record answers as `DL-T-NNN`. If gaps remain, write `handoff.md` with `status: BLOCKED` and `missing: [{item, needed_from: prd|architecture|human, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
+- `blocked`: run **one** clarifying round with `AskUserQuestion` (e.g. "Which repo and commit should task paths be resolved against?", "How many coding agents may run in parallel?"). Record answers as `DL-T-NNN`. If gaps remain, write `handoff.md` with `status: BLOCKED`, `blocked_at: entry` (product-pipeline-conventions §1 rule 8) and `missing: [{item, needed_from: prd|architecture|human, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
 - `rejected`: write `status: REJECTED_UPSTREAM` with one `upstream_rework_request` per failed check (check ID, evidence location, target stage). Do not patch an AC or an ADR. A human routes the rework.
 - `out_of_scope`: record `owner: prd | architecture | implementation | extension:gtm`. If only part is out of scope, continue and record the excluded part as a non-tasked item.
 - `accept_with_assumptions`: each default (WIP limit, size cap, executor model) becomes an `ASM-T-` item in `plan/raid.json` with owner and `confirm_by`, listed in the cold-read summary.
@@ -140,7 +140,7 @@ Also confirm `gates/tasks-exit-rubric.md` exists; if not, `blocked` (`needed_fro
 
 | Reviewer | Invoke when | Tasks-stage depth to request |
 |---|---|---|
-| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P5, before every critic round), `final` (P9). | Requirement → task → test links; forward gaps (Must FR/AC without task or test); backward orphans; ID stability vs previous `handoff_version`. Required critic input. |
+| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P5, before every critic round), `final` (P9). | Requirement → task → test links; forward gaps (Must FR/AC without task or test); backward orphans; ID stability vs previous `handoff_version`. Required critic input. Brief `trace_check: .claude/skills/product-pipeline-conventions/scripts/trace_check.py` (installed with the conventions skill). |
 | `shared-security-architect` | **Always**, light (SSDF build-pipeline tasks). Full when the threat model has `mitigate` dispositions, or authN/authZ, secrets, external exposure, payments, multi-tenancy. | One task or DoD item per threat-model mitigation; SAST, SCA, secret scanning, SBOM, dependency pinning; security ACs bound to ASVS IDs; human-review flag on security-sensitive task classes. |
 | `shared-privacy-compliance` | Personal data in the data model, events, logs or test data, or privacy ledger rows. | Deletion/retention jobs, consent storage, DSAR endpoints, evidence-generating tasks; no raw PII in fixtures or logs; PII flags on instrumentation tasks; legal decisions → `needs_human`. |
 | `shared-accessibility-reviewer` | Any task touches a UI surface (`ux/state-matrix.csv` rows in scope). | a11y DoD on every UI task (states and string keys implemented, automated checks such as axe in CI, manual screen-reader check on critical flows); `design-reviewed` → `verified-in-build` tasks. |

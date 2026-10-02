@@ -123,7 +123,7 @@ Then invoke `shared-traceability-keeper` in `entry` mode.
 
 **Refusal semantics at entry** (never edit upstream files):
 
-- `blocked`: one clarifying round with `AskUserQuestion` ("What availability does checkout need?", "Which cloud and region?", "What monthly cost ceiling?"). Answers become `DL-A-NNN` in `gate/decision-log.md`. If gaps remain, write `handoff.md` with `status: BLOCKED` and `missing: [{item, needed_from, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
+- `blocked`: one clarifying round with `AskUserQuestion` ("What availability does checkout need?", "Which cloud and region?", "What monthly cost ceiling?"). Answers become `DL-A-NNN` in `gate/decision-log.md`. If gaps remain, write `handoff.md` with `status: BLOCKED`, `blocked_at: entry` (product-pipeline-conventions §1 rule 8) and `missing: [{item, needed_from, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
 - `rejected`: write `status: REJECTED_UPSTREAM` with `upstream_rework_request` (each failed check, evidence location, `rerun_stage: prd`). Never repair PRD content.
 - `out_of_scope`: record the owner (`prd`, `tasks`, `extension:gtm`, `human:legal`, `org:EA`) and stop; if only part is out of scope, continue and record the excluded part as a non-goal in `architecture.md` §1.
 - `accept_with_assumptions`: each default is an `ASM-A-` with owner and `confirm_by`, listed in the handoff cold-read summary; core-domain assumptions are capped by M7 (≤3).
@@ -144,7 +144,7 @@ Then invoke `shared-traceability-keeper` in `entry` mode.
 
 | Reviewer | Invoke when | Architecture-stage depth to request |
 |---|---|---|
-| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P7, before every critic round), `final` (P10). | Bidirectional trace FR/NFR → QAS → ADR → C/CMP → BC/AGG → OP/MSG → FF/SPK; orphan and gap report. Its report is a required critic input. |
+| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P7, before every critic round), `final` (P10). | Bidirectional trace FR/NFR → QAS → ADR → C/CMP → BC/AGG → OP/MSG → FF/SPK; orphan and gap report. Its report is a required critic input. Brief `trace_check: .claude/skills/product-pipeline-conventions/scripts/trace_check.py` (installed with the conventions skill). |
 | `shared-security-architect` | **Always**. Full with authN/authZ, non-public data, external exposure, payments, multi-tenancy, or PRD ASVS ≥ L2; light (STRIDE on the external boundary only) for an internal tool with no personal data at ASVS L1. | STRIDE-per-element threat model on `views/dfd.md` with dispositions and owners; ASVS controls mapped to containers and operations; security scheme on every operation; secrets and identity from the platform. |
 | `shared-privacy-compliance` | Any personal or regulated data in `data/inventory.csv`, events or telemetry, or PRD/Discovery flags jurisdictions or regulated domains. Telemetry and analytics designs always go through privacy. | LINDDUN on the same DFD; inventory check (purpose → FR, retention and deletion for every copy incl. logs, backups, event logs; crypto-shredding answer for append-only stores); residency vs the deployment view; legal basis stays "proposed"; data-steward checklist. |
 | `shared-accessibility-reviewer` | `ux/flows.md` non-empty. Skip for API-only or batch systems. | Architecture-level SCs: authentication method (WCAG 2.2 SC 3.3.8), session timeouts (2.2.1), SPA routing and focus management, status messages (4.1.3), declared component library or token source. |

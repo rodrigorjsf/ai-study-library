@@ -70,7 +70,7 @@ The human gives you the run-id or the idea; nothing else from chat counts unless
 
 1. **Resolve `<run-id>`.** Use the one the human gives. Otherwise derive `YYYYMMDD-<slug>` from today's date and a 2–4 word slug of the idea, confirm it once with the human, and create `docs/pipeline/<run-id>/01-discovery/` with `briefs/`, `work/`, `reviews/`, `gate/`, `rejections/`, `history/`.
 2. **Resume check.** If `01-discovery/plan.md` exists, read it and the status per brief. Skip every brief marked `done`; resume from the first `pending` or `in_progress` item. Never re-run a completed brief (this guards against step repetition).
-3. **Re-entry check.** If `01-discovery/handoff.md` exists, this is a re-entry run: copy it to `history/handoff-v<N>.md` before changing anything, read `gate/decision-log.md` (overrides stay overridden) and the new `validation-results/` and `rejections/` files.
+3. **Re-entry check.** If `01-discovery/handoff.md` exists with `blocked_at: entry`, it is not a prior version: move it with its gate files to `history/blocked-entry-<N>/` and continue as a first run (see product-pipeline-conventions §1 rule 8). Otherwise, if `01-discovery/handoff.md` exists, this is a re-entry run: copy it to `history/handoff-v<N>.md` before changing anything, read `gate/decision-log.md` (overrides stay overridden) and the new `validation-results/` and `rejections/` files.
 4. **Read upstream.** Read `00-intake/idea-brief.md` fully and list `00-intake/evidence/` (file names only; workers read the content).
 5. **Rubric preflight.** Confirm `gates/discovery-exit-rubric.md` exists. If it does not, stop with `blocked` (`needed_from: human:harness-author`); you may not invent or edit a rubric.
 
@@ -156,7 +156,7 @@ Run deterministic checks first, then substance checks. Record every check as `ch
 
 | Reviewer | Trigger at Discovery | Screens for |
 |---|---|---|
-| `shared-traceability-keeper` | **Always**: `reserve` (Phase 0), `exit` (Phase 4, before every critic round), `final` (Phase 6). `entry` on re-entry. | ID integrity, parent links, orphans, stability across versions. |
+| `shared-traceability-keeper` | **Always**: `reserve` (Phase 0), `exit` (Phase 4, before every critic round), `final` (Phase 6). `entry` on re-entry. | ID integrity, parent links, orphans, stability across versions. Brief `trace_check: .claude/skills/product-pipeline-conventions/scripts/trace_check.py` (installed with the conventions skill). |
 | `shared-product-analytics` | **Always** (after the viability draft). | MET-* definitions (formula, population, window), actionable vs vanity, guardrail adequacy, baseline feasibility. No tracking plan. |
 | `shared-privacy-compliance` | Personal data about the segment; special categories (health, biometrics, children, financial, location); regulated domain (E-D4 list; then **mandatory**); cross-border data; a viability regulatory flag; any FLAG-PRIV. | Data and actor sensitivity, regulatory red flags threatening viability, DPIA/RIPD likelihood screen (`likely / unlikely / legal_to_decide`). Never a compliance verdict. |
 | `shared-security-architect` | Sensitive assets (money movement, credentials, health records); a new trust boundary (third parties or autonomous AI agents acting for users); a high-value attack target; any FLAG-SEC. | Sensitivity and abuse-potential screen. No threat model. |
@@ -310,4 +310,4 @@ next: "claude --agent prd-orchestrator  # run-id=<run-id>"   # only if human_dec
 
 - **Receives from:** the human sponsor (idea brief, evidence, answers, final decision); all Discovery workers (return briefs pointing at `work/*`); the shared pool (`reviews/<persona>.md`); downstream stages via human-routed `rejections/*.md`.
 - **Delivers to:** `prd-orchestrator`, which starts in a fresh session and reads only `01-discovery/handoff.md`, `handoff.data.json`, `traceability.md`/`trace/`, the ledger and files those cite. The validation plan goes to the human; results re-enter through `00-intake/validation-results/` and a new `claude --agent discovery-orchestrator` session in re-entry mode.
-- **Ends the session** only when `gate/verdict.json` exists with a verdict in {GO, GO_WITH_CONDITIONS, HOLD, BLOCKED} and `handoff.md` `status` equals it, then prints the next command.
+- **Ends the session** only when `gate/verdict.json` exists with a verdict in {GO, GO_WITH_CONDITIONS, HOLD, BLOCKED} and `handoff.md` `status` equals it, then prints the next command. If the entry gate ended the session, that `handoff.md` is a minimal record with `blocked_at: entry` (product-pipeline-conventions §1 rule 8).

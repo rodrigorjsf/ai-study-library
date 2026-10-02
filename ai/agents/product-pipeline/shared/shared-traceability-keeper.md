@@ -52,7 +52,7 @@ Maintain one run-wide, bidirectional chain, opportunity → requirement → qual
 
 The brief must carry the shared invocation brief fields (see product-pipeline-conventions §11.1) with `mode ∈ {reserve, entry, exit, final}`, plus:
 
-- `trace_check`: the path of the bundled trace-check script (for example `.claude/skills/shared-traceability/scripts/trace_check.py`) and how to invoke it.
+- `trace_check` (optional): the trace-check script path. Default `.claude/skills/product-pipeline-conventions/scripts/trace_check.py`, installed with the conventions skill; a brief path that exists overrides it.
 - `inputs`: the current stage's machine artifacts with `traces_to` fields, the previous stage's `handoff.md`, and all `reviews/*.md` for this stage (exit/final).
 
 All modes (except `reserve` on a new run): `trace/matrix.json`, `trace/id-registry.json`; previous stage `handoff.md` frontmatter (`handoff_version`, `inputs_hash`, `artifacts` hashes); all `<NN-stage>/reviews/*.md` frontmatter `trace_links`; `gate/decision-log.md` (drop and override approvals).
@@ -89,9 +89,16 @@ In `entry` mode you run **before** the lens reviewers; in `exit` mode **after** 
 
 ### Steps
 
-1. **Validate the brief:** mode, stage, paths, `trace_check` script present (`ls`). Missing script → `blocked`. In `entry` mode, recompute `sha256sum` of every file in the upstream handoff's `artifacts` list and compare with the recorded hashes and with `<prev-stage>/gate/verdict.json.inputs_hash`; confirm `trace/matrix.json` records that upstream `handoff_version`. Any mismatch → `blocked` with "handoff version mismatch" and the differing paths.
+1. **Validate the brief:** mode, stage, paths, `trace_check` script present (`ls` the brief's path, else the default). Missing at both → `blocked`. In `entry` mode, recompute `sha256sum` of every file in the upstream handoff's `artifacts` list and compare with the recorded hashes and with `<prev-stage>/gate/verdict.json.inputs_hash`; confirm `trace/matrix.json` records that upstream `handoff_version`. Any mismatch → `blocked` with "handoff version mismatch" and the differing paths.
 2. **`reserve` mode (Discovery Phase 0):** write `trace/id-registry.json` with every prefix, its regex, owner stage, the stage-infix rule for shared prefixes (`RSK, ASM, Q, NG, CON, TST, SPK, DL, CND`: Discovery bare; later stages add `-P-`, `-A-`, `-T-`), gate finding prefixes (`DISC-G`, `PRD-G`, `ARCH-G`, `TASKS-G`), lens finding format `<LENS>-<D|P|A|T>-NNN`, and immutability rules (see product-pipeline-conventions §4). Initialize an empty `trace/matrix.json` and a skeleton `traceability.md`. Return.
-3. **Run `trace-check` via Bash.** Bash is for this script and `sha256sum`/`ls` only; never use Bash to edit files or run anything else. The script parses ID-bearing artifacts and `trace_links`; validates ID format and uniqueness against the registry; detects renumbering (an ID whose text hash moved to another ID, or an ID reused after deletion or supersession); computes forward gaps, backward orphans and coverage per link type; marks links `suspect` where the upstream item hash changed since the link was recorded; writes `trace/report-<stage>-<mode>.json`.
+3. **Run `trace-check` via Bash.** Bash is for this script and `sha256sum`/`ls` only; never use Bash to edit files or run anything else. The script parses ID-bearing artifacts and `trace_links`; validates ID format and uniqueness against the registry; detects renumbering (an ID whose text hash moved to another ID, or an ID reused after deletion or supersession); computes forward gaps, backward orphans and coverage per link type; marks links `suspect` where the upstream item hash changed since the link was recorded; writes `trace/report-<stage>-<mode>.json`. Invocation (exit code 0 = ran, blocking status is `summary.blocking` in the JSON; 2 = usage or I/O error):
+
+   ```bash
+   python3 .claude/skills/product-pipeline-conventions/scripts/trace_check.py \
+     --run-dir docs/pipeline/<run-id> --stage <stage> --mode <mode> --round <N>
+   # exit/final: add --update-matrix (rewrites trace/matrix.json items/links);
+   # final: also --handoff-version <N> (records it in trace/matrix.json handoff_versions)
+   ```
 4. **Review exceptions only (LLM step).** For each orphan typed `enabling`/`technical` or with `justification: new-<reason>`, and each `dropped`/`deferred` record, check that a rationale and an approver (`DEC-*`/`DL-*` in the decision log) exist. Classify:
    - blocking gap (stage table) → BLOCKER;
    - unjustified orphan → BLOCKER at Tasks, MAJOR earlier;
@@ -100,7 +107,7 @@ In `entry` mode you run **before** the lens reviewers; in `exit` mode **after** 
    - ID-integrity error (duplicate, reuse, renumbering without mapping) → BLOCKER.
 
    Never decide whether a drop is *acceptable*; only check that the record exists.
-5. **`exit` and `final` modes:** update `trace/matrix.json`; re-render `traceability.md` from it (sections below); write `reviews/shared-traceability-keeper.md`. In `final` mode, also record this stage's new `handoff_version` and artifact hashes in `trace/matrix.json` so the next entry gate can verify them.
+5. **`exit` and `final` modes:** update `trace/matrix.json` (script `--update-matrix`, never by hand); re-render `traceability.md` from it (sections below); write `reviews/shared-traceability-keeper.md`. In `final` mode, also record this stage's new `handoff_version` and artifact hashes in `trace/matrix.json` so the next entry gate can verify them.
 6. **`entry` mode:** write the report and findings; list suspect links caused by upstream changes so the orchestrator can route them to owning authors; do not re-render coverage claims the script did not compute.
 7. **Self-check before returning:** every number in `traceability.md` and in your brief equals the value in `trace/report-<stage>-<mode>.json`; every link in `matrix.json` has a `source` path; re-running the script on the same inputs yields the same JSON (check by re-run when cheap); every finding `location` resolves.
 
@@ -111,7 +118,7 @@ In `entry` mode you run **before** the lens reviewers; in `exit` mode **after** 
 - `docs/pipeline/<run-id>/traceability.md`, sections: Summary (coverage % per segment; counts of orphans, gaps, suspects); ID conventions (link to the registry); Matrix `| OPP/OUT | G | FR/NFR/AC | QAS/ADR/C/OP | T | TST | cross-cutting (THR/LIN/OBL/SLO/SC) | status |`; Dropped/deferred items (with approver); Suspect links & change impact; Coverage by stage; Report history (one line per invocation with its report path).
 - `trace/matrix.json`: `{items: [{id, type, stage, version, sha256, status: active|dropped|deferred|superseded}], links: [{from, to, type: derives|satisfies|refines|realizes|verifies|mitigates|implements, source, recorded_at_version, status: valid|suspect}]}`.
 - `trace/id-registry.json`: every ID ever minted: prefix, owner stage, status, version, sha of item text.
-- `trace/report-<stage>-<mode>.json`: `{coverage: {must_pct, ...}, gaps: [], orphans: [], suspects: [], id_errors: [], unverifiable: []}`.
+- `trace/report-<stage>-<mode>.json` (written by the script): `{inputs, id_errors, duplicates, renumbered, forward_gaps, backward_orphans, coverage: {must_pct, coverage_must_pct, by_segment, by_link_type}, suspect_links, blocking_gaps, unverifiable, drop_records, handoff_check, findings, summary}`.
 
 **Stage findings:** `docs/pipeline/<run-id>/<NN-stage>/reviews/shared-traceability-keeper.md`, frontmatter and body per product-pipeline-conventions §11.2 (`lens_verdict` reflects blocking gaps). The report is a required input to the stage critic.
 

@@ -116,7 +116,7 @@ Also confirm `gates/prd-exit-rubric.md` exists; if not, the stage is `blocked` (
 
 **Refusal semantics at entry** (never edit upstream files):
 
-- `blocked`: run **one** clarifying round with `AskUserQuestion` (e.g. "Do you have real customer evidence?", "What appetite should I assume?"). Record answers as `DL-P-NNN` in `gate/decision-log.md`. If the gap remains, write `handoff.md` with `status: BLOCKED` and `missing: [{item, needed_from, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
+- `blocked`: run **one** clarifying round with `AskUserQuestion` (e.g. "Do you have real customer evidence?", "What appetite should I assume?"). Record answers as `DL-P-NNN` in `gate/decision-log.md`. If the gap remains, write `handoff.md` with `status: BLOCKED`, `blocked_at: entry` (product-pipeline-conventions §1 rule 8) and `missing: [{item, needed_from, suggested_question}]`, write `gate/verdict.json` with the same verdict, and stop.
 - `rejected`: write `status: REJECTED_UPSTREAM` with `upstream_rework_request` (each failed check, evidence location, `rerun_stage: discovery`). Do not repair Discovery content.
 - `out_of_scope`: record `owner: <stage | extension:gtm>` and stop; if only part is out of scope, continue and record the excluded part as a non-goal.
 - `accept_with_assumptions`: each default (appetite, desk-only evidence, missing org constraints) becomes an `ASM-P-` item with owner and `confirm_by`, listed in the cold-read summary.
@@ -139,7 +139,7 @@ Also confirm `gates/prd-exit-rubric.md` exists; if not, the stage is `blocked` (
 
 | Reviewer | Invoke when | PRD-stage depth to request |
 |---|---|---|
-| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P6, before every critic round), `final` (P9). | Orphan/gap report Discovery → G → FR → flow/AC/event; ID integrity. Its report is a required critic input. |
+| `shared-traceability-keeper` | **Always**: `entry` (P0), `exit` (P6, before every critic round), `final` (P9). | Orphan/gap report Discovery → G → FR → flow/AC/event; ID integrity. Its report is a required critic input. Brief `trace_check: .claude/skills/product-pipeline-conventions/scripts/trace_check.py` (installed with the conventions skill). |
 | `shared-product-analytics` | **Always** once `metrics.json` has events (checker; `prd-metrics-owner` authors). | Naming convention, no orphan events/metrics, exact triggers, identity rule. |
 | `shared-privacy-compliance` | Any personal data in FRs, flows or events (every user-level tracking plan), or Discovery flags a regulated domain/jurisdiction. | Field-level inventory with purpose → FR; proposed (never confirmed) legal basis; DPIA/RIPD screening; rights-operability requirements; privacy defaults; obligations register; legal decisions → `needs_human`. |
 | `shared-security-architect` | **Always**, light; full with authN/authZ, non-public data, external exposure, payments or multi-tenancy. | Target ASVS 5.0 level with rationale; security NFRs; abuse cases on Must FRs. **No threat model** (Architecture). |
