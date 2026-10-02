@@ -87,6 +87,11 @@ if [[ ! -e ".claude/agents/$orchestrator.md" && ! -e "$HOME/.claude/agents/$orch
   echo "Warning: $orchestrator.md not found in .claude/agents/ or ~/.claude/agents/ (run install.sh first?)" >&2
 fi
 
+rubric_stage="$stage"; [[ "$stage" == "architecture" ]] && rubric_stage="arch"
+if [[ ! -e "docs/pipeline/gates/$rubric_stage-exit-rubric.md" ]]; then
+  echo "Warning: docs/pipeline/gates/$rubric_stage-exit-rubric.md is missing; $orchestrator will stop with 'blocked' (run install.sh)." >&2
+fi
+
 command -v claude >/dev/null 2>&1 || { echo "The 'claude' CLI is not on PATH." >&2; exit 127; }
 
 exec claude --agent "$orchestrator" "Run the $stage stage for run-id $run_id."

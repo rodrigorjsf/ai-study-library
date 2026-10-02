@@ -97,6 +97,8 @@ gates/<stage>-exit-rubric.md      # versioned rubrics, published before the stag
 org/                              # optional static inputs: tech-radar.*, standards.md, platform-catalog.md
 ```
 
+**Path resolution.** Paths such as `01-discovery/...`, `trace/...` and `crosscutting/...` are relative to `docs/pipeline/<run-id>/`. The `gates/` and `org/` folders are **shared by all runs** and live at `docs/pipeline/gates/` and `docs/pipeline/org/`, so `gates/<stage>-exit-rubric.md` always means `docs/pipeline/gates/<stage>-exit-rubric.md` (`discovery`, `prd`, `arch`, `tasks`). `install.sh` seeds default rubrics there; after that they are human-owned.
+
 Every stage `gate/` folder holds at least `entry-gate.md`, `verify-report.json`, `findings.json`, `critique-r<N>.md`, `verdict.json` and `decision-log.md`. `work/` drafts are not consumed downstream.
 
 **Write scope (single writer per file).** The `Write` tool cannot be path-restricted, so these rules are **instruction-level**: every persona must honor them. A project may add a `PreToolUse` hook to enforce them (see the README); if it does, the agent files must live in `.claude/agents/`, not in a plugin, because plugin agents ignore hooks.

@@ -90,12 +90,30 @@ if [[ -d "$src_root/skills" ]]; then
   done
 fi
 
+# Default exit rubrics are human-owned once installed: copy only the missing ones, never overwrite.
+gates_dir="$target/docs/pipeline/gates"
+gates_installed=()
+if [[ -d "$src_root/gates" ]]; then
+  mkdir -p "$gates_dir"
+  for g in "$src_root"/gates/*.md; do
+    [[ -f "$g" ]] || continue
+    dest="$gates_dir/$(basename "$g")"
+    if [[ -e "$dest" ]]; then
+      echo "Keeping existing rubric: $dest"
+    else
+      cp "$g" "$dest"
+      gates_installed+=("$(basename "$g")")
+    fi
+  done
+fi
+
 echo "Installed product-pipeline into $target ($mode)"
 echo "  agents -> $agents_dir: ${#personas[@]} files"
 for stage in $(printf '%s\n' "${!per_stage[@]}" | sort); do
   printf '    %-14s %d\n' "$stage" "${per_stage[$stage]}"
 done
 echo "  skills -> $skills_dir: ${skills_installed[*]:-(none)}"
+echo "  rubrics -> $gates_dir: ${gates_installed[*]:-(none new)}"
 echo
-echo "Next: restart Claude Code (or open /agents), add gates/<stage>-exit-rubric.md files, then run:"
+echo "Next: restart Claude Code (or open /agents), review the default rubrics in docs/pipeline/gates/, then run:"
 echo "  $script_dir/run-stage.sh discovery <run-id> <idea-file>"
