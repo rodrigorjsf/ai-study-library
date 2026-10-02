@@ -121,16 +121,29 @@ i. **Models:** sonnet default; opus for orchestrators, gatekeeper, critics; no h
 ## Checklist
 
 - [x] Plan reviewed by advisor agent (NEEDS CHANGES → adopted a–i)
-- [ ] User go-ahead
-- [ ] Phase 1 workflow run
-- [ ] Research doc written
-- [ ] Persona files written
-- [ ] Verification + review fixes
-- [ ] README + commit/push
+- [x] User go-ahead
+- [x] Phase 1 workflow run (18 agents)
+- [x] Research doc written
+- [x] Persona files written (35 + conventions skill + rubrics + scripts)
+- [x] Verification + review fixes (lint, audit, Discovery dry runs)
+- [x] README + commit/push (PR #2)
 
 ## Review
 
-(to be filled after execution)
+**Delivered:** 9 verified raw research notes, 5 syntheses, an integrated report (`dev/research/2026-10-02-agentic-pipeline-personas-research.md`), and 35 Claude Code subagents in `ai/agents/product-pipeline/`. Also a preloaded conventions skill, default exit rubrics, `trace_check.py`, and the install, run-stage and lint scripts.
+
+**Static verification:** lint reports 35 personas, 0 errors and 3 length warnings (on the Discovery, Architecture and Tasks orchestrators). The audit pass fixed 6 cross-file inconsistencies.
+
+**Dry runs** (headless `claude -p --agent discovery-orchestrator` in a scratch project):
+1. **Vague idea:** BLOCKED at the entry gate (E-D2, E-S1..S4). No worker ran and nothing was invented. ✅
+2. **Well-specified idea, first run:** the full stage ran (7 workers, 5 shared reviewers, 2 review rounds). It then blocked because `trace_check` was not shipped. → **Fixed:** the script now ships with the skill.
+3. **Vague idea, second run:** the old entry stub would have triggered the re-entry path. → **Fixed** with §1 rule 8 (`blocked_at: entry`). The second run archived the stub and blocked again correctly. ✅
+4. **Well-specified idea, resumed:** traceability reported 0 blocking gaps. Critic round 1 ran as two independent samples. The verdict was HOLD because human-only decisions were still open (kill thresholds, DPO protocol). That is correct: no human decision was invented. ✅
+
+**Other gaps found and fixed:** the exit rubrics were referenced but never shipped (now `gates/`, seeded by `install.sh`). The skill described write-scope and Stop hooks that do not exist; it now says these rules are instruction-level and the hooks optional.
+
+**Not yet exercised:** the PRD, Architecture and Tasks stages end to end. Running them needs a human go/kill decision on the Discovery output. `trace_check.py` rules for PRD, Architecture and Tasks have only been tested on synthetic fixtures.
+
 
 ## User clarification (2026-10-02)
 
