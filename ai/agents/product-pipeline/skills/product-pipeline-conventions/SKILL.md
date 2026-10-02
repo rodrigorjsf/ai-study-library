@@ -34,13 +34,14 @@ Rules that follow from the Claude Code runtime:
 5. **Handoff on disk is the only memory.** A stage knows nothing about earlier sessions except what is in `docs/pipeline/<run-id>/`. Anything that exists only in chat does not exist. No persona uses the `memory` frontmatter field.
 6. **A stage may span several sessions.** The orchestrator keeps a resumable plan file with a status per brief: `01-discovery/plan.md` in Discovery, `<NN-stage>/work/plan.md` elsewhere. On resume it reads the plan and does not re-run completed briefs.
 7. **Upstream is immutable.** No stage edits another stage's folder. Defects upstream are reported (`REJECTED_UPSTREAM`, §5) and a human routes the rework.
+8. **An entry-gate block is not a prior version.** When the entry gate ends the session (`blocked`, `rejected` or `out_of_scope` before any work phase), the orchestrator writes `handoff.md` with `status` equal to the verdict **and** `blocked_at: entry`, plus `gate/verdict.json`, and nothing downstream may consume it. On the next session, a `handoff.md` with `blocked_at: entry` does **not** trigger the re-entry path: the orchestrator moves it, with `gate/entry-gate.md` and `gate/verdict.json`, to `history/blocked-entry-<N>/` and runs the stage as a first run. Only a handoff written after the exit gate (no `blocked_at`, or `blocked_at: exit`) starts a re-entry run.
 
 **Stage skeleton (identical in every stage).**
 
 1. **ENTRY gate.** Layer 1 is a deterministic script (files exist, schemas validate, `inputs_hash` recomputes, upstream `status ∈ {GO, GO_WITH_CONDITIONS}`, no blocking open questions, upstream conditions and ledger rows for this stage imported). Layer 2 is orchestrator judgment on substance. Outcomes: `accept`, `accept_with_assumptions`, `blocked`, `rejected` (written `REJECTED_UPSTREAM`), `out_of_scope`. Recorded in `gate/entry-gate.md` as `check | result | evidence`.
 2. **Work phases.** Independent reading, analysis and review run in parallel; coupled decisions (framing, architecture style, slicing) stay in one head, usually the orchestrator.
-3. **EXIT gate.** (a) deterministic checklist (Bash script and `Stop` hook) → `gate/verify-report.json`; (b) `shared-traceability-keeper` in `exit` mode; (c) the independent stage critic on frozen artifacts; (d) the orchestrator applies the decision rule (§6). At most 3 critic rounds (§9).
-4. **Handoff.** `shared-traceability-keeper` in `final` mode, then `handoff.md` + machine files + `gate/verdict.json`, then ledger rows. A `Stop` hook refuses to end the session unless `gate/verdict.json` exists and `handoff.md` `status` equals its `verdict`.
+3. **EXIT gate.** (a) deterministic checklist (Bash script; the orchestrator runs the checks itself when the project ships no validator, and records `method: manual` in `gate/verify-report.json`) → `gate/verify-report.json`; (b) `shared-traceability-keeper` in `exit` mode; (c) the independent stage critic on frozen artifacts; (d) the orchestrator applies the decision rule (§6). At most 3 critic rounds (§9).
+4. **Handoff.** `shared-traceability-keeper` in `final` mode, then `handoff.md` + machine files + `gate/verdict.json`, then ledger rows. The session must not end unless `gate/verdict.json` exists and `handoff.md` `status` equals its `verdict` (the orchestrator self-checks this; a project may also enforce it with an optional `Stop` hook).
 
 The downstream entry gate re-checks the minimum subset of the upstream exit gate (a consumer-side Definition of Ready). Each exit gate declares `expected_at_next_gate`: what the next exit gate must show.
 
@@ -140,6 +141,7 @@ run_id: <run-id>
 schema_version: "1.0"
 handoff_version: <int>                 # increments on every re-issue; IDs never renumbered
 status: GO | GO_WITH_CONDITIONS | HOLD | BLOCKED | REJECTED_UPSTREAM | KILL_RECOMMENDED  # KILL_RECOMMENDED: PRD onward only
+blocked_at: entry | exit                # only when status is BLOCKED/REJECTED_UPSTREAM; `entry` = stopped before any work phase (§1 rule 8)
 created_at: <ISO-8601>
 rubric_version: <stage>-exit-<x.y>     # discovery-exit-1.0, prd-exit-1.0, arch-exit-1.0, tasks-exit-1.0
 rounds_used: <n>                       # Discovery writes this as exit_gate.rounds
