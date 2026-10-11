@@ -43,6 +43,14 @@ Structured study plans and educational resources.
 - **Basics Study Plan:** A comprehensive guide covering Computer Science foundations (Algorithms, Data Structures), Backend Engineering, and System Design. It incorporates neuroscientific learning principles like Active Recall and Spaced Repetition, utilizing tools like NotebookLM as a cognitive partner.
 - **Tools:** Generators for Product Requirement Documents (PRDs) and Technical Review guidelines.
 
+### 7. `ai/skills/`
+
+Agent skills, each a self-contained `SKILL.md` folder. See [`ai/skills/README.md`](ai/skills/README.md) for the index, install steps, and flow diagrams.
+
+- **`coding-standards`:** generates or updates `CODING_STANDARDS.md` at a repo root from the conventions the codebase actually follows, with one heading per domain. Harness-agnostic: it reads the rule files of Claude Code, Codex, Cursor, Copilot, Gemini CLI, and Windsurf, exports the standards declared in project rule files, and points at user-level rules.
+- **`test-suite-review`:** reviews a codebase's unit tests, removes the ones that add volume without protecting the domain, reinforces where the domain is exposed, and ends green with at least 80% genuine coverage. It works in a git worktree, respects Sonar exclusions, and merges back with a ledger of every change.
+- **`dream`**, **`pdf`**, **`study-plan-generator`:** memory consolidation, PDF to Markdown extraction, and study-plan generation.
+
 ## 🚀 Key Concepts
 
 - **Active Learning:** The study plans encourage active engagement (teaching back, solving problems) rather than passive consumption.

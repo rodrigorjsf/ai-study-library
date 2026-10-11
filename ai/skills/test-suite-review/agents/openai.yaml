@@ -1,0 +1,5 @@
+interface:
+  display_name: "Test Suite Review"
+  short_description: "Cut unit tests that add volume without protecting the domain, reinforce where it is exposed, end green with at least 80% genuine coverage."
+policy:
+  allow_implicit_invocation: false

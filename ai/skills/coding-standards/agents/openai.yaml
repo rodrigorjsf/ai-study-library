@@ -1,0 +1,5 @@
+interface:
+  display_name: "Coding Standards"
+  short_description: "Generate or update CODING_STANDARDS.md from the conventions the codebase actually follows."
+policy:
+  allow_implicit_invocation: false
