@@ -49,7 +49,7 @@ If none exist, **stop and ask the user** which path to use (or whether to create
 
 - User invokes `/dream`, `/dream --project`, `/dream --user`, or `/dream --project --user`.
 - User says phrases like: "dream", "consolidate memories", "do a memory pass", "review what you remember", "sync memory before I switch projects", "tidy `MEMORY.md`".
-- Autonomously, when wrapping up a long session that produced multiple corrections, validated approaches, or new project facts that future sessions would benefit from. Announce the intent before writing — do not silently rewrite memory.
+- Autonomously, when wrapping up a long session that produced multiple corrections, validated approaches, or new project facts that future sessions would benefit from. Announce it in one line and proceed; the background `dreamer` needs no confirmation.
 
 ### Inline vs background execution
 
@@ -103,8 +103,11 @@ Look for new information worth persisting. Sources, in priority order:
 3. **Transcript search (narrow).** Transcripts are large JSONL files. Never read them whole. Grep for narrow terms only when you already suspect something matters:
 
    ```bash
-   grep -rn "<narrow term>" <transcripts-source> --include="*.jsonl" | tail -50
+   grep -rlF --include="*.jsonl" "<narrow term>" <transcripts-source>
+   grep -rhoiP -m 3 --include="*.jsonl" ".{0,300}<narrow term>.{0,300}" <transcripts-source>
    ```
+
+   The first command lists the transcripts that mention the term. The second prints only the text around each match: a transcript line is one whole message and can be hundreds of kilobytes, so never print one in full. Keep `-P`: where `grep` is ugrep, the same window under `-E` fails with "exceeds complexity limits".
 
    Examples of "narrow terms": a specific error message, a flag name, a person's name, a Linear/Jira ticket ID. Don't grep generic words like "bug" or "fix".
 
@@ -176,7 +179,7 @@ If nothing changed because memories were already tight, say exactly that. A clea
 
 > User (after a 90-minute session with several corrections): "ok I'm done for today, anything else before I close?"
 
-→ Offer: "Want me to spawn `@dreamer` to consolidate today's corrections into memory in the background? I'd update X and Y." Wait for confirmation before spawning. Prefer `@dreamer` over inline `/dream` for autonomous invocations so the user isn't blocked.
+→ Spawn `@dreamer` in the background without asking and say so in one line ("dreamer consolidating today's corrections in background"). The global CLAUDE.md "Memory consolidation" rule lists the trigger points. Prefer `@dreamer` over inline `/dream` for autonomous invocations so the user isn't blocked.
 
 **Example 4 — single fact, skill should NOT trigger**
 

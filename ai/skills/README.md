@@ -7,6 +7,7 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 | [`coding-standards`](coding-standards/SKILL.md) | user-invoked | Generates or updates `CODING_STANDARDS.md` at a repo root from the conventions the codebase actually follows. |
 | [`test-suite-review`](test-suite-review/SKILL.md) | user-invoked | Reviews a codebase's unit tests, cuts the ones that add volume without protecting the domain, reinforces where the domain is exposed, and ends green with at least 80% genuine coverage. |
 | [`dream`](dream/SKILL.md) | model-invoked | Memory consolidation pass over session logs and transcripts. |
+| [`memory-consolidation`](memory-consolidation/SKILL.md) | model-invoked | Spawns the background `dreamer` subagent for the same pass, with the spawn prompt it needs. |
 | [`pdf`](pdf/SKILL.md) | model-invoked | Structure-aware PDF to Markdown extraction. See [`pdf/README.md`](pdf/README.md). |
 | [`study-plan-generator`](study-plan-generator/SKILL.md) | model-invoked | Builds study plans and NotebookLM prompts for a topic. |
 
