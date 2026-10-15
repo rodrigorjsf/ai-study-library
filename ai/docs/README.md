@@ -1,77 +1,113 @@
 # Documentation
 
-## Directory Structure
+A study library on working with AI coding agents: vendor documentation mirrors, saved articles and papers, our own research syntheses, and two studies written from them.
 
-| Directory      | Scope            | Contents                                                            | When to Load                          |
-| -------------- | ---------------- | ------------------------------------------------------------------- | ------------------------------------- |
-| `claude-code/` | Claude Code      | Hooks, memory, plugins, skills, subagents, prompting                | Working on Claude Code artifacts      |
-| `cursor/`      | Cursor IDE       | Rules, hooks, MCP, plugins, skills, subagents, tools                | Working on Cursor artifacts           |
-| `general-llm/` | Any LLM/agent    | AGENTS.md guide, research, prompt engineering, context optimization | Research, cross-tool decisions        |
-| `shared/`      | Cross-tool       | Agent Skills open standard, skill authoring best practices          | Building portable skills              |
-| `analysis/`    | Project-internal | Deep extraction analysis of each source document                    | Understanding source doc implications |
+> **Last full audit: 2026-10-11.** Every document was checked against current sources. Start with [analysis/state-of-practice-2026-10.md](analysis/state-of-practice-2026-10.md) for what still holds and what does not.
+
+## How to tell what you are reading
+
+Each audited file says what it is in a block directly under its title:
+
+| Block | Kind of file | What was done |
+|---|---|---|
+| `> Source: <url> — mirrored 2026-10-11` | **Vendor mirror** | The body is the current upstream page, verbatim. |
+| `> **Revision 2026-10-11:**` | **Our synthesis** | Corrected inline as `~~old~~ → new [source]`. |
+| `> **Currency check (2026-10-11):** <verdict>` | **Third-party snapshot** (article, paper, post) or an **analysis** of one | Body untouched. The verdict is `Current`, `Partially outdated`, `Superseded`, `Obsolete`, or `could not verify`, followed by what changed. |
+
+A snapshot marked `Superseded` or `Obsolete` is kept for history. Read its block before relying on it.
+
+## Start here
+
+| If you want to… | Read |
+|---|---|
+| Know what advice is still good in October 2026 | [analysis/state-of-practice-2026-10.md](analysis/state-of-practice-2026-10.md) |
+| Design an agent-driven delivery pipeline | [software-factory/05-unified-factory-study.md](software-factory/05-unified-factory-study.md) |
+| Pick a Claude model and effort level for a role | [models/claude-5-5-model-selection.md](models/claude-5-5-model-selection.md) |
+| Decide what an agent may do unattended, and how to enforce it | [software-factory/08-guardrails.md](software-factory/08-guardrails.md) |
+
+## Directory structure
+
+| Directory | Kind | Contents |
+|---|---|---|
+| [`software-factory/`](software-factory/README.md) | Study | ZazenCodes' factory, Austin Marchese's harness engineering, Matt Pocock's skills v1.3, the local `/run-spec` flow, the unified study, the evidence on prototyping, a full assessment of wayfinder, a study of guardrails, and six video transcripts |
+| [`models/`](models/claude-5-5-model-selection.md) | Study | Opus, Sonnet and Haiku 5.5: benchmarks per effort level, cost per task, role recommendations |
+| `analysis/` | Analysis | The state-of-practice summary, plus one deep-extraction file per source document |
+| `claude-code/` | Vendor mirror | Hooks, memory, plugins, skills, subagents, prompting |
+| `claude/` | Vendor mirror | Anthropic's long-running-harness article; two superseded prompting duplicates |
+| `cursor/` | Vendor mirror | Rules, hooks, MCP, plugins, skills, subagents, tools |
+| `shared/` | Vendor mirror | Agent Skills open standard, skill authoring best practices |
+| `structured-outputs/` | Vendor mirror | Structured outputs, strict tool use, defining tools, consistency |
+| `tool-calling/` | Mirror + snapshots | Programmatic tool calling, tool search |
+| `mcp/` | Mirror + snapshots | MCP specification (revision 2026-07-28), SDK and server READMEs, MCP vs A2A |
+| `agent-protocols/` | Snapshots | A2A, agent communication protocols |
+| `general-llm/` | Our syntheses | AGENTS.md guide, context engineering research, prompt engineering guide, the ETH AGENTS.md paper |
+| `context-engineering/` | Snapshots | Context rot, progressive disclosure, 1M-token windows |
+| `harness-engineering/` | Snapshots | Harness engineering articles |
+| `agentic-engineering/` | Snapshots | Research-Plan-Implement, agent harness construction, the Claude cookbook |
+| `spec-driven-development/` | Snapshots | Spec-driven development and its critique |
+| `long-context-research/` | Snapshots | The lost-in-the-middle papers |
+| `human-layer-project/` | Snapshot | HumanLayer repository analysis (obsolete: the repository was deprecated) |
 
 ## Claude Code (`claude-code/`)
 
-| File                                                      | Description                                                              |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `claude-prompting-best-practices.md`                      | Official Anthropic prompting best practices for Claude models            |
-| `hooks/automate-workflow-with-hooks.md`                   | Setting up Claude Code hooks for workflow automation                     |
-| `hooks/claude-hook-reference-doc.md`                      | Technical reference: 14 event types, JSON schemas, handlers              |
-| `memory/how-claude-remembers-a-project.md`                | CLAUDE.md load order, `@import`, `claudeMdExcludes`, memory system       |
-| `plugins/claude-create-plugin-doc.md`                     | Creating Claude Code plugins: manifest, skills, agents, hooks bundling   |
-| `skills/extend-claude-with-skills.md`                     | Tutorial: creating skills with SKILL.md, invocation, `$CLAUDE_SKILL_DIR` |
-| `skills/research-claude-code-skills-format.md`            | Research comparing skills/plugins format across tools (Claude-focused)   |
-| `subagents/creating-custom-subagents.md`                  | Creating specialized subagents: YAML frontmatter, tool restrictions      |
-| `subagents/claude-orchestrate-of-claude-code-sessions.md` | Orchestrating multiple Claude Code sessions via subagents                |
+| File | Description |
+|---|---|
+| `claude-prompting-best-practices.md` | Anthropic's consolidated prompting guide, with per-model guidance for the current models |
+| `hooks/automate-workflow-with-hooks.md` | Guide to setting up hooks |
+| `hooks/claude-hook-reference-doc.md` | Reference: 33 lifecycle events, five handler types, JSON schemas |
+| `memory/how-claude-remembers-a-project.md` | `CLAUDE.md` load order, imports, `CLAUDE.local.md`, native `AGENTS.md`, auto memory |
+| `plugins/claude-create-plugin-doc.md` | Creating plugins (mirrors the successor page `plugins/create`) |
+| `skills/extend-claude-with-skills.md` | Creating skills: `SKILL.md`, frontmatter, invocation |
+| `skills/research-claude-code-skills-format.md` | Our research comparing skill and plugin formats across tools (partially outdated) |
+| `subagents/creating-custom-subagents.md` | Subagent definitions: frontmatter, tools, model, effort, nesting |
+| `subagents/claude-orchestrate-of-claude-code-sessions.md` | Agent teams |
 
-## Cursor IDE (`cursor/`)
+## Cursor (`cursor/`)
 
-See [`cursor/README.md`](cursor/README.md) for detailed navigation of Cursor-specific documentation.
-
-Covers: rules (4 types), hooks (JSON stdio), MCP integration, plugins (marketplace), skills (Agent Skills standard), subagents, and tools (terminal, browser, search, worktrees).
+See [`cursor/README.md`](cursor/README.md). It also lists upstream areas not mirrored here (Run Modes, CLI, SDK, Cloud Agents and others).
 
 ## General LLM (`general-llm/`)
 
-| File                                            | Description                                                                                                                                     |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a-guide-to-agents.md`                          | Complete guide to AGENTS.md open standard — cross-agent compatibility, path-scoped rules                                                        |
-| `Evaluating-AGENTS-paper.md`                    | ETH Zurich study (Feb 2026): minimal files outperform comprehensive ones                                                                        |
-| `Evaluating-AGENTS-paper.pdf`                   | Original PDF of the ETH Zurich paper                                                                                                            |
-| `research-context-engineering-comprehensive.md` | **Hub file** — Executive summary, recommendations, myths/reality, confidence assessment, and full 55-citation list. Links to scoped child files |
-| `research-context-rot-and-management.md`        | Context rot mechanisms, attention budget, lost-in-middle, poisoning, compression, RAG quality (Parts 1–8)                                       |
-| `research-whitespace-and-formatting.md`         | Whitespace tokenization, structural cues, formatting impact on output quality (Part 9)                                                          |
-| `research-multilingual-performance.md`          | English vs other languages: token cost, reasoning routing, Portuguese/Romance language benchmarks (Parts 10–11)                                 |
-| `research-agent-workflows-and-patterns.md`      | Multi-agent orchestration, tool use patterns, memory systems, progressive disclosure implementation (Section 13)                                |
-| `prompt-engineering-guide.md`                   | 58+ prompt engineering techniques with benchmarks and token costs (2022–2026)                                                                   |
-| `subagents/research-subagent-best-practices.md` | Cross-tool subagent design patterns and best practices                                                                                          |
+| File | Description |
+|---|---|
+| `a-guide-to-agents.md` | Guide to the AGENTS.md convention |
+| `Evaluating-AGENTS-paper.md` / `.pdf` | ETH Zurich study of repository context files. The `.md` is the full text of v3 (2026-09-29) and the `.pdf` is the v3 PDF; summarized in the state-of-practice summary (section 5) |
+| `research-context-engineering-comprehensive.md` | **Hub file**: executive summary, recommendations, citations; links to the scoped files below |
+| `research-context-rot-and-management.md` | Context rot, attention budget, compression |
+| `research-whitespace-and-formatting.md` | Whitespace and formatting effects |
+| `research-multilingual-performance.md` | English versus other languages, including Portuguese |
+| `research-agent-workflows-and-patterns.md` | Multi-agent orchestration, tool use, memory |
+| `prompt-engineering-guide.md` | Prompt engineering techniques, annotated for what current models reject |
+| `persuasion-principles.md` / `Call_Me_A_Jerk….pdf` | Persuasion principles applied to LLM compliance |
+| `subagents/research-subagent-best-practices.md` | Cross-tool subagent design patterns |
 
-**Related documentation**: [skill-authoring-best-practices](shared/skill-authoring-best-practices.md) | [skills-standard](shared/skills-standard/README.md)
+## Shared standards (`shared/`)
 
-## Shared Standards (`shared/`)
+| File | Description |
+|---|---|
+| `skill-authoring-best-practices.md` | Anthropic's skill authoring guide |
+| `skills-standard/README.md` | Index of the agentskills.io mirror |
+| `skills-standard/agentskills-*.md` | Specification, best practices, scripts, descriptions, evaluation |
 
-| File                                                     | Description                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| `skill-authoring-best-practices.md`                      | Best practices for skill creation applicable to any agent  |
-| `skills-standard/README.md`                              | Agent Skills open standard overview (agentskills.io)       |
-| `skills-standard/agentskills-what-are-skills.md`         | Core concepts: structure, portability, why standard exists |
-| `skills-standard/agentskills-specification.md`           | Complete file format, frontmatter, layout specification    |
-| `skills-standard/agentskills-best-practices.md`          | Naming, description, and authoring guidelines              |
-| `skills-standard/agentskills-using-scripts.md`           | Bundling and executing scripts in skills                   |
-| `skills-standard/agentskills-optimizing-descriptions.md` | Writing descriptions that trigger reliable invocation      |
-| `skills-standard/agentskills-evaluating-skills.md`       | Measuring and improving skill output quality               |
+## Reading order by task
 
-## Analysis (`analysis/`)
+**Building a delivery pipeline with agents:** `software-factory/README.md` → `05-unified-factory-study.md` → `models/claude-5-5-model-selection.md`
 
-16 deep extraction files — one per source document. Each contains actionable findings, quality ratings, and recommendations for this project. Metadata headers identify source document, analysis date, and scope.
+**Setting up Claude Code:** `claude-code/memory/` → `claude-code/skills/` → `claude-code/subagents/` → `claude-code/hooks/`
 
-## Reading Order by Task
+**Setting up Cursor:** `cursor/README.md` → `cursor/rules/` → `cursor/hooks/`
 
-**Setting up Claude Code**: `general-llm/a-guide-to-agents.md` → `claude-code/memory/` → `claude-code/hooks/`
+**Creating skills for any tool:** `shared/skill-authoring-best-practices.md` → `shared/skills-standard/` → `claude-code/skills/` or `cursor/skills/` → the "Writing for agents" section of `software-factory/03-matt-pocock-skills-v1-3.md`
 
-**Setting up Cursor**: `cursor/README.md` → `cursor/rules/` → `cursor/hooks/`
+**Understanding context engineering:** `analysis/state-of-practice-2026-10.md` → `general-llm/research-context-engineering-comprehensive.md` → the scoped research files
 
-**Creating skills (any tool)**: `shared/skill-authoring-best-practices.md` → `shared/skills-standard/` → tool-specific: `claude-code/skills/` or `cursor/skills/`
+**Prompting current models:** `claude-code/claude-prompting-best-practices.md` → `models/claude-5-5-model-selection.md` (section 5, behaviour per model)
 
-**Understanding context optimization**: `general-llm/research-context-engineering-comprehensive.md` (hub + summary) → specific scope files (`research-context-rot-and-management.md`, `research-whitespace-and-formatting.md`, `research-multilingual-performance.md`, `research-agent-workflows-and-patterns.md`) → `general-llm/Evaluating-AGENTS-paper.md`
+**Protocols:** `mcp/mcp-specification.md` → `agent-protocols/` (read each currency block first; several are behind A2A v1.0)
 
-**Prompt engineering deep dive**: `claude-code/claude-prompting-best-practices.md` (Claude-focused) or `general-llm/prompt-engineering-guide.md` (58+ techniques, tool-agnostic)
+## Known limits of this library
+
+- Four captures in `mcp/` did not match the sources they named and were deleted on 2026-10-11; the state-of-practice summary lists them and what to read instead.
+- Benchmark numbers come from vendor system cards and third parties. None were measured here.
+- The `harness-kb` package (`tools/harness-kb/`) ships a frozen copy of this folder, staged by `harness-kb build`, which aborts when any doc here is newer than the knowledge-graph manifest. After the October audit that copy is stale: the graph must be refreshed and the package rebuilt (see `tools/harness-kb/docs/build.md`). This was not done as part of the audit, and the documented route is currently blocked: `graphify-out/` was removed from the repository, so the manifest the build checks no longer exists.
+- An untracked `docs/` tree at the repository root holds an older, partly diverging copy (a May 2026 sync, plus `cursor/cli`, `cursor/sdk` and `compliance` folders that do not exist here). It was not touched.
