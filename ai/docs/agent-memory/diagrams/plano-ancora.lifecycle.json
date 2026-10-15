@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Plano — ciclo de vida de uma memória ancorada (ponte Âncora)",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Caminho principal"
+    },
+    {
+      "id": "waiting",
+      "label": "Revisão humana"
+    },
+    {
+      "id": "exceptions",
+      "label": "Sem âncora"
+    },
+    {
+      "id": "terminal",
+      "label": "Fim"
+    }
+  ],
+  "states": [
+    {
+      "id": "escrita",
+      "type": "start",
+      "label": "Página escrita",
+      "sublabel": "write_page",
+      "lane": "main",
+      "col": 0,
+      "step": "01"
+    },
+    {
+      "id": "resolver",
+      "type": "active",
+      "label": "Resolver símbolo",
+      "sublabel": "índice codegraph",
+      "lane": "main",
+      "col": 1,
+      "step": "02"
+    },
+    {
+      "id": "ancorada",
+      "type": "active",
+      "label": "Ancorada",
+      "sublabel": "resolução única",
+      "lane": "main",
+      "col": 2,
+      "step": "03"
+    },
+    {
+      "id": "verificar",
+      "type": "decision",
+      "label": "Verificar",
+      "sublabel": "branch + master",
+      "lane": "main",
+      "col": 3,
+      "step": "04"
+    },
+    {
+      "id": "valida",
+      "type": "success",
+      "label": "Válida",
+      "sublabel": "hash igual · brief",
+      "lane": "main",
+      "col": 4,
+      "step": "05"
+    },
+    {
+      "id": "revisar",
+      "type": "waiting",
+      "label": "Obsoleta",
+      "sublabel": "changed / moved",
+      "lane": "waiting",
+      "col": 1
+    },
+    {
+      "id": "ambigua",
+      "type": "failure",
+      "label": "Ambígua",
+      "sublabel": "sem âncora + aviso",
+      "lane": "exceptions",
+      "col": 0
+    },
+    {
+      "id": "removida",
+      "type": "failure",
+      "label": "Símbolo removido",
+      "sublabel": "arquivar página",
+      "lane": "terminal",
+      "col": 1
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t-res",
+      "from": "escrita",
+      "to": "resolver"
+    },
+    {
+      "id": "t-anc",
+      "from": "resolver",
+      "to": "ancorada",
+      "route": "straight"
+    },
+    {
+      "id": "t-ver",
+      "from": "ancorada",
+      "to": "verificar"
+    },
+    {
+      "id": "t-ok",
+      "from": "verificar",
+      "to": "valida",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t-stale",
+      "from": "verificar",
+      "to": "revisar",
+      "label": "hash mudou",
+      "variant": "security",
+      "route": "drop"
+    },
+    {
+      "id": "t-amb",
+      "from": "resolver",
+      "to": "ambigua",
+      "label": "0 ou 2+",
+      "variant": "dashed"
+    },
+    {
+      "id": "t-rem",
+      "from": "revisar",
+      "to": "removida",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Âncora estável",
+      "items": [
+        "repo + arquivo + kind + qualified_name",
+        "Nunca o ID do nó (inclui a linha)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Dois níveis",
+      "items": [
+        "Branch: codegraph local",
+        "Master: consulta ao Neptune"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Plano — arquitetura alvo: ai-memory fork + codegraph + Neptune no Cursor",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "codigo",
+        "label": "Escopo código",
+        "focus": [
+          "cursor",
+          "codegraph",
+          "cgindex"
+        ],
+        "note": "codegraph responde como o código é agora, na branch do dev."
+      },
+      {
+        "id": "trabalho",
+        "label": "Escopo trabalho",
+        "focus": [
+          "cursor",
+          "aimem",
+          "wiki",
+          "proxy"
+        ],
+        "note": "ai-memory fork guarda decisões, falhas e handoffs; auth e mTLS obrigatórios."
+      },
+      {
+        "id": "ancora",
+        "label": "Ponte Âncora",
+        "focus": [
+          "aimem",
+          "ancora",
+          "codegraph",
+          "neptune"
+        ],
+        "note": "Webhook liga memórias a símbolos e marca obsolescência na branch e na master."
+      },
+      {
+        "id": "org",
+        "label": "Escopo organização",
+        "focus": [
+          "cursor",
+          "npmcp",
+          "neptune",
+          "pipeline"
+        ],
+        "note": "Neptune é só consulta; o pipeline de release existente continua dono dos dados."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cursor",
+      "type": "frontend",
+      "label": "Cursor IDE",
+      "sublabel": "hooks + 3 MCPs",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "codegraph",
+      "type": "backend",
+      "label": "codegraph MCP",
+      "sublabel": "telemetria off",
+      "pos": [
+        300,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "cgindex",
+      "type": "database",
+      "label": ".codegraph/",
+      "sublabel": "grafo da branch",
+      "pos": [
+        560,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "proxy",
+      "type": "security",
+      "label": "Proxy TLS",
+      "sublabel": "PKI interna · mTLS",
+      "pos": [
+        300,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "aimem",
+      "type": "backend",
+      "label": "ai-memory fork",
+      "sublabel": "auth obrigatória",
+      "pos": [
+        560,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "wiki",
+      "type": "database",
+      "label": "Wiki + git",
+      "sublabel": "âncoras no frontmatter",
+      "pos": [
+        560,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "ancora",
+      "type": "backend",
+      "label": "Serviço Âncora",
+      "sublabel": "sidecar + webhook",
+      "pos": [
+        820,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "LLM interno",
+      "sublabel": "ou vendor ZDR",
+      "pos": [
+        820,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "npmcp",
+      "type": "backend",
+      "label": "MCP Neptune",
+      "sublabel": "já existente",
+      "pos": [
+        300,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "neptune",
+      "type": "cloud",
+      "label": "AWS Neptune",
+      "sublabel": "Database + Analytics",
+      "pos": [
+        1080,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "cloud",
+      "label": "Pipeline de release",
+      "sublabel": "LLM avalia a master",
+      "pos": [
+        1080,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Estação do dev / servidor do time",
+      "wraps": [
+        "codegraph",
+        "cgindex",
+        "proxy",
+        "aimem",
+        "wiki",
+        "ancora",
+        "npmcp"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "AWS VPC (via VPN)",
+      "wraps": [
+        "neptune",
+        "pipeline"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-cg",
+      "from": "cursor",
+      "to": "codegraph",
+      "label": "MCP stdio",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-am",
+      "from": "cursor",
+      "to": "proxy",
+      "label": "hooks + MCP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-px",
+      "from": "proxy",
+      "to": "aimem",
+      "label": "token + mTLS",
+      "variant": "security"
+    },
+    {
+      "id": "c-np",
+      "from": "cursor",
+      "to": "npmcp",
+      "label": "MCP",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "c-idx",
+      "from": "codegraph",
+      "to": "cgindex",
+      "label": "índice"
+    },
+    {
+      "id": "c-wiki",
+      "from": "aimem",
+      "to": "wiki",
+      "label": "Markdown + git",
+      "labelAt": [
+        645,
+        420
+      ]
+    },
+    {
+      "id": "c-hook",
+      "from": "aimem",
+      "to": "ancora",
+      "label": "write_page",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-sym",
+      "from": "ancora",
+      "to": "codegraph",
+      "label": "CLI / MCP",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [
+        [
+          905,
+          72
+        ],
+        [
+          385,
+          72
+        ]
+      ]
+    },
+    {
+      "id": "c-nq",
+      "from": "ancora",
+      "to": "neptune",
+      "label": "leitura IAM",
+      "variant": "dashed"
+    },
+    {
+      "id": "c-llm",
+      "from": "ancora",
+      "to": "llm",
+      "label": "opcional",
+      "variant": "dashed",
+      "labelAt": [
+        905,
+        420
+      ]
+    },
+    {
+      "id": "c-npn",
+      "from": "npmcp",
+      "to": "neptune",
+      "label": "SigV4",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          385,
+          600
+        ],
+        [
+          1165,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "c-pipe",
+      "from": "pipeline",
+      "to": "neptune",
+      "label": "atualiza",
+      "labelAt": [
+        1165,
+        240
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Três escopos",
+      "items": [
+        "codegraph: código da branch",
+        "ai-memory: trabalho do dev/time",
+        "Neptune: conhecimento da master"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Ponte sem fork",
+      "items": [
+        "Âncora via codegraph CLI/MCP, não SQLite",
+        "Obsolescência gravada só na transição"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Segurança",
+      "items": [
+        "Auth + mTLS + CA corporativa",
+        "Egresso só para allowlist"
+      ]
+    }
+  ]
+}

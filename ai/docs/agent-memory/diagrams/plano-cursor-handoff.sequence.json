@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Plano — handoff em duas fases no Cursor (fork corrigido)",
+    "viewBox": [
+      960,
+      820
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "cc",
+      "type": "frontend",
+      "label": "Claude Code",
+      "sublabel": "sessão anterior"
+    },
+    {
+      "id": "cursor",
+      "type": "frontend",
+      "label": "Cursor Agent",
+      "sublabel": "nova sessão"
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "Hook nativo",
+      "sublabel": "CA + mTLS"
+    },
+    {
+      "id": "srv",
+      "type": "backend",
+      "label": "ai-memory fork",
+      "sublabel": "auth obrigatória"
+    },
+    {
+      "id": "cg",
+      "type": "database",
+      "label": "codegraph",
+      "sublabel": "blast radius"
+    }
+  ],
+  "segments": [
+    {
+      "from": 154,
+      "to": 230,
+      "label": "Sessão anterior"
+    },
+    {
+      "from": 250,
+      "to": 416,
+      "label": "sessionStart"
+    },
+    {
+      "from": 436,
+      "to": 552,
+      "label": "Primeiro evento real"
+    },
+    {
+      "from": 572,
+      "to": 628,
+      "label": "Sem evento na sessão"
+    }
+  ],
+  "messages": [
+    {
+      "id": "a1",
+      "from": "cc",
+      "to": "srv",
+      "y": 170,
+      "label": "SessionEnd: cria handoff (open)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "a2",
+      "from": "srv",
+      "to": "cc",
+      "y": 200,
+      "label": "202",
+      "variant": "return"
+    },
+    {
+      "id": "b1",
+      "from": "cursor",
+      "to": "hook",
+      "y": 266,
+      "label": "sessionStart",
+      "variant": "default"
+    },
+    {
+      "id": "b2",
+      "from": "hook",
+      "to": "srv",
+      "y": 296,
+      "label": "reserva handoff (lease)",
+      "variant": "security"
+    },
+    {
+      "id": "b3",
+      "from": "hook",
+      "to": "cg",
+      "y": 326,
+      "label": "impacto dos arquivos",
+      "variant": "default"
+    },
+    {
+      "id": "b4",
+      "from": "srv",
+      "to": "hook",
+      "y": 356,
+      "label": "handoff + brief",
+      "variant": "return"
+    },
+    {
+      "id": "b5",
+      "from": "hook",
+      "to": "cursor",
+      "y": 386,
+      "label": "additional_context (raiz)",
+      "variant": "return"
+    },
+    {
+      "id": "c1",
+      "from": "cursor",
+      "to": "hook",
+      "y": 452,
+      "label": "beforeSubmitPrompt",
+      "variant": "default"
+    },
+    {
+      "id": "c2",
+      "from": "hook",
+      "to": "srv",
+      "y": 482,
+      "label": "confirma (accepted)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c3",
+      "from": "srv",
+      "to": "hook",
+      "y": 512,
+      "label": "ok",
+      "variant": "return"
+    },
+    {
+      "id": "d1",
+      "from": "srv",
+      "to": "cc",
+      "y": 596,
+      "label": "lease expirou: handoff volta a open",
+      "variant": "dashed"
+    }
+  ]
+}
