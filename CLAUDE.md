@@ -14,3 +14,6 @@ When something fails repeatedly, when User has to re-explain, or when a workarou
 - yt-dlp subtitles hit HTTP 429; use `uvx --from youtube-transcript-api youtube_transcript_api <id>`.
 - Mirror vendor docs with `curl` on the `.md` suffix (code.claude.com, platform.claude.com, cursor.com/docs).
 - `harness-kb build` bundles `ai/docs/` but needs `graphify-out/manifest.json`, removed from the repo.
+- No Chrome in WSL: archify `visual-check` skips; set `ARCHIFY_CHROME` first.
+- No osv-scanner installed: query `api.osv.dev/v1/querybatch` with lockfile versions.
+- archify `deliver` with `meta.repository` needs `--repo-root <checkout>`.
