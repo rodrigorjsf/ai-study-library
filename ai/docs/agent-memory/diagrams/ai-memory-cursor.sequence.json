@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": { "title": "ai-memory no Cursor IDE — fluxo real dos hooks", "viewBox": [960, 820], "column_fit": "spread", "quality_profile": "showcase" },
+  "participants": [
+    { "id": "user", "type": "external", "label": "Usuário", "sublabel": "abre um chat" },
+    { "id": "cursor", "type": "frontend", "label": "Cursor Agent", "sublabel": "hooks.json" },
+    { "id": "hook", "type": "backend", "label": "Hook", "sublabel": "binário Rust" },
+    { "id": "srv", "type": "backend", "label": "Servidor", "sublabel": "127.0.0.1:49374" },
+    { "id": "mcp", "type": "security", "label": "MCP /mcp", "sublabel": "contorno manual" }
+  ],
+  "segments": [
+    { "from": 154, "to": 290, "label": "sessionStart" },
+    { "from": 310, "to": 456, "label": "Cada ferramenta" },
+    { "from": 476, "to": 562, "label": "sessionEnd" },
+    { "from": 582, "to": 668, "label": "Contorno" }
+  ],
+  "messages": [
+    { "id": "s1", "from": "user", "to": "cursor", "y": 168, "label": "novo chat", "variant": "default" },
+    { "id": "s2", "from": "cursor", "to": "hook", "y": 198, "label": "sessionStart (sem espera)", "variant": "default" },
+    { "id": "s3", "from": "hook", "to": "srv", "y": 228, "label": "GET /handoff (destrutivo)", "variant": "security" },
+    { "id": "s4", "from": "hook", "to": "cursor", "y": 258, "label": "hookSpecificOutput (Cursor espera additional_context)", "variant": "return" },
+    { "id": "t1", "from": "cursor", "to": "hook", "y": 324, "label": "beforeSubmitPrompt", "variant": "default" },
+    { "id": "t2", "from": "cursor", "to": "hook", "y": 354, "label": "preToolUse → {}", "variant": "default" },
+    { "id": "t3", "from": "cursor", "to": "hook", "y": 384, "label": "postToolUse", "variant": "default" },
+    { "id": "t4", "from": "hook", "to": "srv", "y": 414, "label": "POST /hook/batch", "variant": "emphasis" },
+    { "id": "e1", "from": "cursor", "to": "hook", "y": 490, "label": "sessionEnd", "variant": "default" },
+    { "id": "e2", "from": "hook", "to": "srv", "y": 520, "label": "cria handoff para o próximo agente", "variant": "emphasis" },
+    { "id": "n1", "from": "cursor", "to": "mcp", "y": 596, "label": "memory_handoff_accept", "variant": "emphasis" },
+    { "id": "n2", "from": "mcp", "to": "cursor", "y": 626, "label": "handoff entregue via MCP", "variant": "return" }
+  ]
+}

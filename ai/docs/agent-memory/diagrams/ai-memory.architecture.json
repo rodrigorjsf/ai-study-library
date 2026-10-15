@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ai-memory — arquitetura real com Claude Code e Cursor (commit 705aba7)",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/akitaonrails/ai-memory",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "705aba70bc1a3ce6349194135206fb622ca55749"
+    },
+    "views": [
+      {
+        "id": "captura",
+        "label": "Captura",
+        "focus": [
+          "cc",
+          "hooks",
+          "spool",
+          "router",
+          "sanitizer",
+          "writer",
+          "cursor"
+        ],
+        "note": "Todo evento passa pelo sanitizador tipado antes do writer único."
+      },
+      {
+        "id": "fonte-verdade",
+        "label": "Fonte de verdade",
+        "focus": [
+          "router",
+          "wiki",
+          "writer",
+          "sqlite"
+        ],
+        "note": "O wiki Markdown versionado em git é a verdade; o SQLite é índice derivado e reconstruível."
+      },
+      {
+        "id": "recuperacao",
+        "label": "Recuperação",
+        "focus": [
+          "cc",
+          "mcp",
+          "sqlite",
+          "cursor"
+        ],
+        "note": "Busca híbrida: FTS5 bm25 + entidades + grafo + vetores locais, fundidos por RRF k=60."
+      },
+      {
+        "id": "egresso",
+        "label": "Egresso opcional",
+        "focus": [
+          "workers",
+          "llm"
+        ],
+        "note": "Sem llm_provider não há chamada a LLM; com ele, auto-improve aprova sozinho por padrão."
+      },
+      {
+        "id": "cursor",
+        "label": "Cursor IDE",
+        "focus": [
+          "cursor",
+          "hooks",
+          "router"
+        ],
+        "note": "sessionStart devolve hookSpecificOutput; o Cursor documenta additional_context. O handoff pode ser consumido sem aparecer."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cc",
+      "type": "frontend",
+      "label": "Claude Code",
+      "sublabel": "plugin · 9 eventos",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-cli/src/commands/install_hooks.rs",
+          "line": 2143
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "type": "frontend",
+      "label": "Cursor IDE",
+      "sublabel": "~/.cursor/hooks.json · 8",
+      "pos": [
+        40,
+        400
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-cli/src/commands/install_hooks.rs",
+          "line": 2817
+        }
+      ]
+    },
+    {
+      "id": "hooks",
+      "type": "backend",
+      "label": "Hooks",
+      "sublabel": "shell curl · nativo Rust",
+      "pos": [
+        300,
+        300
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "hooks/_lib.sh",
+          "line": 927
+        }
+      ]
+    },
+    {
+      "id": "spool",
+      "type": "database",
+      "label": "Hook spool",
+      "sublabel": "arquivos locais",
+      "pos": [
+        300,
+        480
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-cli/src/commands/hook_spool.rs",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Hook router",
+      "sublabel": "/hook · /handoff",
+      "tag": "127.0.0.1:49374",
+      "pos": [
+        560,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-hooks/src/router.rs",
+          "line": 630
+        },
+        {
+          "path": "crates/ai-memory-cli/src/config.rs",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP router",
+      "sublabel": "/mcp · 23 tools",
+      "pos": [
+        560,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-mcp/src/server.rs",
+          "line": 2634
+        }
+      ]
+    },
+    {
+      "id": "sanitizer",
+      "type": "security",
+      "label": "Sanitizer",
+      "sublabel": "Sanitized<T>",
+      "pos": [
+        820,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-core/src/sanitize.rs",
+          "line": 355
+        }
+      ]
+    },
+    {
+      "id": "writer",
+      "type": "backend",
+      "label": "Writer actor",
+      "sublabel": "1 thread · mpsc 1024",
+      "pos": [
+        1080,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-store/src/writer.rs",
+          "line": 824
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite (índice)",
+      "sublabel": "FTS5 + vetores BLOB",
+      "pos": [
+        1080,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-store/src/reader.rs",
+          "line": 5979,
+          "label": "RRF k=60"
+        }
+      ]
+    },
+    {
+      "id": "wiki",
+      "type": "database",
+      "label": "Wiki Markdown",
+      "sublabel": "git · fonte de verdade",
+      "pos": [
+        560,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-wiki/src/git.rs",
+          "line": 383
+        }
+      ]
+    },
+    {
+      "id": "workers",
+      "type": "backend",
+      "label": "Workers",
+      "sublabel": "decay · lint · auto-improve",
+      "pos": [
+        820,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-consolidate/src/sweep.rs",
+          "line": 1189
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "Provedor LLM",
+      "sublabel": "opt-in · llm_provider",
+      "pos": [
+        1080,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "crates/ai-memory-cli/src/config.rs",
+          "line": 3019
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "ai-memory serve (um processo Rust)",
+      "wraps": [
+        "router",
+        "mcp",
+        "sanitizer",
+        "writer",
+        "sqlite",
+        "wiki",
+        "workers"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-cc",
+      "from": "cc",
+      "to": "hooks",
+      "label": "stdin JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-cursor",
+      "from": "cursor",
+      "to": "hooks",
+      "label": "stdin JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-mcp",
+      "from": "cc",
+      "to": "mcp",
+      "label": "MCP",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-post",
+      "from": "hooks",
+      "to": "router",
+      "label": "HTTP loopback",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-spool",
+      "from": "hooks",
+      "to": "spool",
+      "label": "fila local",
+      "labelAt": [
+        380,
+        420
+      ]
+    },
+    {
+      "id": "c-scrub",
+      "from": "router",
+      "to": "sanitizer",
+      "label": "scrub",
+      "variant": "security"
+    },
+    {
+      "id": "c-write",
+      "from": "sanitizer",
+      "to": "writer",
+      "label": "Sanitized"
+    },
+    {
+      "id": "c-sql",
+      "from": "writer",
+      "to": "sqlite",
+      "label": "SQL"
+    },
+    {
+      "id": "c-search",
+      "from": "mcp",
+      "to": "sqlite",
+      "label": "busca híbrida"
+    },
+    {
+      "id": "c-page",
+      "from": "router",
+      "to": "wiki",
+      "label": "sessions/<id>.md",
+      "labelAt": [
+        645,
+        420
+      ]
+    },
+    {
+      "id": "c-evict",
+      "from": "workers",
+      "to": "wiki",
+      "label": "evict"
+    },
+    {
+      "id": "c-llm",
+      "from": "workers",
+      "to": "llm",
+      "label": "HTTPS opt-in",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Claude Code × Cursor",
+      "items": [
+        "Claude Code: injeção documentada",
+        "Cursor: envelope Claude, injeção não verificada"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Memória legível",
+      "items": [
+        "Markdown + git é a verdade",
+        "SQLite é índice reconstruível"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Riscos padrão",
+      "items": [
+        "Sem token = API sem auth no loopback",
+        "LLM ligado: auto-improve sem revisão"
+      ]
+    }
+  ]
+}

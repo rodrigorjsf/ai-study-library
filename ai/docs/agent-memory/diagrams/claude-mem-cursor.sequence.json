@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": { "title": "claude-mem no Cursor IDE — fluxo real dos hooks", "viewBox": [960, 820], "column_fit": "spread", "quality_profile": "showcase" },
+  "participants": [
+    { "id": "cursor", "type": "frontend", "label": "Cursor Agent", "sublabel": "hooks.json" },
+    { "id": "rule", "type": "database", "label": "Regra .mdc", "sublabel": "alwaysApply" },
+    { "id": "hook", "type": "backend", "label": "Hook", "sublabel": "npx -y / bun" },
+    { "id": "worker", "type": "backend", "label": "Worker", "sublabel": "127.0.0.1:377xx" },
+    { "id": "llm", "type": "external", "label": "LLM observador", "sublabel": "Haiku (padrão)" }
+  ],
+  "segments": [
+    { "from": 154, "to": 290, "label": "Início do chat" },
+    { "from": 310, "to": 426, "label": "Shell / MCP / edição" },
+    { "from": 446, "to": 592, "label": "stop" }
+  ],
+  "messages": [
+    { "id": "s1", "from": "rule", "to": "cursor", "y": 168, "label": "carrega .mdc (só se instalado por projeto)", "variant": "return" },
+    { "id": "s2", "from": "cursor", "to": "hook", "y": 198, "label": "beforeSubmitPrompt: session-init", "variant": "default" },
+    { "id": "s3", "from": "hook", "to": "worker", "y": 228, "label": "POST /api/sessions/init", "variant": "emphasis" },
+    { "id": "s4", "from": "hook", "to": "cursor", "y": 258, "label": "{continue:true} — sem contexto", "variant": "return" },
+    { "id": "t1", "from": "cursor", "to": "hook", "y": 324, "label": "afterShellExecution / afterMCPExecution", "variant": "default" },
+    { "id": "t2", "from": "hook", "to": "worker", "y": 354, "label": "observação", "variant": "emphasis" },
+    { "id": "t3", "from": "worker", "to": "llm", "y": 384, "label": "tool I/O para comprimir", "variant": "security" },
+    { "id": "e1", "from": "cursor", "to": "hook", "y": 460, "label": "stop: summarize", "variant": "default" },
+    { "id": "e2", "from": "worker", "to": "llm", "y": 490, "label": "resumo do transcript", "variant": "security" },
+    { "id": "e3", "from": "llm", "to": "worker", "y": 520, "label": "<summary> XML", "variant": "return" },
+    { "id": "e4", "from": "worker", "to": "rule", "y": 550, "label": "reescreve .mdc (projetos registrados)", "variant": "dashed" }
+  ]
+}

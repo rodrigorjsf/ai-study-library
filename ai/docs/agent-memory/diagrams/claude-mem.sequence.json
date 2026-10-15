@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "claude-mem no Claude Code — sessão com compressão por LLM",
+    "viewBox": [
+      960,
+      820
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "agent",
+      "type": "frontend",
+      "label": "Harness",
+      "sublabel": "Claude Code"
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "Hook CLI",
+      "sublabel": "launcher Bun"
+    },
+    {
+      "id": "spool",
+      "type": "database",
+      "label": "Spool",
+      "sublabel": "JSON bruto"
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "Express 127.0.0.1"
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "LLM observador",
+      "sublabel": "Haiku (padrão)"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite + Chroma",
+      "sublabel": "~/.claude-mem"
+    }
+  ],
+  "segments": [
+    {
+      "from": 154,
+      "to": 272,
+      "label": "SessionStart"
+    },
+    {
+      "from": 294,
+      "to": 472,
+      "label": "Cada ferramenta"
+    },
+    {
+      "from": 494,
+      "to": 612,
+      "label": "Stop / SessionEnd"
+    },
+    {
+      "from": 634,
+      "to": 692,
+      "label": "Próxima sessão"
+    }
+  ],
+  "messages": [
+    {
+      "id": "s1",
+      "from": "agent",
+      "to": "hook",
+      "y": 168,
+      "label": "SessionStart context",
+      "variant": "default"
+    },
+    {
+      "id": "s2",
+      "from": "hook",
+      "to": "worker",
+      "y": 198,
+      "label": "GET /api/context/inject",
+      "variant": "emphasis"
+    },
+    {
+      "id": "s3",
+      "from": "worker",
+      "to": "db",
+      "y": 228,
+      "label": "50 observações recentes",
+      "variant": "default"
+    },
+    {
+      "id": "s4",
+      "from": "hook",
+      "to": "agent",
+      "y": 258,
+      "label": "additionalContext (sem cercado)",
+      "variant": "return"
+    },
+    {
+      "id": "t1",
+      "from": "agent",
+      "to": "hook",
+      "y": 308,
+      "label": "PostToolUse (async)",
+      "variant": "default"
+    },
+    {
+      "id": "t2",
+      "from": "hook",
+      "to": "spool",
+      "y": 338,
+      "label": "grava payload bruto",
+      "variant": "default"
+    },
+    {
+      "id": "t3",
+      "from": "hook",
+      "to": "worker",
+      "y": 368,
+      "label": "POST /api/spool/nudge",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t4",
+      "from": "worker",
+      "to": "llm",
+      "y": 398,
+      "label": "tool I/O em <outcome>",
+      "variant": "security"
+    },
+    {
+      "id": "t5",
+      "from": "llm",
+      "to": "worker",
+      "y": 428,
+      "label": "<observation> XML",
+      "variant": "return"
+    },
+    {
+      "id": "t6",
+      "from": "worker",
+      "to": "db",
+      "y": 458,
+      "label": "store + sync Chroma",
+      "variant": "default"
+    },
+    {
+      "id": "e1",
+      "from": "agent",
+      "to": "hook",
+      "y": 508,
+      "label": "Stop summarize",
+      "variant": "default"
+    },
+    {
+      "id": "e2",
+      "from": "worker",
+      "to": "llm",
+      "y": 538,
+      "label": "prompt de resumo",
+      "variant": "security"
+    },
+    {
+      "id": "e3",
+      "from": "llm",
+      "to": "worker",
+      "y": 568,
+      "label": "<summary> XML",
+      "variant": "return"
+    },
+    {
+      "id": "e4",
+      "from": "worker",
+      "to": "db",
+      "y": 598,
+      "label": "session_summaries",
+      "variant": "default"
+    },
+    {
+      "id": "n1",
+      "from": "agent",
+      "to": "worker",
+      "y": 648,
+      "label": "MCP search → timeline → get_observations",
+      "variant": "emphasis"
+    },
+    {
+      "id": "n2",
+      "from": "worker",
+      "to": "agent",
+      "y": 678,
+      "label": "detalhes sob demanda",
+      "variant": "return"
+    }
+  ]
+}

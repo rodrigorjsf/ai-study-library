@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "ai-memory no Claude Code — sessão e handoff entre harnesses",
+    "viewBox": [
+      960,
+      820
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "agent",
+      "type": "frontend",
+      "label": "Harness",
+      "sublabel": "Claude Code"
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "Hook",
+      "sublabel": "ai-memory hook"
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Hook router",
+      "sublabel": "127.0.0.1:49374"
+    },
+    {
+      "id": "san",
+      "type": "security",
+      "label": "Sanitizer",
+      "sublabel": "regex scrub"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "writer único"
+    },
+    {
+      "id": "wiki",
+      "type": "database",
+      "label": "Wiki + git",
+      "sublabel": "Markdown"
+    }
+  ],
+  "segments": [
+    {
+      "from": 154,
+      "to": 272,
+      "label": "SessionStart"
+    },
+    {
+      "from": 294,
+      "to": 442,
+      "label": "Durante a sessão"
+    },
+    {
+      "from": 464,
+      "to": 582,
+      "label": "SessionEnd"
+    },
+    {
+      "from": 604,
+      "to": 662,
+      "label": "Próxima sessão"
+    }
+  ],
+  "messages": [
+    {
+      "id": "s1",
+      "from": "agent",
+      "to": "hook",
+      "y": 168,
+      "label": "SessionStart (stdin)",
+      "variant": "default"
+    },
+    {
+      "id": "s2",
+      "from": "hook",
+      "to": "router",
+      "y": 198,
+      "label": "GET /handoff",
+      "variant": "emphasis"
+    },
+    {
+      "id": "s3",
+      "from": "router",
+      "to": "db",
+      "y": 228,
+      "label": "claim handoff (CAS)",
+      "variant": "default"
+    },
+    {
+      "id": "s4",
+      "from": "router",
+      "to": "agent",
+      "y": 258,
+      "label": "handoff + brief (cercado untrusted)",
+      "variant": "return"
+    },
+    {
+      "id": "t1",
+      "from": "agent",
+      "to": "hook",
+      "y": 308,
+      "label": "PostToolUse",
+      "variant": "default"
+    },
+    {
+      "id": "t2",
+      "from": "hook",
+      "to": "router",
+      "y": 338,
+      "label": "POST /hook/batch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t3",
+      "from": "router",
+      "to": "san",
+      "y": 368,
+      "label": "Sanitized::new",
+      "variant": "security"
+    },
+    {
+      "id": "t4",
+      "from": "san",
+      "to": "db",
+      "y": 398,
+      "label": "insert observation",
+      "variant": "default"
+    },
+    {
+      "id": "t5",
+      "from": "router",
+      "to": "hook",
+      "y": 428,
+      "label": "202 queued",
+      "variant": "return"
+    },
+    {
+      "id": "e1",
+      "from": "agent",
+      "to": "hook",
+      "y": 478,
+      "label": "SessionEnd",
+      "variant": "default"
+    },
+    {
+      "id": "e2",
+      "from": "hook",
+      "to": "router",
+      "y": 508,
+      "label": "drain spool",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "router",
+      "to": "wiki",
+      "y": 538,
+      "label": "sessions/<id>.md + commit",
+      "variant": "default"
+    },
+    {
+      "id": "e4",
+      "from": "router",
+      "to": "db",
+      "y": 568,
+      "label": "upsert page + handoff",
+      "variant": "default"
+    },
+    {
+      "id": "n1",
+      "from": "agent",
+      "to": "router",
+      "y": 618,
+      "label": "outro harness: GET /handoff",
+      "variant": "emphasis"
+    },
+    {
+      "id": "n2",
+      "from": "router",
+      "to": "agent",
+      "y": 648,
+      "label": "continua de onde parou",
+      "variant": "return"
+    }
+  ]
+}

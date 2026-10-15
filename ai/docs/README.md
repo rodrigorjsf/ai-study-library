@@ -24,12 +24,14 @@ A snapshot marked `Superseded` or `Obsolete` is kept for history. Read its block
 | Design an agent-driven delivery pipeline | [software-factory/05-unified-factory-study.md](software-factory/05-unified-factory-study.md) |
 | Pick a Claude model and effort level for a role | [models/claude-5-5-model-selection.md](models/claude-5-5-model-selection.md) |
 | Decide what an agent may do unattended, and how to enforce it | [software-factory/08-guardrails.md](software-factory/08-guardrails.md) |
+| Choose a long-term memory tool for coding agents (ai-memory vs claude-mem, enterprise security, Cursor and Claude Code) | [agent-memory/README.md](agent-memory/README.md) (pt-BR) |
 
 ## Directory structure
 
 | Directory | Kind | Contents |
 |---|---|---|
 | [`software-factory/`](software-factory/README.md) | Study | ZazenCodes' factory, Austin Marchese's harness engineering, Matt Pocock's skills v1.3, the local `/run-spec` flow, the unified study, the evidence on prototyping, a full assessment of wayfinder, a study of guardrails, and six video transcripts |
+| [`agent-memory/`](agent-memory/README.md) | Study (pt-BR) | Agent memory concepts, architecture and security audit of ai-memory and claude-mem, Cursor/Claude Code integration, comparison, archify diagrams |
 | [`models/`](models/claude-5-5-model-selection.md) | Study | Opus, Sonnet and Haiku 5.5: benchmarks per effort level, cost per task, role recommendations |
 | `analysis/` | Analysis | The state-of-practice summary, plus one deep-extraction file per source document |
 | `claude-code/` | Vendor mirror | Hooks, memory, plugins, skills, subagents, prompting |

@@ -1,0 +1,494 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "claude-mem — arquitetura real com Claude Code e Cursor (commit fef3402)",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/thedotmack/claude-mem",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "fef3402e674bebbf72a23aeb735e91c92cd34afd"
+    },
+    "views": [
+      {
+        "id": "captura",
+        "label": "Captura",
+        "focus": [
+          "cc",
+          "hook",
+          "spool",
+          "worker"
+        ],
+        "note": "Hooks gravam um JSON por evento no spool e cutucam o worker em loopback."
+      },
+      {
+        "id": "compressao",
+        "label": "Compressão por LLM",
+        "focus": [
+          "worker",
+          "observer",
+          "llm",
+          "sqlite",
+          "chroma"
+        ],
+        "note": "Cada evento de ferramenta vira um prompt para o LLM observador; o XML devolvido vira observação."
+      },
+      {
+        "id": "egresso",
+        "label": "Saídas da máquina",
+        "focus": [
+          "observer",
+          "llm",
+          "posthog",
+          "cmem"
+        ],
+        "note": "Os três caminhos pelos quais dados saem do host: LLM, telemetria e sync opcional."
+      },
+      {
+        "id": "cursor",
+        "label": "Cursor IDE",
+        "focus": [
+          "cursor",
+          "hook",
+          "worker",
+          "rule"
+        ],
+        "note": "No Cursor não há injeção por hook: só a regra .mdc, escrita após um resumo e só para projetos registrados."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cc",
+      "type": "frontend",
+      "label": "Claude Code",
+      "sublabel": "plugin · Read Gate",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "plugin/hooks/hooks.json"
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "type": "frontend",
+      "label": "Cursor IDE",
+      "sublabel": "5 hooks · npx -y",
+      "pos": [
+        40,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "claude-mem-cursor/hooks/hooks.json"
+        }
+      ]
+    },
+    {
+      "id": "rule",
+      "type": "database",
+      "label": "Regra .mdc",
+      "sublabel": "só instalação de projeto",
+      "pos": [
+        300,
+        120
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/integrations/CursorHooksInstaller.ts",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "Hook CLI",
+      "sublabel": "launcher → Bun",
+      "pos": [
+        300,
+        300
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/cli/handlers/index.ts",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "id": "spool",
+      "type": "database",
+      "label": "Hook spool",
+      "sublabel": "~/.claude-mem/state",
+      "pos": [
+        300,
+        480
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/shared/hook-spool.ts",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP server",
+      "sublabel": "stdio · 19 tools",
+      "pos": [
+        560,
+        120
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/servers/mcp-server.ts",
+          "line": 488
+        }
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker service",
+      "sublabel": "Bun + Express 5",
+      "tag": "127.0.0.1:37700+uid%100",
+      "pos": [
+        560,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/shared/SettingsDefaultsManager.ts",
+          "line": 403
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite + FTS5",
+      "sublabel": "claude-mem.db",
+      "pos": [
+        560,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/sqlite/SessionSearch.ts",
+          "line": 240
+        }
+      ]
+    },
+    {
+      "id": "observer",
+      "type": "backend",
+      "label": "LLM observador",
+      "sublabel": "provider-dispatch",
+      "pos": [
+        840,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/worker/provider-dispatch.ts",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "id": "chroma",
+      "type": "database",
+      "label": "Chroma",
+      "sublabel": "uvx chroma-mcp",
+      "pos": [
+        840,
+        480
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/sync/ChromaMcpManager.ts",
+          "line": 669
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "Provedores LLM",
+      "sublabel": "Anthropic (padrão), Gemini, Ollama",
+      "pos": [
+        1120,
+        300
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/shared/SettingsDefaultsManager.ts",
+          "line": 400
+        }
+      ]
+    },
+    {
+      "id": "posthog",
+      "type": "external",
+      "label": "PostHog",
+      "sublabel": "telemetria ligada por padrão",
+      "pos": [
+        1120,
+        120
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/telemetry/consent.ts",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "id": "cmem",
+      "type": "external",
+      "label": "CMEM Pro sync",
+      "sublabel": "opcional, desligado",
+      "pos": [
+        1120,
+        480
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/services/sync/CloudSync.ts",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Máquina do desenvolvedor",
+      "wraps": [
+        "hook",
+        "spool",
+        "mcp",
+        "worker",
+        "sqlite",
+        "observer",
+        "chroma"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-cc",
+      "from": "cc",
+      "to": "hook",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-cursor",
+      "from": "cursor",
+      "to": "hook",
+      "label": "npx -y",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-rule",
+      "from": "rule",
+      "to": "cursor",
+      "label": "alwaysApply"
+    },
+    {
+      "id": "c-mdc",
+      "from": "observer",
+      "to": "rule",
+      "label": "reescreve .mdc",
+      "fromSide": "top",
+      "toSide": "top",
+      "variant": "dashed",
+      "via": [
+        [
+          925,
+          92
+        ],
+        [
+          375,
+          92
+        ]
+      ]
+    },
+    {
+      "id": "c-spool",
+      "from": "hook",
+      "to": "spool",
+      "label": "1 JSON/evento",
+      "labelAt": [
+        375,
+        420
+      ]
+    },
+    {
+      "id": "c-nudge",
+      "from": "hook",
+      "to": "worker",
+      "label": "HTTP loopback",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-mcpw",
+      "from": "mcp",
+      "to": "worker",
+      "label": "proxy HTTP",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        638,
+        242
+      ]
+    },
+    {
+      "id": "c-store",
+      "from": "worker",
+      "to": "sqlite",
+      "label": "grava + FTS5",
+      "labelAt": [
+        645,
+        420
+      ]
+    },
+    {
+      "id": "c-obs",
+      "from": "worker",
+      "to": "observer",
+      "label": "eventos",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-chroma",
+      "from": "observer",
+      "to": "chroma",
+      "label": "sync vetorial",
+      "labelAt": [
+        925,
+        420
+      ]
+    },
+    {
+      "id": "c-llm",
+      "from": "observer",
+      "to": "llm",
+      "label": "HTTPS",
+      "variant": "security"
+    },
+    {
+      "id": "c-ph",
+      "from": "observer",
+      "to": "posthog",
+      "label": "telemetria",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-cmem",
+      "from": "sqlite",
+      "to": "cmem",
+      "label": "sync opcional",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          645,
+          610
+        ],
+        [
+          1215,
+          610
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Claude Code × Cursor",
+      "items": [
+        "Claude Code: SessionStart + Read Gate",
+        "Cursor: só regra .mdc (projeto) ou MCP"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Memória",
+      "items": [
+        "LLM gera <observation> e <summary> XML",
+        "Busca: Chroma primeiro, FTS5 completa"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Egresso",
+      "items": [
+        "Conteúdo de ferramentas vai ao LLM",
+        "PostHog ativo por padrão (DO_NOT_TRACK desliga)"
+      ]
+    }
+  ]
+}
