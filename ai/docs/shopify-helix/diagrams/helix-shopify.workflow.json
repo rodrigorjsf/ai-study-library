@@ -1,0 +1,256 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Helix (Shopify): checkpoints e quatro gates",
+    "quality_profile": "showcase",
+    "output": "../html/helix-shopify.html"
+  },
+  "lanes": [
+    {
+      "id": "eng",
+      "label": "Engenheiro"
+    },
+    {
+      "id": "orq",
+      "label": "Orquestrador (GPT)"
+    },
+    {
+      "id": "gates",
+      "label": "Gates em ordem",
+      "variant": "exception"
+    },
+    {
+      "id": "evid",
+      "label": "Evidência e memória"
+    }
+  ],
+  "phases": [
+    {
+      "id": "planejar_fase",
+      "label": "Planejar checkpoints",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "construir_fase",
+      "label": "Construir um checkpoint",
+      "fromCol": 2,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "fechar_fase",
+      "label": "Aprovar e commitar",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "alvo",
+    "planejar",
+    "aprova_plano",
+    "implementar",
+    "g1",
+    "g2",
+    "g3",
+    "g4",
+    "commit"
+  ],
+  "nodes": [
+    {
+      "id": "alvo",
+      "lane": "eng",
+      "col": 0,
+      "type": "external",
+      "label": "Escolhe o alvo",
+      "sublabel": "tela ou subtela",
+      "width": 164
+    },
+    {
+      "id": "aprova_plano",
+      "lane": "eng",
+      "col": 1,
+      "type": "external",
+      "label": "Aprova a sequência",
+      "sublabel": "poucas palavras",
+      "width": 164
+    },
+    {
+      "id": "g4",
+      "lane": "eng",
+      "col": 5,
+      "type": "security",
+      "label": "Gate 4 · Engenheiro",
+      "sublabel": "código + app rodando",
+      "width": 164
+    },
+    {
+      "id": "planejar",
+      "lane": "orq",
+      "col": 0,
+      "type": "backend",
+      "label": "Planeja checkpoints",
+      "sublabel": "lê o React Native",
+      "tag": "a referência é a spec",
+      "width": 164
+    },
+    {
+      "id": "implementar",
+      "lane": "orq",
+      "col": 2,
+      "type": "backend",
+      "label": "Implementa checkpoint",
+      "sublabel": "Swift / Kotlin",
+      "width": 164
+    },
+    {
+      "id": "g1",
+      "lane": "gates",
+      "col": 2,
+      "type": "security",
+      "label": "Gate 1 · Comportamento",
+      "sublabel": "testes via CLI",
+      "width": 164
+    },
+    {
+      "id": "g2",
+      "lane": "gates",
+      "col": 3,
+      "type": "security",
+      "label": "Gate 2 · UI",
+      "sublabel": "Gemini compara telas",
+      "tag": "sem pixel diff",
+      "width": 164
+    },
+    {
+      "id": "g3",
+      "lane": "gates",
+      "col": 4,
+      "type": "security",
+      "label": "Gate 3 · Adversarial",
+      "sublabel": "2 revisores isolados",
+      "width": 164
+    },
+    {
+      "id": "testes",
+      "lane": "evid",
+      "col": 1,
+      "type": "database",
+      "label": "Casos de teste",
+      "sublabel": "subagent gera",
+      "width": 164
+    },
+    {
+      "id": "memoria",
+      "lane": "orq",
+      "col": 5,
+      "type": "database",
+      "label": "Memória do Helix",
+      "sublabel": "feedback das revisões",
+      "width": 164
+    },
+    {
+      "id": "commit",
+      "lane": "evid",
+      "col": 5,
+      "type": "database",
+      "label": "Commit",
+      "sublabel": "um por checkpoint",
+      "width": 164
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-alvo",
+      "from": "alvo",
+      "to": "planejar",
+      "label": "aponta"
+    },
+    {
+      "id": "e-plano",
+      "from": "planejar",
+      "to": "aprova_plano",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-aprovado",
+      "from": "aprova_plano",
+      "to": "implementar",
+      "label": "aprovado",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-testes",
+      "from": "planejar",
+      "to": "testes",
+      "label": "gera testes",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "e-impl-g1",
+      "from": "implementar",
+      "to": "g1"
+    },
+    {
+      "id": "e-g1-g2",
+      "from": "g1",
+      "to": "g2"
+    },
+    {
+      "id": "e-g2-g3",
+      "from": "g2",
+      "to": "g3"
+    },
+    {
+      "id": "e-g3-g4",
+      "from": "g3",
+      "to": "g4"
+    },
+    {
+      "id": "e-g4-commit",
+      "from": "g4",
+      "to": "commit",
+      "label": "aprova",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-blocker",
+      "from": "g2",
+      "to": "implementar",
+      "label": "blockers",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e-feedback",
+      "from": "g4",
+      "to": "memoria",
+      "label": "feedback",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "O que a Shopify afirma",
+      "items": [
+        "Checkpoints pequenos, revisáveis em minutos",
+        "Gates em ordem: testes, UI, revisão adversarial, engenheiro",
+        "Uma tentativa imperfeita não avança até virar um bom resultado"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Modelos citados",
+      "items": [
+        "Orquestrador: GPT",
+        "Revisor visual: Gemini, por noção espacial",
+        "Modo autônomo mantém os mesmos gates"
+      ]
+    }
+  ]
+}

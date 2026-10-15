@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Mesmos gates, dois harnesses: Claude Code × Cursor",
+    "quality_profile": "showcase",
+    "output": "../html/gates-claude-code-vs-cursor.html"
+  },
+  "components": [
+    {
+      "id": "cc_stop",
+      "type": "security",
+      "label": "Stop hook",
+      "sublabel": "decision: block + reason",
+      "tag": "teto: 8 seguidas",
+      "pos": [
+        40,
+        110
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cc_sub",
+      "type": "backend",
+      "label": "Subagents",
+      "sublabel": "contexto próprio",
+      "tag": "só modelos Claude",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cc_mem",
+      "type": "database",
+      "label": "CLAUDE.md + skills",
+      "sublabel": "learnings carregados",
+      "pos": [
+        40,
+        410
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cc_vis",
+      "type": "cloud",
+      "label": "Chrome + MCP",
+      "sublabel": "screenshots web; mobile via MCP",
+      "pos": [
+        40,
+        560
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "gate_stop",
+      "type": "messagebus",
+      "label": "Não parar antes dos gates",
+      "sublabel": "loop até aprovar",
+      "pos": [
+        420,
+        110
+      ],
+      "size": [
+        230,
+        66
+      ]
+    },
+    {
+      "id": "gate_rev",
+      "type": "messagebus",
+      "label": "Revisores isolados",
+      "sublabel": "contexto limpo",
+      "pos": [
+        420,
+        260
+      ],
+      "size": [
+        230,
+        66
+      ]
+    },
+    {
+      "id": "gate_mem",
+      "type": "messagebus",
+      "label": "Memória de feedback",
+      "sublabel": "vale p/ próximos checkpoints",
+      "pos": [
+        420,
+        410
+      ],
+      "size": [
+        230,
+        66
+      ]
+    },
+    {
+      "id": "gate_vis",
+      "type": "messagebus",
+      "label": "Revisão visual",
+      "sublabel": "referência × implementação",
+      "pos": [
+        420,
+        560
+      ],
+      "size": [
+        230,
+        66
+      ]
+    },
+    {
+      "id": "cu_stop",
+      "type": "security",
+      "label": "stop hook",
+      "sublabel": "followup_message",
+      "tag": "loop_limit: 5",
+      "pos": [
+        820,
+        110
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cu_sub",
+      "type": "backend",
+      "label": "Subagents",
+      "sublabel": "readonly / is_background",
+      "tag": "model: qualquer ID",
+      "pos": [
+        820,
+        260
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cu_mem",
+      "type": "database",
+      "label": "Rules + skills",
+      "sublabel": ".cursor/rules",
+      "pos": [
+        820,
+        410
+      ],
+      "size": [
+        210,
+        66
+      ]
+    },
+    {
+      "id": "cu_vis",
+      "type": "cloud",
+      "label": "Browser nativo",
+      "sublabel": "screenshot como imagem",
+      "pos": [
+        820,
+        560
+      ],
+      "size": [
+        210,
+        66
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Claude Code",
+      "wraps": [
+        "cc_stop",
+        "cc_sub",
+        "cc_mem",
+        "cc_vis"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Mecanismo do Helix",
+      "wraps": [
+        "gate_stop",
+        "gate_rev",
+        "gate_mem",
+        "gate_vis"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Cursor",
+      "wraps": [
+        "cu_stop",
+        "cu_sub",
+        "cu_mem",
+        "cu_vis"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "m-cc-stop",
+      "from": "gate_stop",
+      "to": "cc_stop",
+      "label": "bloqueia",
+      "variant": "security"
+    },
+    {
+      "id": "m-cu-stop",
+      "from": "gate_stop",
+      "to": "cu_stop",
+      "label": "reenvia",
+      "variant": "security"
+    },
+    {
+      "id": "m-cc-sub",
+      "from": "gate_rev",
+      "to": "cc_sub"
+    },
+    {
+      "id": "m-cu-sub",
+      "from": "gate_rev",
+      "to": "cu_sub"
+    },
+    {
+      "id": "m-cc-mem",
+      "from": "gate_mem",
+      "to": "cc_mem",
+      "variant": "dashed"
+    },
+    {
+      "id": "m-cu-mem",
+      "from": "gate_mem",
+      "to": "cu_mem",
+      "variant": "dashed"
+    },
+    {
+      "id": "m-cc-vis",
+      "from": "gate_vis",
+      "to": "cc_vis"
+    },
+    {
+      "id": "m-cu-vis",
+      "from": "gate_vis",
+      "to": "cu_vis",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Claude Code",
+      "items": [
+        "Stop: decision \"block\" + stop_hook_active evita loop infinito",
+        "Revisor Gemini exige MCP ou CLI externa"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Cursor",
+      "items": [
+        "stop: followup_message vira a próxima mensagem; loop_count conta",
+        "Subagent com model próprio pode reproduzir GPT + Gemini da Shopify"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Lacuna comum",
+      "items": [
+        "Nenhum dos dois traz gate visual pronto: o revisor é um prompt seu",
+        "Chrome e Browser cobrem web; app nativo exige MCP de simulador"
+      ]
+    }
+  ]
+}

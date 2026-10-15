@@ -17,7 +17,9 @@
 
 When something fails repeatedly, when User has to re-explain, or when a workaround is found for a platform/tool limitation, add a one-line bullet here. Keep each bullet under 15 words. No explanations. Only add things that will save time in future sessions.
 
-- yt-dlp subtitles hit HTTP 429; use `uvx --from youtube-transcript-api youtube_transcript_api <id>`.
+- YouTube transcripts may 429 everywhere; try `youtube_transcript_api`, then ask user to paste.
+- Blocked transcript: `yt-dlp --write-info-json --ignore-no-formats-error`, `player_client=web_embedded`, still gives description/chapters.
+- `uvx` is not on Bash PATH; call `/home/linuxbrew/.linuxbrew/bin/uvx`.
 - Mirror vendor docs with `curl` on the `.md` suffix (code.claude.com, platform.claude.com, cursor.com/docs).
 - `harness-kb build` bundles `ai/docs/` but needs `graphify-out/manifest.json`, removed from the repo.
 - No Chrome in WSL: archify `visual-check` skips; set `ARCHIFY_CHROME` first.

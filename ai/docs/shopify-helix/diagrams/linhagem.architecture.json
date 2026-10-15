@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Linhagem do Helix: quem disse o quê",
+    "quality_profile": "showcase",
+    "output": "../html/linhagem.html"
+  },
+  "components": [
+    {
+      "id": "evalopt",
+      "type": "external",
+      "label": "evaluator-optimizer",
+      "sublabel": "Anthropic · 2024-12-19",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "judge",
+      "type": "external",
+      "label": "LLM-as-a-judge",
+      "sublabel": "Zheng et al. · 2023",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "sdd",
+      "type": "external",
+      "label": "spec-kit / Kiro",
+      "sublabel": "o fluxo que o Helix rejeita",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "btn",
+      "type": "backend",
+      "label": "back-to-native",
+      "sublabel": "Mustafa Ali · 2026-09-10",
+      "pos": [
+        350,
+        100
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "helix",
+      "type": "backend",
+      "label": "Helix",
+      "sublabel": "Talha Naqvi · 2026-09-21",
+      "tag": "fonte primária",
+      "pos": [
+        350,
+        260
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "shop",
+      "type": "backend",
+      "label": "shop-app-migration",
+      "sublabel": "extensão do Pi + Tardis",
+      "pos": [
+        350,
+        420
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "video",
+      "type": "frontend",
+      "label": "Vídeo AI LABS",
+      "sublabel": "bBMp5tLxShQ · 2026-09-24",
+      "pos": [
+        660,
+        100
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "hook",
+      "type": "security",
+      "label": "Stop hook",
+      "sublabel": "não para antes dos gates",
+      "pos": [
+        660,
+        260
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "ralph",
+      "type": "external",
+      "label": "Ralph loop",
+      "sublabel": "Huntley · 2025-07-14",
+      "pos": [
+        660,
+        420
+      ],
+      "size": [
+        230,
+        70
+      ]
+    },
+    {
+      "id": "cc",
+      "type": "cloud",
+      "label": "Claude Code",
+      "sublabel": "Stop: decision block",
+      "pos": [
+        970,
+        180
+      ],
+      "size": [
+        210,
+        70
+      ]
+    },
+    {
+      "id": "cursor",
+      "type": "cloud",
+      "label": "Cursor",
+      "sublabel": "stop: followup_message",
+      "pos": [
+        970,
+        340
+      ],
+      "size": [
+        210,
+        70
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Tier C · ideias anteriores",
+      "wraps": [
+        "evalopt",
+        "judge",
+        "sdd"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Tier A · Shopify",
+      "wraps": [
+        "btn",
+        "helix",
+        "shop"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Tier B · AI LABS",
+      "wraps": [
+        "video",
+        "hook"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Harnesses",
+      "wraps": [
+        "cc",
+        "cursor"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Tier C · loop",
+      "wraps": [
+        "ralph"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "l-btn",
+      "from": "btn",
+      "to": "helix",
+      "label": "anuncia",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "id": "l-shop",
+      "from": "shop",
+      "to": "helix",
+      "label": "aprendizado",
+      "variant": "emphasis"
+    },
+    {
+      "id": "l-video",
+      "from": "helix",
+      "to": "video",
+      "label": "recriado"
+    },
+    {
+      "id": "l-hook",
+      "from": "video",
+      "to": "hook",
+      "label": "acrescenta",
+      "labelDy": 24
+    },
+    {
+      "id": "l-ralph",
+      "from": "ralph",
+      "to": "hook",
+      "label": "inspira"
+    },
+    {
+      "id": "l-eval",
+      "from": "evalopt",
+      "to": "helix",
+      "variant": "dashed"
+    },
+    {
+      "id": "l-judge",
+      "from": "judge",
+      "to": "helix",
+      "variant": "dashed"
+    },
+    {
+      "id": "l-sdd",
+      "from": "sdd",
+      "to": "helix",
+      "variant": "dashed"
+    },
+    {
+      "id": "l-cc",
+      "from": "hook",
+      "to": "cc"
+    },
+    {
+      "id": "l-cursor",
+      "from": "hook",
+      "to": "cursor",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Linha cheia",
+      "items": [
+        "Ligação declarada por uma das partes"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Linha tracejada",
+      "items": [
+        "Semelhança de mecanismo identificada por este estudo",
+        "A Shopify não cita nenhuma fonte externa"
+      ]
+    }
+  ]
+}

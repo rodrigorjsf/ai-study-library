@@ -1,0 +1,247 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Recriação AI LABS no Claude Code",
+    "quality_profile": "showcase",
+    "output": "../html/ailabs-claude-code.html"
+  },
+  "lanes": [
+    {
+      "id": "humano",
+      "label": "Você (2 paradas)"
+    },
+    {
+      "id": "orq",
+      "label": "Orquestrador Claude Code"
+    },
+    {
+      "id": "sub",
+      "label": "Subagents (contexto novo)"
+    },
+    {
+      "id": "hooks",
+      "label": "Hooks e arquivos",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "plano_fase",
+      "label": "Checkpoints",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "gates_fase",
+      "label": "Gates 1 a 3",
+      "fromCol": 2,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "humano_fase",
+      "label": "Gate 4",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "pedido",
+    "planner",
+    "revisa",
+    "orquestrador",
+    "g1",
+    "g2",
+    "g3",
+    "g4"
+  ],
+  "nodes": [
+    {
+      "id": "pedido",
+      "lane": "humano",
+      "col": 0,
+      "type": "external",
+      "label": "Pede a feature",
+      "sublabel": "app de RH interno",
+      "width": 164
+    },
+    {
+      "id": "revisa",
+      "lane": "humano",
+      "col": 1,
+      "type": "external",
+      "label": "Revisa o plano",
+      "sublabel": "viewer simples",
+      "tag": "parada 1",
+      "width": 164
+    },
+    {
+      "id": "g4",
+      "lane": "humano",
+      "col": 5,
+      "type": "security",
+      "label": "Gate 4 · Você testa",
+      "sublabel": "feedback vira checkpoint",
+      "tag": "parada 2",
+      "width": 164
+    },
+    {
+      "id": "orquestrador",
+      "lane": "orq",
+      "col": 1,
+      "type": "backend",
+      "label": "Orquestrador",
+      "sublabel": "workflow dinâmico",
+      "width": 164
+    },
+    {
+      "id": "planner",
+      "lane": "sub",
+      "col": 0,
+      "type": "backend",
+      "label": "Checkpoint Planner",
+      "sublabel": "simples → complexo",
+      "width": 164
+    },
+    {
+      "id": "g1",
+      "lane": "sub",
+      "col": 2,
+      "type": "security",
+      "label": "Gate 1 · Comportam.",
+      "sublabel": "testes antes do código",
+      "width": 164
+    },
+    {
+      "id": "g2",
+      "lane": "sub",
+      "col": 3,
+      "type": "security",
+      "label": "Gate 2 · UI",
+      "sublabel": "protótipo HTML + design.md",
+      "width": 164
+    },
+    {
+      "id": "g3",
+      "lane": "sub",
+      "col": 4,
+      "type": "security",
+      "label": "Gate 3 · Adversarial",
+      "sublabel": "revisor ↔ fixer",
+      "width": 164
+    },
+    {
+      "id": "stophook",
+      "lane": "hooks",
+      "col": 3,
+      "type": "security",
+      "label": "Stop hook",
+      "sublabel": "ideia do Ralph loop",
+      "tag": "não deixa parar",
+      "width": 164
+    },
+    {
+      "id": "learnings",
+      "lane": "hooks",
+      "col": 5,
+      "type": "database",
+      "label": "Arquivo de learnings",
+      "sublabel": "todo agente lê",
+      "width": 164
+    }
+  ],
+  "edges": [
+    {
+      "id": "a-pedido",
+      "from": "pedido",
+      "to": "planner",
+      "label": "feature grande"
+    },
+    {
+      "id": "a-plano",
+      "from": "planner",
+      "to": "revisa",
+      "label": "plano"
+    },
+    {
+      "id": "a-aprova",
+      "from": "revisa",
+      "to": "orquestrador",
+      "label": "aprova",
+      "variant": "emphasis"
+    },
+    {
+      "id": "a-g1",
+      "from": "orquestrador",
+      "to": "g1",
+      "label": "despacha"
+    },
+    {
+      "id": "a-g2",
+      "from": "g1",
+      "to": "g2"
+    },
+    {
+      "id": "a-g3",
+      "from": "g2",
+      "to": "g3"
+    },
+    {
+      "id": "a-g4",
+      "from": "g3",
+      "to": "g4",
+      "label": "aprovado",
+      "variant": "emphasis"
+    },
+    {
+      "id": "a-hook",
+      "from": "g2",
+      "to": "stophook",
+      "label": "tenta parar",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "a-learn",
+      "from": "g4",
+      "to": "learnings",
+      "label": "feedback",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "a-volta",
+      "from": "stophook",
+      "to": "orquestrador",
+      "label": "volta ao trabalho",
+      "variant": "security",
+      "role": "return",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "route": "bottom-channel",
+      "labelSegment": 1
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "Adições do vídeo (não estão no post da Shopify)",
+      "items": [
+        "Stop hook inspirado no Ralph loop",
+        "Subagents Claude no lugar do Gemini",
+        "Protótipo HTML + design.md como referência visual",
+        "Arquivo de learnings lido por todos os agentes"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Fonte",
+      "items": [
+        "Descrição e capítulos do vídeo bBMp5tLxShQ",
+        "Transcript indisponível: YouTube bloqueou este IP"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Helix × spec-kit: contra o que cada um itera",
+    "quality_profile": "showcase",
+    "output": "../html/helix-vs-spec-kit.html"
+  },
+  "components": [
+    { "id": "sk_const", "type": "database", "label": "constitution", "sublabel": "regras do projeto", "pos": [40, 120], "size": [160, 66] },
+    { "id": "sk_spec", "type": "frontend", "label": "specify + clarify", "sublabel": "spec.md", "pos": [240, 120], "size": [160, 66] },
+    { "id": "sk_plan", "type": "backend", "label": "plan + tasks", "sublabel": "plan.md · tasks.md", "pos": [440, 120], "size": [160, 66] },
+    { "id": "sk_analyze", "type": "security", "label": "analyze", "sublabel": "artefatos, só leitura", "pos": [640, 120], "size": [160, 66] },
+    { "id": "sk_impl", "type": "backend", "label": "implement", "sublabel": "por fases", "pos": [840, 120], "size": [160, 66] },
+    { "id": "sk_conv", "type": "security", "label": "converge", "sublabel": "código × artefatos", "tag": "até Converged", "pos": [1040, 120], "size": [160, 66] },
+    { "id": "hx_ref", "type": "database", "label": "Referência", "sublabel": "app rodando", "pos": [40, 360], "size": [160, 66] },
+    { "id": "hx_cp", "type": "frontend", "label": "Checkpoints", "sublabel": "poucas palavras", "pos": [240, 360], "size": [160, 66] },
+    { "id": "hx_impl", "type": "backend", "label": "Implementa", "sublabel": "um checkpoint", "pos": [440, 360], "size": [160, 66] },
+    { "id": "hx_gates", "type": "security", "label": "Gates 1–3", "sublabel": "testes · visão · revisores", "pos": [640, 360], "size": [160, 66] },
+    { "id": "hx_eng", "type": "external", "label": "Engenheiro", "sublabel": "gate 4 + memória", "pos": [840, 360], "size": [160, 66] },
+    { "id": "hx_commit", "type": "database", "label": "Commit", "sublabel": "com evidência", "pos": [1040, 360], "size": [160, 66] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "spec-kit v1.2.0 · a verdade é o documento", "wraps": ["sk_const", "sk_spec", "sk_plan", "sk_analyze", "sk_impl", "sk_conv"] },
+    { "kind": "region", "label": "Helix · a verdade é a referência", "wraps": ["hx_ref", "hx_cp", "hx_impl", "hx_gates", "hx_eng", "hx_commit"] }
+  ],
+  "connections": [
+    { "id": "k1", "from": "sk_const", "to": "sk_spec" },
+    { "id": "k2", "from": "sk_spec", "to": "sk_plan" },
+    { "id": "k3", "from": "sk_plan", "to": "sk_analyze" },
+    { "id": "k4", "from": "sk_analyze", "to": "sk_impl" },
+    { "id": "k5", "from": "sk_impl", "to": "sk_conv" },
+    { "id": "k-loop", "from": "sk_conv", "to": "sk_impl", "label": "Tasks appended", "variant": "security", "fromSide": "top", "toSide": "top", "via": [[1120, 76], [920, 76]] },
+    { "id": "h1", "from": "hx_ref", "to": "hx_cp" },
+    { "id": "h2", "from": "hx_cp", "to": "hx_impl" },
+    { "id": "h3", "from": "hx_impl", "to": "hx_gates" },
+    { "id": "h4", "from": "hx_gates", "to": "hx_eng" },
+    { "id": "h5", "from": "hx_eng", "to": "hx_commit", "variant": "emphasis" },
+    { "id": "h-loop", "from": "hx_gates", "to": "hx_impl", "label": "reprova", "variant": "security", "fromSide": "bottom", "toSide": "bottom", "via": [[720, 470], [520, 470]] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Em comum",
+      "items": [
+        "Regras escritas: constitution ≈ arquitetura documentada",
+        "Laço de correção até um critério de saída"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "A diferença",
+      "items": [
+        "converge compara código com documentos",
+        "os gates comparam código e tela com a referência rodando"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Harnesses",
+      "items": [
+        "spec-kit: claude → .claude/skills · cursor-agent → .cursor/skills",
+        "Helix: interno, sem código publicado"
+      ]
+    }
+  ]
+}
