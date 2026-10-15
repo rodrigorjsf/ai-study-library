@@ -1,5 +1,14 @@
 # Analysis: Automate Workflows with Hooks
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The source page was renamed "Automate actions with hooks" and moved from `docs.anthropic.com` to https://code.claude.com/docs/en/hooks-guide.md
+> - "Four types of hooks" no longer holds: there are five handler types (`command`, `http`, `mcp_tool`, `prompt`, `agent`). Source: https://code.claude.com/docs/en/hooks.md
+> - "22 lifecycle events" no longer holds: the reference lists 33. Added since the capture: `Setup`, `UserPromptExpansion`, `PermissionDenied`, `PostToolBatch`, `MessageDisplay`, `TaskCreated`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreModelSwitch`, `PostModelSwitch`. None were removed. Source: https://code.claude.com/docs/en/hooks.md
+> - "Infinite loop in Stop hook" is now bounded: Claude Code overrides a Stop hook after it blocks eight times in a row with no tool call in between, and the troubleshooting entry is now "Stop hook hits the block cap". Checking `stop_hook_active` is still the recommended fix. Source: https://code.claude.com/docs/en/hooks-guide.md
+> - "Default timeout: 10 minutes" is now only the general default: 600 s still applies to `command`, `http`, and `mcp_tool` hooks, but it is lowered to 30 s on `UserPromptSubmit`, `PreModelSwitch`, and `PostModelSwitch`, and to 10 s on `MessageDisplay`. Source: https://code.claude.com/docs/en/hooks.md
+> - New guide sections this analysis does not cover: "Reload environment when directory or files change", "Combine results from multiple hooks", and "Hooks and permission modes"; the troubleshooting entries "JSON validation failed" and "Debug techniques" were replaced by "Hook JSON has no effect" and "Check what a hook did". Source: https://code.claude.com/docs/en/hooks-guide.md
+
 > **Status**: Current
 > **Source document**: [Automate Workflows with Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks)
 > **Analysis date**: 2026-03

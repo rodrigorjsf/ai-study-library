@@ -1,5 +1,10 @@
 # Towards Fluid Human-Agent Collaboration: From Dynamic Collaboration Patterns to Models of Theory of Mind Reasoning
 
+> **Currency check (2026-10-11):** Current
+>
+> - Peer-reviewed 2025 paper on human-agent collaboration and theory-of-mind modelling. It makes no claims about MCP, A2A, tool calling or any versioned product, so nothing in it is superseded by the changes tracked elsewhere in this library.
+> - Could not re-open the PMC page on 2026-10-11 (the URL served a reCAPTCHA browser check), so the body was not compared against the original: https://pmc.ncbi.nlm.nih.gov/articles/PMC12353729/
+
 **Source:** https://pmc.ncbi.nlm.nih.gov/articles/PMC12353729/ (PMCID: PMC12353729, PMID: 40822442)
 **DOI:** https://doi.org/10.3389/frobt.2025.1532693
 **Journal:** Frontiers in Robotics and AI, 2025

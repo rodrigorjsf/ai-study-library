@@ -1,5 +1,12 @@
 # MCP: Programmatic Tool Calling (Code Mode) with OpenSandbox — DEV Community
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The article is still online (opened 2026-10-11): https://dev.to/thangchung/mcp-programmatic-tool-calling-code-mode-with-opensandbox-4n3n — the pattern it teaches (search → get_schema → execute in a sandbox) is still a valid client-side design. The .NET code was not re-run.
+> - The first-party equivalent is now generally available: programmatic tool calling is GA on the Claude API (and Claude Platform on AWS / Microsoft Foundry), requires the code execution tool `code_execution_20260120` or later, and uses `allowed_callers` on tool definitions. Its docs list "self-managed sandboxed execution" — this article's approach — as an alternative implementation: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
+> - The MCP plumbing underneath changed: revision 2026-07-28 removed the `initialize` handshake and sessions, requires `Mcp-Method`/`Mcp-Name` headers on Streamable HTTP, and asks servers to return `tools/list` in deterministic order with `ttlMs`/`cacheScope` cache hints — relevant to any tool-catalog search layer: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Tool search, the other half of the context-bloat fix, is a documented server tool (`tool_search_tool_regex_20251119` / `tool_search_tool_bm25_20251119`): https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+
 **Source:** https://dev.to/thangchung/mcp-programmatic-tool-calling-code-mode-with-opensandbox-4n3n
 **Category:** Programmatic Tool Calling
 

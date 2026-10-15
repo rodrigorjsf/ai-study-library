@@ -1,5 +1,14 @@
 # Long Live MCP - a recap of MCP Dev Summit NY | Aqfer
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The article is still online (opened 2026-10-11; 23 of 25 sentences sampled from the body below appear on the live page) and records an April 2026 event; its forward-looking statements have since resolved as listed here. Could not verify the AGNTCon + MCPCon North America dates (22–23 October 2026); no event page was opened: https://aqfer.com/long-live-mcp-a-recap-of-mcp-dev-summit-ny/
+> - "June 2026 spec release" slipped: release candidate 2026-05-21, final revision **2026-07-28**. Stateless transport and MRTR (SEP-2322) did ship in it: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - "Hardened long-running tasks (SEP-1686)" did not land in core: experimental tasks were moved *out* of the core protocol into the `io.modelcontextprotocol/tasks` extension and redesigned (polling `tasks/get`, new `tasks/update`, `tasks/list` removed — SEP-2663): https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Auth: CIMD is now the preferred client registration path and Dynamic Client Registration is formally deprecated; the Enterprise-Managed Authorization extension (the XAA / ID-JAG flow) was declared stable on 2026-06-18: https://modelcontextprotocol.io/specification/2026-07-28/changelog and https://blog.modelcontextprotocol.io/posts/enterprise-managed-auth/
+> - SDKs: TypeScript v2 is the stable line on `main` (released 2026-07-27, split packages); the release post says the TypeScript, Python, Go and C# Tier 1 SDKs all speak 2026-07-28: https://github.com/modelcontextprotocol/typescript-sdk and https://blog.modelcontextprotocol.io/posts/2026-07-28/
+> - "Beyond June" items: Skills over MCP is now an official extension (SEP-2640 Final, 2026-09-13); Triggers became a priority area ("server-initiated events") in the 2026-08-22 roadmap; Roots, Sampling and Logging — not mentioned in the recap — are now deprecated: https://modelcontextprotocol.io/extensions/skills/overview and https://modelcontextprotocol.io/development/roadmap
+
 **Source:** https://aqfer.com/long-live-mcp-a-recap-of-mcp-dev-summit-ny/
 **Category:** Model Context Protocol (MCP)
 

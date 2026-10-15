@@ -1,5 +1,12 @@
 # Prompting best practices
 
+> **Currency check (2026-10-11):** Superseded
+>
+> - This file mirrors the Claude 4.5-era page ("Sonnet 4.5, Haiku 4.5, and Opus 4.5"). Its old slug `claude-4-best-practices` redirects to the consolidated "Prompting best practices" page (redirect observed 2026-10-11). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - The surviving, current mirror is [`../claude-code/claude-prompting-best-practices.md`](../claude-code/claude-prompting-best-practices.md). Read that file instead; this one is kept only for history. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - The "What's new in Claude 4.5" and "Migrating to Claude 4.5" framing is gone. Upstream now targets the Claude 5.x families (Fable, Mythos, Opus 5/5.5, Sonnet 5/5.5, Haiku 5.5) plus Opus 4.6-4.8, Sonnet 4.6, and Haiku 4.5; its migration section is now "Migrating to Claude Sonnet 5.5". Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - The thinking guidance here is written for extended thinking on Claude 4.5 models (for example the note that Opus 4.5 is sensitive to the word "think" when extended thinking is disabled). Upstream now describes adaptive thinking (`thinking: {type: "adaptive"}`) for Claude 4.6 and later, steered with the `effort` parameter, and states that `budget_tokens` returns a 400 error on Claude 4.7 and later. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+
 ---
 
 This guide provides specific prompt engineering techniques for Claude 4.x models, with specific guidance for Sonnet 4.5, Haiku 4.5, and Opus 4.5. These models have been trained for more precise instruction following than previous generations of Claude models.

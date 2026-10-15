@@ -3,6 +3,14 @@
 **Source:** https://markusharrer.de/blog/2026/02/17/agentic-software-modernization-chances-and-traps/
 **Category:** Agentic Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** a legacy codebase of millions of lines does not fit even a 1M-token window (1M tokens is roughly 555k words, https://platform.claude.com/docs/en/about-claude/models/overview), so research-first, hygiene-first and traceability advice stands. The source URL is still live.
+> - **Outdated — "Dumb Zone above ~40%":** a 200K-era percentage; HumanLayer now uses a fixed ~100K-token threshold for long-context models (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Revised by the cited source — "shift review left to the plan; you don't have to review line-by-line":** HumanLayer, the article's main authority, spent 2026 walking this back ("Everything We Got Wrong About Research-Plan-Implement"; "read the code"; "the lights off factory does not work") (https://www.humanlayer.com/blog/humanlayer-resources, https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Reinforced — rework and entropy:** HumanLayer's SlopCodeBench reports say every model tested added defects and complexity over time (https://www.humanlayer.com/blog/humanlayer-resources), which supports the article's hygiene-first stance.
+> - **Weakened — active compaction as a core practice:** native-1M models in Claude Code auto-compact at about 967K tokens (https://code.claude.com/docs/en/model-config), so a forced reset comes much later than on the 200K windows the article assumes. Resetting after a failed attempt is still sound; the article's own note that it matters most for small-window models still applies.
+
 ## Summary
 
 Markus Harrer argues that agentic AI can genuinely modernize legacy software (COBOL, RPG, etc.) but requires disciplined preparation — not "vibe coding." The key insight is that the LLM context window creates a "Dumb Zone" above ~40% utilization, and legacy codebases are too large to fit in context. The solution is the RPI workflow (Research, Plan, Implement) with active context compaction, iterative refinement with critic agents, codebase hygiene investment, and maintaining traceability links from new code back to the original business logic.

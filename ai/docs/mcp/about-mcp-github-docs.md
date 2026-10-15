@@ -1,5 +1,13 @@
 # About Model Context Protocol (MCP) - GitHub Docs
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The page is still online and the overall description holds (opened 2026-10-11 through the GitHub Docs article API): https://docs.github.com/en/copilot/concepts/context/mcp
+> - The live page now has an **"Agent finder"** section (a runtime discovery service for MCP servers, tools, agents and skills) that is absent from the capture below. Same URL.
+> - The live page says repository-level MCP configuration applies to both **Copilot cloud agent and Copilot code review**; the capture mentions only the cloud agent. Same URL.
+> - Unchanged: the GitHub MCP Registry is still described as "in public preview and subject to change". Same URL.
+> - Context the page does not cover: the MCP protocol itself changed substantially in revision 2026-07-28 (stateless core, no handshake, DCR deprecated in favor of Client ID Metadata Documents): https://modelcontextprotocol.io/specification/2026-07-28/changelog
+
 **Source:** https://docs.github.com/en/copilot/concepts/context/mcp
 **Category:** Model Context Protocol (MCP)
 

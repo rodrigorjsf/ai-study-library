@@ -3,6 +3,14 @@
 **Source:** https://paddo.dev/blog/your-agents-md-is-a-liability/
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Current
+>
+> - **Still holds — shorter, modular instruction files:** Claude Code's docs now give a number ("target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence") and point to path-scoped rules and skills for the rest (https://code.claude.com/docs/en/memory).
+> - **Now has direct evidence the article lacked:** ETH Zurich's "Evaluating AGENTS.md" (v3, 29 Sep 2026) found context files raise inference cost by ~20% without a statistically significant gain in task success, and recommends including only what is not already in the README (https://arxiv.org/abs/2602.11988).
+> - **Dated details:** the model list (GPT-5.3, Gemini 3.1 Pro, Opus 4.6) is two generations old (https://platform.claude.com/docs/en/about-claude/models/overview). I could not verify a re-run of IFScale on 2026 models, nor the "Opus 4.6 shows less than 5% degradation" figure — treat both numbers as mid-2025/early-2026 snapshots.
+> - **Changed since capture:** Claude Code reads `AGENTS.md` natively when no `CLAUDE.md` is present (v2.1.277+), so the two file names are now interchangeable in that harness (https://code.claude.com/docs/en/memory).
+> - **Source:** the original URL is still live.
+
 ## Summary
 
 Paddo.dev's research-backed argument that growing AGENTS.md files beyond a certain size actively harms AI agent performance. Drawing on the IFScale benchmark (NeurIPS 2025), "lost in the middle" research, Chroma's context rot findings, and Google's prompt repetition study, the article demonstrates that attention dilution, primacy bias, and the dumb zone make long instruction files counterproductive. The fix: shorter, modular, front- and back-loaded instruction files.

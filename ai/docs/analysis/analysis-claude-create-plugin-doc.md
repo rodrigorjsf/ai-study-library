@@ -1,5 +1,14 @@
 # Analysis: Creating Plugins for Claude Code
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The analysed "Create plugins" page was split. `/en/plugins.md` now serves "Plugins overview"; the successor is "Create a Claude Code plugin" at https://code.claude.com/docs/en/plugins/create.md, and the former "Develop more complex plugins" material (agents, hooks, MCP, LSP, settings, monitors) moved to https://code.claude.com/docs/en/plugins/components.md, with the manifest in https://code.claude.com/docs/en/plugins/manifest-reference.md
+> - Local testing is no longer only `--plugin-dir <directory>`: `--plugin-dir` also accepts a `.zip` archive or a folder of plugins (v2.1.265+), `--plugin-url` fetches a `.zip` from a URL, `CLAUDE_CODE_PLUGIN_DIRS` loads plugins without a flag, and `claude plugin init` scaffolds a plugin under `~/.claude/skills/` that loads every session. Source: https://code.claude.com/docs/en/plugins/create.md
+> - "Only the `agent` field is supported in plugin `settings.json`" no longer holds: two keys take effect, `agent` and `subagentStatusLine`. Source: https://code.claude.com/docs/en/plugins/components.md
+> - New capabilities absent from this analysis: `claude plugin validate`, plugin evals (`claude plugin eval`), `monitors/monitors.json` background monitors, plugin dependencies with version ranges, `userConfig` prompts, and mods. Sources: https://code.claude.com/docs/en/plugins/create.md, https://code.claude.com/docs/en/plugin-evals.md, https://code.claude.com/docs/en/plugins/dependencies.md
+> - Distribution: "official marketplace" submission is replaced by "Submit to Anthropic's directory" (paid claude.ai plan, developer portal); Anthropic now runs official, community (`claude-community`), and demo marketplaces. Sources: https://code.claude.com/docs/en/plugins/publish.md, https://code.claude.com/docs/en/plugins/anthropic-marketplaces.md
+> - Still holds: the manifest lives at `.claude-plugin/plugin.json` and only `plugin.json` goes in that directory; plugin skills and agents are namespaced as `/plugin-name:skill`; `commands/` is the older form and `skills/` is preferred. Source: https://code.claude.com/docs/en/plugins/create.md
+
 > **Status**: Current
 > **Source document**: [Create Plugins](https://docs.anthropic.com/en/docs/claude-code/plugins)
 > **Analysis date**: 2026-03

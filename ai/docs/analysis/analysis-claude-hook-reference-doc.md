@@ -1,5 +1,14 @@
 # Analysis: Claude Hook Reference Doc
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Section 2.2 "The 22 Lifecycle Events" no longer holds: the reference lists 33 events. Added: `Setup`, `UserPromptExpansion`, `PermissionDenied`, `PostToolBatch`, `MessageDisplay`, `TaskCreated`, `CwdChanged`, `DirectoryAdded`, `FileChanged`, `PreModelSwitch`, `PostModelSwitch`. None were removed. Source: https://code.claude.com/docs/en/hooks.md
+> - Section 2.3 "Four Hook Handler Types" no longer holds: `mcp_tool` is a fifth type. `SessionStart` supports only `command` and `mcp_tool`; `Setup` runs only `command`. Source: https://code.claude.com/docs/en/hooks.md
+> - "The 8 events that support all types" changed: twelve events now support all five types (`PermissionDenied`, `PostToolBatch`, `PostToolUse`, `PostToolUseFailure`, `PreToolUse`, `Stop`, `SubagentStop`, `TaskCompleted`, `TaskCreated`, `TeammateIdle`, `UserPromptExpansion`, `UserPromptSubmit`). `PermissionRequest` is no longer in that set: it does not support `agent` hooks. Source: https://code.claude.com/docs/en/hooks.md
+> - Timeout table and checklist ("command 600s, prompt 30s, agent 60s"): still the base defaults, but the 600 s default also covers `http` and `mcp_tool`, drops to 30 s on `UserPromptSubmit`/`PreModelSwitch`/`PostModelSwitch` and 10 s on `MessageDisplay`; a timed-out `PreToolUse` hook does not block the tool call unless `onFailure: "block"` is set (v2.1.295+). The SessionEnd 1.5 s budget is now raised automatically to match a longer per-hook `timeout`, up to 60 s. Source: https://code.claude.com/docs/en/hooks.md
+> - New handler fields not covered: `if` (permission-rule filter on tool events), `args` (exec form, no shell), `asyncRewake`, `shell` (`bash` or `powershell`), `onFailure`, and `continueOnBlock` for prompt/agent hooks. `PreToolUse` `permissionDecision` gained a fourth value, `defer`. Source: https://code.claude.com/docs/en/hooks.md
+> - New top-level sections not covered: "Workspace trust" (settings-file hooks are held back until the trust dialog is accepted in interactive sessions, but `-p` and SDK sessions treat the folder as trusted) and "Windows PowerShell tool". Source: https://code.claude.com/docs/en/hooks.md
+
 > **Status**: Current
 > **Source document**: [claude-hook-reference-doc.md](https://docs.anthropic.com/en/docs/claude-code/hooks)
 > **Analysis date**: 2025-06-01
@@ -387,9 +396,9 @@ echo "$SUMMARY" >> ~/.claude/projects/my-project/compaction-history.log
 
 | Paper Finding | Relationship with Hooks |
 |---------------|------------------------|
-| LLM-generated files reduce performance | Hooks enforce rules without adding text to the context |
-| "More testing" increases with config files | `Stop` hooks with agent type explicitly validate tests |
-| Instructions are followed — that's the problem | Hook enforcement is external to the model, avoiding the dilemma |
+| Every context file raises cost by about 20% with no significant change in success (v3) | Hooks enforce rules without adding text to the context |
+| Agents run more tests when a context file is present; testing instructions are the costliest category (v3, Table 7) | A `Stop` hook can run the tests once, deterministically, instead of an instruction the model weighs on every task |
+| Instructions are followed, and following them costs steps and reasoning tokens (v3, §4.3) | Hook enforcement is external to the model, so it spends none of that reasoning |
 
 ### 7.3 claude-prompting-best-practices.md
 

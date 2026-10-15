@@ -1,5 +1,14 @@
 # AI Agent Protocols 2026: The Complete Guide to Standardizing AI Communication
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Could not re-open the article: on 2026-10-11 the URL redirects to a hosting "Account Temporary On Hold" (suspended) page. The body below cannot be compared against the original: https://optinampout.com/blogs/mcp-vs-a2a-vs-acp-agent-protocols-2026
+> - "MCP spec maturity: Stable (2025-11-25)" is superseded by revision **2026-07-28**: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - "Sampling: servers can request LLM completions through the client" is now a deprecated feature (along with Roots and Logging), and server-initiated requests were replaced by Multi Round-Trip Requests. "SSE via Streamable HTTP" lost the standalone GET stream, session IDs and resumability: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - "A2A: Stable (v0.3, July 2025)" is superseded by v1.0.0 (2026-03-12) and v1.0.1 (May 2026), with breaking changes and gRPC + HTTP+JSON/REST bindings beside JSON-RPC: https://github.com/a2aproject/A2A/blob/main/CHANGELOG.md
+> - Consistent with today's sources: ACP folded into A2A (the ACP repo is archived and says so), and A2A's Technical Steering Committee is Google, Microsoft, Cisco, AWS, Salesforce, ServiceNow, SAP and IBM: https://github.com/i-am-bee/acp and https://github.com/a2aproject/A2A/blob/main/GOVERNANCE.md
+> - "Registry problem being solved": the MCP Registry is still labelled preview on 2026-10-11: https://modelcontextprotocol.io/registry/about
+
 **Source:** https://optinampout.com/blogs/mcp-vs-a2a-vs-acp-agent-protocols-2026
 **Category:** Agent Protocols & Communication
 

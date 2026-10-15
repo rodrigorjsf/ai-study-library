@@ -1,5 +1,14 @@
 # Research: Claude Code Skills & Plugin Marketplace Format
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - `effort` options: this file lists `low`, `medium`, `high`, `max`. Upstream now lists `low`, `medium`, `high`, `xhigh`, `max`, with available levels depending on the model. Source: https://code.claude.com/docs/en/skills.md
+> - Claude Code frontmatter extensions: the field table here is incomplete. Upstream added `when_to_use`, `arguments`, `disallowed-tools`, `background`, `paths`, `shell`, and `metadata`, and now documents the Agent Skills fields `license` and `compatibility` as accepted but not acted on. Source: https://code.claude.com/docs/en/skills.md
+> - Description budget: "2% of the context window" (with a 16,000-character fallback) no longer holds. The skill listing budget now scales at 1% of the context window, is tunable with `skillListingBudgetFraction` or `SLASH_COMMAND_TOOL_CHAR_BUDGET`, and each entry's combined `description` + `when_to_use` text is capped at 1,536 characters in the listing. Source: https://code.claude.com/docs/en/skills.md
+> - Marketplaces: Anthropic now publishes three general-purpose marketplaces, not one: official (`claude-plugins-official`, still added automatically), community (`claude-community`, repository `anthropics/claude-plugins-community`), and demo (`claude-code-plugins`, in `anthropics/claude-code`). Source: https://code.claude.com/docs/en/plugins/anthropic-marketplaces.md
+> - Submission: the "submit to the official Anthropic marketplace" links are superseded by "Submit to Anthropic's directory" (https://claude.ai/directory), which requires a paid claude.ai plan and is done from the developer portal. Source: https://code.claude.com/docs/en/plugins/publish.md
+> - Plugin docs moved: the single "Plugins" and "Plugins Reference" pages cited here (under `docs.anthropic.com/en/docs/claude-code/`) were split into a `plugins/` tree (`overview`, `create`, `components`, `manifest-reference`, `marketplace-reference`, `publish`, and others). The star counts in the "Key Community Marketplace Repos" table are a 2026-03 snapshot and were not re-verified. Source: https://code.claude.com/docs/llms.txt
+
 > **Date**: 2026-03-22
 > **Sources**: Anthropic official docs, Agent Skills open standard spec, GitHub repos
 

@@ -1,5 +1,14 @@
 # A2aprotocol — a Hugging Face Space by a2aprotocol
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Both sources still resolve (opened 2026-10-11): https://huggingface.co/spaces/a2aprotocol/a2aprotocol and https://huggingface.co/blog/1bo/a2a-protocol-explained — both are community content describing pre-1.0 A2A.
+> - A2A v1.0.0 (2026-03-12) renamed the core operations: `message/send` → `SendMessage`, `message/stream` → `SendStreamingMessage`, `tasks/get` → `GetTask`, `tasks/cancel` → `CancelTask`, `tasks/resubscribe` → `SubscribeToTask`: https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - Agent Card: discovery is `/.well-known/agent-card.json` (not `agent.json`); in v1.0 `protocolVersion` moved to per-interface objects and `preferredTransport`/`additionalInterfaces` were consolidated into `supportedInterfaces[]`; cards can be signed (JWS + RFC 8785 canonicalization). The TypeScript `AgentCard` structure below is the old shape: https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - "HTTP(S) with JSON-RPC 2.0 payloads" is one of three equal bindings now (JSON-RPC, gRPC, HTTP+JSON/REST), all derived from a normative `a2a.proto`; clients MUST send an `A2A-Version` header: https://github.com/a2aproject/A2A/blob/main/docs/specification.md
+> - OAuth flows were modernized in v1.0 (implicit and password flows removed, device code and PKCE added), and v1.0.1 (May 2026) is the current release: https://github.com/a2aproject/A2A/blob/main/CHANGELOG.md
+> - The Python SDK example below was not re-run and targets the pre-1.0 SDK API; could not verify it against the current `a2a-sdk`.
+
 **Source:** https://huggingface.co/spaces/a2aprotocol/a2aprotocol | https://huggingface.co/blog/1bo/a2a-protocol-explained
 **Category:** Agent Protocols & Communication
 

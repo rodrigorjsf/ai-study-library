@@ -4,6 +4,13 @@
 **Category:** Spec-Driven Development
 **Platform:** martinfowler.com — "Exploring Gen AI" series
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Attribution:** the author is Birgitta Böckeler (Thoughtworks), published 15 Oct 2025 on martinfowler.com; the page shows no update note and is still live (https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html).
+> - **Still holds — the critique:** one workflow does not fit all problem sizes, markdown review fatigue, and a false sense of control. I found no later evidence that these were resolved.
+> - **Tool snapshot is from September 2025** (the article warns of this itself). Tessl was "private beta" and is now an "agent enablement platform" with a skills registry (https://www.tessl.io/); Kiro has added CLI and web surfaces, with spec mode as one of three modes (https://kiro.dev/); Spec Kit now describes itself as a toolkit for "SDD or any other process" (https://github.com/github/spec-kit).
+> - **Not covered:** BMAD-METHOD (https://github.com/bmad-code-org/BMAD-METHOD) and GSD (https://github.com/gsd-build/get-shit-done), two large community frameworks (about 54k and 64k GitHub stars on 2026-10-11).
+
 ## Summary
 
 A critical, hands-on analysis of three SDD tools (Kiro, GitHub Spec Kit, Tessl) by a practitioner from the Martin Fowler team. Goes beyond the hype to examine the definition of "spec" in this context, the distinction between spec levels (spec-first vs spec-anchored vs spec-as-source), and raises open questions about review overhead, AI non-determinism, one-size-fits-all workflows, and who the actual target user is.

@@ -8,6 +8,15 @@ contributor: "unknown"
 
 # Skill Issue: Harness Engineering for Coding Agents
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** the lever map (instruction files, tools/MCP, skills, sub-agents, hooks, back-pressure), skills as progressive disclosure (https://code.claude.com/docs/en/skills), and sub-agents for context control rather than role-play (https://code.claude.com/docs/en/sub-agents). The source URL is still live.
+> - **Outdated — ETH Zurich numbers:** the post relays an earlier version of the study. The current version (v3, 29 Sep 2026) reports that LLM-generated context files change task success by −0.5% and −2% and developer-written ones by +2.4%, none statistically significant, while every context file raises cost (20-23% for generated files, up to 19% for developer-written ones). Its conclusion: context files "should only contain specific additional instructions beyond what is already available in the codebase". Also, 138 is the number of task instances in its new benchmark (from 12 repositories), not "138 agentfiles": https://arxiv.org/abs/2602.11988v3
+> - **Changed context — "be sceptical of extended-context variants":** 1M is no longer an opt-in variant; it is the default window on all current Claude models (https://platform.claude.com/docs/en/about-claude/models/overview), and in Claude Code you now opt *out* (`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`, https://code.claude.com/docs/en/model-config). HumanLayer's follow-up reported weaker instruction-following on 1M Opus 4.6 and moved its context warning to a fixed 100K tokens "instead of 40% of the usable context" (https://www.hlyr.dev/blog/long-context-isnt-the-answer). I could not verify whether native-1M models (Opus 4.7 and later) still show that effect; the isolation argument itself still matches Anthropic's docs (https://platform.claude.com/docs/en/build-with-claude/context-windows).
+> - **Changed mechanics:** the parent / sub-agent diagrams assume one level. Claude Code sub-agents now nest three layers by default and can fork the parent's history (https://code.claude.com/docs/en/sub-agents).
+> - **Author's later position:** HumanLayer's 2026 writing says "harness engineering is not enough" and that lights-off factories fail without humans reading code (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md); their current packaging is the `humanlayer/skills` repo (https://github.com/humanlayer/skills).
+> - **Could not verify:** the Terminal Bench 2.0 ranking claim for Opus 4.6.
+
 We've spent the past year watching coding agents fail in every conceivable way: ignoring instructions, executing dangerous commands un-prompted, and going in circles on the simplest of tasks.
 
 We've seen teams ship immense amounts of slop. We've even shipped a little bit of slop ourselves.

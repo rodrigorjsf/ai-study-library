@@ -3,6 +3,14 @@
 **Source:** https://dev.to/pockit_tools/context-engineering-the-most-important-ai-skill-nobodys-teaching-you-4o91
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** selection and structure of context matter more than prompt wording; Anthropic's docs say curating context is "just as important as how much space is available" (https://platform.claude.com/docs/en/build-with-claude/context-windows) and still recommend "the smallest set of high-signal tokens" (https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents).
+> - **Outdated framing — "finite space every component competes for":** with 1M tokens standard on all current Claude models (https://platform.claude.com/docs/en/about-claude/models/overview), the binding constraint shifts from fitting to quality and cost. Token-count validation matters mainly for cost, and on Haiku 5.5 for staying under the 100K-token price step (https://platform.claude.com/docs/en/about-claude/pricing).
+> - **Now built in — dynamic tool loading:** Claude Code defers MCP tool schemas by default and loads them through tool search (https://code.claude.com/docs/en/context-window); skills load only a description until invoked (https://code.claude.com/docs/en/skills). You configure this rather than build it.
+> - **Overstated:** "information buried in the middle of a 100K-token context might as well not be there." I could not verify that for 2026 models; later work shows the position effect shifts with how full the window is (https://arxiv.org/abs/2508.07479).
+> - **Source:** the original URL is still live.
+
 ## Summary
 
 This DEV Community article argues that context engineering — the systematic practice of selecting, structuring, and managing information in an LLM's context window — is the most important skill for building production AI systems, far outweighing prompt engineering in real-world impact. It covers the five pillars of context engineering with concrete code examples and production patterns.

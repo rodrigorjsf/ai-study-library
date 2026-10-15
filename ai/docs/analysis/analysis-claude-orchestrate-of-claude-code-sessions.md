@@ -1,5 +1,14 @@
 # Analysis: Orchestrating Agent Teams in Claude Code
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Source moved from `docs.anthropic.com` to https://code.claude.com/docs/en/agent-teams.md. Agent teams are still experimental and off by default; the enable instruction is now explicitly `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+> - Step "Lead performs cleanup of shared resources" and the "Clean up the team" section no longer hold: the team's shared directories are cleaned up automatically when the session ends, with no separate cleanup step. Source: https://code.claude.com/docs/en/agent-teams.md
+> - Section 2.6 "Plan Approval" changed: the section is now "Have teammates plan before implementing", and Claude Code approves a teammate's plan in the lead's session as soon as the request arrives, without the lead reviewing it. Source: https://code.claude.com/docs/en/agent-teams.md
+> - "`TeammateIdle` and `TaskCompleted` are hooks exclusive to agent teams" is incomplete: `TaskCreated` was added (exit code 2 prevents task creation). Source: https://code.claude.com/docs/en/agent-teams.md
+> - "Subagents cannot spawn other subagents; agent teams overcome this" no longer holds as a differentiator: subagents can now spawn their own subagents, up to three layers below the main conversation by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`). Source: https://code.claude.com/docs/en/sub-agents.md#let-subagents-spawn-their-own-subagents
+> - New behaviour not covered: teammates can be spawned from subagent definitions ("Use subagent definitions for teammates"); while teams are enabled, a subagent Claude names in the lead's session launches as a teammate; `teammateDefaultModel` was removed in v2.1.234. "One team per session" and "no nested teams" still hold. Source: https://code.claude.com/docs/en/agent-teams.md
+
 > **Status**: Current
 > **Source document**: [claude-orchestrate-of-claude-code-sessions.md](https://docs.anthropic.com/en/docs/claude-code/agent-teams)
 > **Analysis date**: 2025-06-01

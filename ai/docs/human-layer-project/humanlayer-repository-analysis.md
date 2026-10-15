@@ -1,5 +1,12 @@
 # HumanLayer Repository Analysis
 
+> **Currency check (2026-10-11):** Obsolete
+>
+> - **The analysed code is deprecated:** the repository README now reads "public issues repo for humanlayer - the code here is pretty much all deprecated - you can try the rebuild of humanlayer at https://humanlayer.com" (https://github.com/humanlayer/humanlayer). Last push 2026-06-19; about 11.7k stars; not archived.
+> - **Product direction changed:** HumanLayer's timeline lists a June 2026 "HumanLayer launch" of "a coding environment built around human review, control, and code quality" (https://www.humanlayer.com/blog/humanlayer-resources). I could not verify whether the rebuild is open source or how it relates to the CodeLayer name used here.
+> - **Still valid only as history:** the directories described (`hld`, `hlyr`, `humanlayer-wui`, `claudecode-go`, `apps`, `packages`) are still present in the repo (https://github.com/humanlayer/humanlayer), so the report describes the pre-rebuild architecture accurately.
+> - **Where the active open-source work is now:** `humanlayer/skills` (rpi, show-me, visual-pr, improve-claude-md; last push 2026-10-08, https://github.com/humanlayer/skills) and the essays and benchmarks in the context-engineering repo (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents).
+
 This report analyzes the local clone at `humanlayer/` for structure, runtime flow, tooling, and documentation posture. It treats the repository as a product monorepo with one primary shipping surface, several supporting libraries and services, and a few clearly experimental or transitional areas.
 
 ## Executive summary

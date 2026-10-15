@@ -1,5 +1,12 @@
 # cameronking4/programmatic-tool-calling-ai-sdk — GitHub
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The repository is still public and not archived, but its last push was 2025-12-03 (GitHub API, 2026-10-11); the README still targets Vercel AI SDK 5.0 and Next.js 16. Treat it as an unmaintained proof of concept: https://github.com/cameronking4/programmatic-tool-calling-ai-sdk
+> - "Inspired by Anthropic's beta capabilities announced November 2025" — the capability is no longer beta. Programmatic tool calling is generally available (frontmatter `status: ga`), with tool version `code_execution_20260120` or later: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
+> - The MCP integration notes ("HTTP, SSE, Stdio transports") predate revision 2026-07-28: HTTP+SSE is formally Deprecated and Streamable HTTP lost sessions and the `initialize` handshake: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Could not verify the token-savings, latency and cost figures (they are the author's own, priced against GPT-4), nor whether the code runs on current AI SDK releases.
+
 **Source:** https://github.com/cameronking4/programmatic-tool-calling-ai-sdk
 **Category:** Programmatic Tool Calling
 

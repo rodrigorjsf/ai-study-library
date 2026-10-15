@@ -1,5 +1,12 @@
 # Anthropic MCP - GitHub Topics
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The repository list below is a point-in-time listing of a GitHub topic page and was not re-verified repository by repository. The topic page still resolves: https://github.com/topics/anthropic-mcp
+> - "Eight repositories currently match the tag" no longer holds: the GitHub search API returned 28 repositories for `topic:anthropic-mcp` on 2026-10-11: https://api.github.com/search/repositories?q=topic:anthropic-mcp
+> - "Anthropic's Model Context Protocol" is dated framing: the official servers repository now describes its reference servers as "maintained by the MCP steering group", and points to the MCP Registry for discovering servers: https://github.com/modelcontextprotocol/servers
+> - Any project below built on the 2025-era protocol (sessions, `initialize` handshake, HTTP+SSE) predates revision 2026-07-28, which removed the first two and formally deprecated the third: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+
 **Source:** https://github.com/topics/anthropic-mcp
 **Category:** Model Context Protocol (MCP)
 

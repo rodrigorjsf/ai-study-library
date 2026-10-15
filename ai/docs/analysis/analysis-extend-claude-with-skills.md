@@ -1,5 +1,14 @@
 # Analysis: Extend Claude with Skills
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Section 2.7 "Character Budget for Descriptions" no longer holds: the budget is 1% of the context window (not 2%, and the 16,000-character fallback is gone); it is raised with `skillListingBudgetFraction` or `SLASH_COMMAND_TOOL_CHAR_BUDGET`. Skill names are always listed; descriptions are dropped starting with the least-invoked skills. Source: https://code.claude.com/docs/en/skills.md#skill-descriptions-are-cut-short
+> - New per-entry cap: combined `description` + `when_to_use` text is truncated at 1,536 characters in the listing. Source: https://code.claude.com/docs/en/skills.md#frontmatter-reference
+> - Frontmatter table is incomplete: added `when_to_use`, `arguments`, `disallowed-tools`, `background` (v2.1.218+), `paths`, `shell`, `metadata`, `license`, `compatibility`. `effort` now lists `low`, `medium`, `high`, `xhigh`, `max`. Source: https://code.claude.com/docs/en/skills.md#frontmatter-reference
+> - `allowed-tools` "grants permissions during execution" needs a qualifier: the grant lasts only for the turn that invokes the skill and clears on the next user message, while the skill's content stays in context. Source: https://code.claude.com/docs/en/skills.md#skill-content-lifecycle
+> - New lifecycle facts not covered: after auto-compaction Claude Code re-attaches the most recent invocation of each skill, the first 5,000 tokens each, within a combined 25,000-token budget. Source: https://code.claude.com/docs/en/skills.md#skill-content-lifecycle
+> - New sections not covered: `skillOverrides` setting, "Find unused skills" (`/skill-doctor`), "Evaluate and iterate on a skill", and name-conflict resolution. The "under 500 lines" guidance still holds, but upstream dropped the "(~5,000 tokens)" gloss. Source: https://code.claude.com/docs/en/skills.md
+
 > **Status**: Current
 > **Source document**: [Anthropic — Extend Claude with Skills](docs/skills/extend-claude-with-skills.md)
 > **Analysis date**: 2026-03-27

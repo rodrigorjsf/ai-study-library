@@ -3,6 +3,14 @@
 **Source:** https://www.mindstudio.ai/blog/progressive-disclosure-ai-agents-context-management
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Current
+>
+> - **Became the default packaging:** Agent Skills are an open standard; Claude Code puts only each skill's description in context and loads the body on use ("long reference material costs almost nothing until you need it", https://code.claude.com/docs/en/skills). MCP tool schemas are likewise deferred by default (https://code.claude.com/docs/en/context-window).
+> - **Pattern 4 is now official guidance:** "Keep `SKILL.md` under 500 lines. Move detailed reference material to separate files" (https://code.claude.com/docs/en/skills).
+> - **Needs a correction — "fetched content doesn't need to persist":** in Claude Code a loaded skill body stays in context for the rest of the session, and after compaction the most recent invocation of each skill is re-attached (first 5,000 tokens each, 25,000 shared) (https://code.claude.com/docs/en/skills). Scoping is not automatic.
+> - **Still holds with 1M windows:** the article's FAQ answer matches Anthropic's current wording that more context "isn't automatically better" (https://platform.claude.com/docs/en/build-with-claude/context-windows); just-in-time loading is still Anthropic's recommended pattern (https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents).
+> - **Source:** the original URL is still live.
+
 ## Summary
 
 MindStudio's article explains progressive disclosure as the primary strategy for preventing context rot in AI agents. Rather than front-loading all potentially relevant material at initialization, progressive disclosure loads reference files, documentation, and supporting context only when the current task phase actually requires it. The article covers four main implementation patterns, a context trigger system, and when the pattern doesn't apply.

@@ -1,5 +1,15 @@
 # Analysis: Research Claude Code Skills & Plugin Marketplace Format
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> The analysed research file was not rewritten; see its own Currency check block at [`../claude-code/skills/research-claude-code-skills-format.md`](../claude-code/skills/research-claude-code-skills-format.md).
+>
+> - `effort: low, medium, high, max` is incomplete: `xhigh` was added. Source: https://code.claude.com/docs/en/skills.md#frontmatter-reference
+> - "Skill descriptions consume 2% of the context window" no longer holds: the listing budget is 1% of the context window, and each entry is capped at 1,536 characters of combined `description` + `when_to_use`. The recommendation to keep descriptions short still follows. Source: https://code.claude.com/docs/en/skills.md#skill-descriptions-are-cut-short
+> - The "Claude Code proprietary extensions" list is incomplete: `when_to_use`, `arguments`, `disallowed-tools`, `background`, `paths`, `shell`, and `metadata` were added. Source: https://code.claude.com/docs/en/skills.md#frontmatter-reference
+> - Gap "No migration guide" is partly closed: the plugin docs now include "Convert an existing `.claude/` setup". Source: https://code.claude.com/docs/en/plugins/create.md
+> - Marketplace findings changed: three Anthropic marketplaces (official, community `claude-community`, demo `claude-code-plugins`) and submission through "Anthropic's directory". Sources: https://code.claude.com/docs/en/plugins/anthropic-marketplaces.md, https://code.claude.com/docs/en/plugins/publish.md
+
 > **Status**: Current
 > **Source document**: [`docs/skills/research-claude-code-skills-format.md`](../skills/research-claude-code-skills-format.md)
 > **Analysis date**: 2026-03-27

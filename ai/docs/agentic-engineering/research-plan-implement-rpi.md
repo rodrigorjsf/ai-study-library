@@ -4,6 +4,15 @@
 **Original Repository:** https://github.com/humanlayer/advanced-context-engineering-for-coding-agents
 **Category:** Agentic Engineering
 
+> **Currency check (2026-10-11):** Superseded
+>
+> - **Superseded by its own authors:** HumanLayer's timeline lists a March 2026 move "from giant RPI prompts to smaller workflows with more structure and human ownership", an April 2026 talk "Everything We Got Wrong About Research-Plan-Implement", and a follow-on called QRSPI that turns RPI "into explicit control flow" (https://www.humanlayer.com/blog/humanlayer-resources). I could not verify the expansion of the QRSPI acronym from a primary source.
+> - **Current packaging:** RPI now ships as an `rpi` skill in `humanlayer/skills`, with design-discussion, PRD-then-TDD and technical-design options, each phase in a fresh session, alongside `show-me` and `visual-pr` (https://github.com/humanlayer/skills, https://www.humanlayer.com/blog/show-me-skill).
+> - **No longer holds — "40–60% context utilization target":** replaced by an absolute ~100K-token threshold for long-context models (https://www.hlyr.dev/blog/long-context-isnt-the-answer); all current Claude models have 1M windows (https://platform.claude.com/docs/en/about-claude/models/overview).
+> - **No longer holds — reviewing the plan as a substitute for reviewing code:** "Read the dang code"; review 100–200 lines at a time (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Still holds:** human checkpoints after research and after planning, and sub-agents for research (https://code.claude.com/docs/en/sub-agents).
+> - **Source state:** the DeepWiki URL returned HTTP 429 (could not verify its content). The original repository is live and active (last push 2026-10-08) and now also holds `wsff.md` and SlopCodeBench reports next to the original `ace-fca.md` (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents).
+
 ## Summary
 
 The Research-Plan-Implement (RPI) workflow, developed by Dex Horthy at HumanLayer, divides AI coding work into three sequential phases, each producing a compacted artifact that serves as the input for the next phase. It is part of the Frequent Intentional Compaction (FIC) methodology and addresses the core constraint that LLM output quality depends entirely on context quality. Human review at the Research and Plan phases provides the highest leverage for catching errors before they cascade into code.

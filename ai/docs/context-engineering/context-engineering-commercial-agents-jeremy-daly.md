@@ -3,6 +3,13 @@
 **Source:** https://jeremydaly.com/context-engineering-for-commercial-agent-systems/
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Current
+>
+> - **Still holds:** the central claims — tenant isolation enforced in the data plane, an append-only event log as truth, rebuildable retrieval indexes, per-run cost surfaces — are model-independent and are not affected by larger context windows.
+> - **Converging evidence:** Anthropic's Managed Agents design (April 2026) splits an agent into an append-only session log, a replaceable harness and sandboxes, with the log acting as durable context outside the window (https://www.anthropic.com/engineering/managed-agents) — the same truth-versus-acceleration separation.
+> - **Cost predictability got a new wrinkle:** Claude Haiku 5.5 bills a whole request at 5x the base rate once the prompt exceeds 100K tokens ($0.10 → $0.50 per MTok input), so per-run token budgets matter more on the cheap tier, not less (https://platform.claude.com/docs/en/about-claude/pricing).
+> - **Could not verify:** the "ecosystem convergence" list (Cursor, Letta, AWS AgentCore) against those products' current architectures. The source URL is still live.
+
 ## Summary
 
 Jeremy Daly's comprehensive field guide to context engineering in commercial, multi-tenant AI agent systems. Drawing on experience building production agent systems serving hundreds of enterprise customers, the article establishes that context is infrastructure — not an implementation detail — requiring the same engineering discipline as networking, compute, or storage. It covers memory taxonomy, truth vs. acceleration layers, and the full context engine loop.

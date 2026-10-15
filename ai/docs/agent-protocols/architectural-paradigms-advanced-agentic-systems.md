@@ -1,5 +1,14 @@
 # Architectural Paradigms of Advanced Agentic Systems: Context Engineering, Protocol Standardization, and Programmatic Execution
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Both arXiv records still resolve with the titles cited below (opened 2026-10-11; abstract pages only, the PDFs were not re-read): https://arxiv.org/abs/2510.25445 and https://arxiv.org/abs/2508.10146
+> - The document is a project synthesis of 2025 papers; its conceptual material (dual-paradigm framework, context engineering) is not time-sensitive and was not re-checked against the papers.
+> - Its protocol snapshot is 2025-era. A2A reached v1.0.0 on 2026-03-12 (normative `a2a.proto`, three bindings): https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - MCP changed shape in revision 2026-07-28 (stateless core, MRTR, deprecations of Roots/Sampling/Logging), which affects any "protocol standardization" comparison: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - The "programmatic execution" theme is now a shipped, generally available API feature (programmatic tool calling), not only a research direction: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
+> - Could not verify the current status of ANP or Agora; no source for either was opened.
+
 **Source:** https://arxiv.org/abs/2510.25445 (primary); https://arxiv.org/abs/2508.10146 (related)
 **Category:** Agent Protocols & Communication
 

@@ -3,6 +3,14 @@
 **Source:** https://dev.to/ametel01/advanced-context-engineering-for-coding-agents-11p7
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** curate context instead of filling it, restart a session rather than argue with a bad trajectory, and use sub-agents to fork a clean window and return a short summary. Anthropic's current docs say the same ("more context isn't automatically better … context rot", https://platform.claude.com/docs/en/build-with-claude/context-windows; sub-agents "preserve context", https://code.claude.com/docs/en/sub-agents).
+> - **No longer holds — "dumb zone at ~40% of the window":** the percentage was calibrated on 200K windows. Every current Claude model (Opus/Sonnet/Haiku 5.5, Fable 5.1) has a 1M window (https://platform.claude.com/docs/en/about-claude/models/overview), where 40% would be 400K tokens. HumanLayer itself replaced the 40% rule with a fixed ~100K-token warning for long-context models in March 2026 (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Revised by its own author — "review plans instead of code":** HumanLayer's April 2026 talk is titled "Everything We Got Wrong About Research-Plan-Implement" ("RPI became a way to outsource thought"), and their 2026 advice is to "read the code" in small slices (https://www.humanlayer.com/blog/humanlayer-resources, https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Weakened — "intentional compaction is mandatory":** Claude Code now auto-compacts native-1M models at about 967K tokens (https://code.claude.com/docs/en/model-config), and Anthropic reports dropping context resets from its long-running harness once Opus 4.5 removed "context anxiety" (https://www.anthropic.com/engineering/harness-design-long-running-apps). Hand-written handoff artifacts remain useful; they are no longer a survival requirement.
+> - **Changed mechanics:** sub-agents can now spawn their own sub-agents (three layers by default) and can be forked with the parent's full history (https://code.claude.com/docs/en/sub-agents). The source URL is still live.
+
 ## Summary
 
 A technical distillation of Dex Horthy's talk on advanced context engineering for coding agents. The article identifies why AI productivity doesn't always equal progress in real-world codebases, introduces the "dumb zone" concept, and provides a systematic framework (Research–Plan–Implement) for managing context effectively across the software development lifecycle.

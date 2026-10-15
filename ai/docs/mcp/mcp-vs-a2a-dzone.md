@@ -1,5 +1,12 @@
 # MCP vs A2A: Practical Enterprise Data Integration - DZone
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Could not re-open the article: on 2026-10-11 dzone.com returned HTTP 403 (bot challenge page). The body below was not compared against the original: https://dzone.com/articles/model-context-protocol-agent2agent-practical
+> - The MCP-for-tools / A2A-for-agents layering still matches how both projects describe themselves, but the MCP mechanics changed in revision 2026-07-28: stateless request/response core, no `initialize` handshake or sessions, server-initiated requests replaced by Multi Round-Trip Requests: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - A2A is at v1.0.x (v1.0.0 on 2026-03-12, v1.0.1 in May 2026), with renamed operations (`message/send` → `SendMessage`), three bindings (JSON-RPC, gRPC, HTTP+JSON/REST) and Agent Cards at `/.well-known/agent-card.json`: https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - "Over 110 million SDK downloads per month as of April 2026" is stale; the 2026-07-28 release post reports close to half a billion a month across Tier 1 SDKs: https://blog.modelcontextprotocol.io/posts/2026-07-28/
+
 **Source:** https://dzone.com/articles/model-context-protocol-agent2agent-practical
 **Category:** Model Context Protocol (MCP)
 

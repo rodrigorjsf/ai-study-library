@@ -1,5 +1,14 @@
 # Analysis: Creating Custom Subagents in Claude Code
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Section 3.2 "Anti-Nesting Restriction" ("Subagents CANNOT spawn other subagents") no longer holds. By default a subagent can spawn its own subagents up to three layers below the main conversation; `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` changes the limit and `1` turns nesting off. Source: https://code.claude.com/docs/en/sub-agents.md#let-subagents-spawn-their-own-subagents
+> - Foreground/background finding changed: where fork mode is on (the default in interactive sessions) Claude Code runs subagents in the background; elsewhere background is the default and foreground is used only when Claude needs the result. `background: true` now means "keep in the background even when Claude asks for the foreground". Source: https://code.claude.com/docs/en/sub-agents.md
+> - `effort` options `low`, `medium`, `high`, `max` are incomplete: `xhigh` was added, the "max (Opus 4.6 only)" note is gone (levels depend on the model), and Claude can pass a per-invocation `effort` parameter (v2.1.292+). Source: https://code.claude.com/docs/en/sub-agents.md#choose-an-effort-level
+> - Model selection `haiku`, `sonnet`, `opus`, `inherit` is incomplete: the `fable` alias was added and example IDs are now `claude-opus-5-5` and `claude-sonnet-5`. Source: https://code.claude.com/docs/en/sub-agents.md#choose-a-model
+> - Frontmatter table is incomplete: `omitClaudeMd`, `color`, `initialPrompt`, and `experimental` (`cacheTtl`) were added; `permissionMode` gained `auto` and the `manual` alias. Source: https://code.claude.com/docs/en/sub-agents.md#supported-frontmatter-fields
+> - New sections not covered: "Fork the current conversation" (`/subtask`, v2.1.212+), "Concurrent subagent limit" (20 running subagents by default, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), and "Subagent output scanning". Still holds: plugin subagents ignore `hooks`, `mcpServers`, and `permissionMode`. Source: https://code.claude.com/docs/en/sub-agents.md
+
 > **Status**: Current
 > **Source document**: [creating-custom-subagents.md](https://docs.anthropic.com/en/docs/claude-code/subagents)
 > **Analysis date**: 2025-06-01

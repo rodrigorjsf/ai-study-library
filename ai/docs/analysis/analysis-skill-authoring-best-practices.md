@@ -1,5 +1,13 @@
 # Complete Analysis: Skill Authoring Best Practices
 
+> **Currency check (2026-10-11):** Current
+>
+> - This is a project analysis (dated 2026-03-27) of Anthropic's "Skill authoring best practices" page; it was compared against the page as re-mirrored on 2026-10-11 at [`../shared/skill-authoring-best-practices.md`](../shared/skill-authoring-best-practices.md). Source: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices.md
+> - A normalized diff of the May and October captures shows editorial changes only (bullet style, absolute links, wording such as "Solve, don't punt" → "Solve, don't defer", directory trees rendered as lists, PNG diagrams replaced by SVG). The principles this analysis discusses — conciseness, degrees of freedom, progressive disclosure, evaluation-first iteration with two Claudes, the 64-character `name` and 1,024-character `description` limits — are unchanged. Same source URL.
+> - The 500-line SKILL.md limit this analysis cites still holds; the page only dropped the "(~5,000 tokens)" parenthetical that the May capture carried next to it. Same source URL.
+> - The "Source document" link below (`../skills/skill-authoring-best-practices.md`) is a broken path; the file lives at `../shared/skill-authoring-best-practices.md`.
+> - The agentskills.io standard referenced alongside it changed only slightly: `name` now explicitly allows digits, `metadata` is a string-to-string map, `allowed-tools` is a space-separated string: https://agentskills.io/specification.md
+
 > **Status**: Current
 > **Source document**: [`docs/skills/skill-authoring-best-practices.md`](../skills/skill-authoring-best-practices.md)
 > **Analysis date**: 2026-03-27
@@ -509,11 +517,11 @@ that might inform this task (previous decisions, preferences, constraints).
 
 | Paper Finding | Alignment with Best Practices |
 |---------------|-------------------------------|
-| LLM-generated configs reduce performance | Evaluation-driven development prevents over-documentation |
-| More context ≠ better performance | Conciseness as a central principle; "Claude is already smart" |
-| Generic overviews are ineffective | Descriptions must be specific with key terms |
-| Instructions are followed literally | Degrees of freedom calibrated to task fragility |
-| Niche repositories benefit more | Skills most valuable for domains Claude doesn't know |
+| LLM-generated context files do not improve success and raise cost by 20-23% (v3, §4.2) | Evaluation-driven development prevents over-documentation |
+| Context files do not generally improve success (v3, abstract) | Conciseness as a central principle; "Claude is already smart" |
+| Repository overviews do not help agents find the relevant files sooner (v3, §4.3) | Descriptions must be specific with key terms |
+| Instructions are followed; named tools are used almost only when mentioned (v3, §4.3) | Degrees of freedom calibrated to task fragility |
+| Generated files help only when the repository's documentation is removed (+2.7%, v3 Appendix B) | Skills most valuable where the knowledge is not already available to the agent |
 
 ### 7.3 claude-prompting-best-practices.md
 

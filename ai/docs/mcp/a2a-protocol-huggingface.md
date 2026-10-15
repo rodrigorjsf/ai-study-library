@@ -1,5 +1,13 @@
 # A2A Protocol - Hugging Face Community
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Fidelity warning — the body below is not a capture of the source page.** The Hugging Face organization page still resolves (opened 2026-10-11; page title "a2aprotocol (zhangcheng)") but carries only a short profile; of 25 sentences sampled from the body below, 1 appears on it. The body says of itself that it is "synthesized from the organization's public profile and related web" material. The account is a community one, not an official A2A project property: https://huggingface.co/a2aprotocol
+> - "As of mid-2025" is two major steps behind. A2A v1.0.0 was released 2026-03-12 and v1.0.1 on 2026-05-26/28; v1.0 has many breaking changes from v0.3: https://github.com/a2aproject/A2A/blob/main/CHANGELOG.md and https://github.com/a2aproject/A2A/releases
+> - Agent Card discovery is `/.well-known/agent-card.json`, not `/.well-known/agent.json` (already true in v0.3.0): https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - A2A is a Linux Foundation project ("contributed by Google") governed by an eight-seat Technical Steering Committee — Google, Microsoft, Cisco, AWS, Salesforce, ServiceNow, SAP, IBM — not simply "Google, broad ecosystem": https://github.com/a2aproject/A2A/blob/main/GOVERNANCE.md
+> - The MCP column is stale too: MCP is no longer "stateless(ish)" by accident but stateless by design since revision 2026-07-28 (no `initialize`, no sessions; `server/discover` replaces capability negotiation at connect time): https://modelcontextprotocol.io/specification/2026-07-28/changelog
+
 **Source:** https://huggingface.co/a2aprotocol
 **Category:** Model Context Protocol (MCP)
 

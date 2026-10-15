@@ -3,6 +3,13 @@
 **Source:** https://github.com/anthropics/anthropic-cookbook
 **Category:** Agentic Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Renamed:** the repository is now `anthropics/claude-cookbooks`; the old `anthropic-cookbook` URL redirects there (https://github.com/anthropics/claude-cookbooks). Links in this snapshot still resolve through the redirect.
+> - **Missing from this snapshot:** the repository today also has top-level directories `claude_agent_sdk/`, `managed_agents/`, `skills/` and `patterns/agents/` (https://github.com/anthropics/claude-cookbooks) — the agentic material a reader of this folder is most likely looking for.
+> - **Still accurate:** the listed capability, tool-use and multimodal recipes still exist; the sub-agents notebook is still at `multimodal/using_sub_agents.ipynb` (https://github.com/anthropics/claude-cookbooks).
+> - **Dated example:** "Haiku as a sub-agent in combination with Opus" predates current models and Claude Code's built-in sub-agents (https://code.claude.com/docs/en/sub-agents); treat it as an API-level illustration.
+
 ## Summary
 
 The Anthropic Claude Cookbook is an official collection of code examples and guides for building with Claude. It covers core AI capabilities (classification, RAG, summarization), tool use and integrations, multimodal capabilities, and advanced techniques including sub-agents, automated evaluations, and prompt caching. The cookbook is community-driven and designed to provide copy-paste code snippets adaptable to any project.

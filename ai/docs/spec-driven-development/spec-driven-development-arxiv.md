@@ -6,6 +6,14 @@
 **Submitted:** Fri, 30 Jan 2026 — Submitted to AIWare 2026 (8 pages, 3 figures)
 **DOI:** https://doi.org/10.48550/arXiv.2602.00180
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** the spec-first / spec-anchored / spec-as-source taxonomy remains the common vocabulary; the arXiv record is still live. I could not verify whether the paper was revised or accepted at AIWare 2026.
+> - **Inaccurate and outdated tool survey:** Kiro is described as a "VS Code extension"; it was already a VS Code-based distribution in 2025 (see the Böckeler article in this folder) and today is a standalone Code OSS-based IDE with CLI, web and mobile surfaces, still producing requirements / design / tasks (https://kiro.dev/). Tessl no longer presents a spec-as-source framework on its site — it is an "agent enablement platform" with a skills registry (https://www.tessl.io/); I could not verify whether the Framework is still offered.
+> - **Missing from the survey:** BMAD-METHOD (https://github.com/bmad-code-org/BMAD-METHOD) and GSD (https://github.com/gsd-build/get-shit-done), both larger than most tools listed, and Spec Kit's growth to about 141k stars (https://github.com/github/spec-kit).
+> - **Dated or unverified claims:** "GPT-4 or Claude" as the reference agents, and "up to 50% error reduction" — could not verify against a 2026 study.
+> - **Counter-evidence since publication:** HumanLayer argues test-passing generated code still erodes maintainability, so specs plus validation are not sufficient without code reading (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+
 ## Summary
 
 This paper provides practitioners with a comprehensive guide to Spec-Driven Development (SDD), which inverts the traditional workflow by treating specifications as the source of truth and code as a generated or verified secondary artifact. The authors present three levels of specification rigor—spec-first, spec-anchored, and spec-as-source—with guidance on when each applies, a survey of tools from BDD frameworks to AI-assisted toolkits, and case studies across API development, enterprise systems, and embedded software.

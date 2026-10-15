@@ -3,6 +3,14 @@
 **Source:** https://syntackle.com/blog/long-context-window-ai-model-catch/
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** accepting 1M tokens is not the same as using them well. Anthropic's docs state that "as token count grows, accuracy and recall degrade" even though all current models ship a 1M window (https://platform.claude.com/docs/en/build-with-claude/context-windows, https://platform.claude.com/docs/en/about-claude/models/overview).
+> - **Dated numbers:** the MRCR v2 figures are for Opus 4.6, GPT-5.4, Gemini 3.1 Pro and Sonnet 4.5. I could not verify equivalent 1M-token scores for the 5.5 generation, so the size of the drop today is unknown.
+> - **Refined mechanism:** "lost in the middle" is not a fixed U-shape — it is strongest up to ~50% window fill and becomes a recency bias near the limit (https://arxiv.org/abs/2508.07479).
+> - **Superseded quote:** the "around the 40% line" rule came from 200K windows; HumanLayer now uses an absolute ~100K-token threshold for long-context models (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Could not verify:** that RAG "will often outperform raw long context" on current models. The source URL is still live.
+
 ## Summary
 
 Syntackle's article breaks down the reality behind million-token context windows recently made available across Claude, GPT, and Gemini models. While larger context windows are genuinely useful, the "lost in the middle" phenomenon and attention dilution mean that performance degrades significantly as context fills — making disciplined context management still essential even with massive windows.

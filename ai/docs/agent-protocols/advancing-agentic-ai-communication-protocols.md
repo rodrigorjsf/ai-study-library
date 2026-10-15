@@ -1,5 +1,13 @@
 # Advancing Agentic AI through Communication Protocols
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The paper is a dated academic survey and is still published (opened 2026-10-11; the DOI resolves to ijsrst.com): https://doi.org/10.32628/IJSRST25125127
+> - ACP is no longer a live fourth protocol: the ACP repository is archived (last push 2025-08-25) and its README states "ACP is now part of A2A under the Linux Foundation": https://github.com/i-am-bee/acp
+> - A2A as described ("HTTP-based, JSON-RPC with SSE") is the v0.x shape. v1.0.0 (2026-03-12) made `a2a.proto` normative with three bindings (JSON-RPC, gRPC, HTTP+JSON/REST): https://github.com/a2aproject/A2A/blob/main/docs/whats-new-v1.md
+> - MCP as described (stateful JSON-RPC client-server) changed in revision 2026-07-28: stateless core, no `initialize` handshake, Roots/Sampling/Logging deprecated: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Could not verify the current status of ANP; no ANP source was opened.
+
 **Source:** https://mail.ijsrst.com/index.php/home/article/view/IJSRST25125127 (DOI: https://doi.org/10.32628/IJSRST25125127)
 **Category:** Agent Protocols & Communication
 

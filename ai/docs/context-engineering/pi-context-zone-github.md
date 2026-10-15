@@ -3,6 +3,14 @@
 **Source:** https://github.com/arpagon/pi-context-zone
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Superseded
+>
+> - **No longer makes sense — percentage zones (40% / 70%):** on a 1M window those lines sit at 400K and 700K tokens. The source of the 40% rule, HumanLayer, switched to a fixed ~100K-token warning for long-context models (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Stale model table:** it stops at Opus 4.6 / GPT-5.4 / Gemini 3.1 (March 2026); current Claude models are the 5.5 family, all 1M (https://platform.claude.com/docs/en/about-claude/models/overview). I could not verify MRCR numbers for them.
+> - **Unsourced figures — could not verify:** "F1 scores drop ~45%", "hallucination rates spike to 40%", "100,000+ developer sessions", and "KV cache compression" have no citation in the README.
+> - **Mislabelled:** "Context Compaction architecture" is not a property of the model. Compaction is a harness/API feature — server-side compaction in the API (https://platform.claude.com/docs/en/build-with-claude/context-windows) and auto-compaction at ~967K in Claude Code (https://code.claude.com/docs/en/model-config).
+> - **Repo state:** https://github.com/arpagon/pi-context-zone is still public but its last push was 2026-03-27 (9 stars). The underlying idea — make context usage visible — still holds; the thresholds do not.
+
 ## Summary
 
 `pi-context-zone` is a Pi coding agent extension that adds a visual context health bar to the terminal footer, showing real-time context usage across smart (0–40%), warm (40–70%), and dumb (70%+) zones. Inspired by Dex Horthy's "No Vibes Allowed" talk and the concept of context rot, it makes the degradation curve visible so developers can act before reasoning quality collapses.

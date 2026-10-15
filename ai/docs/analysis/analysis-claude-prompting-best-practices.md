@@ -1,5 +1,14 @@
 # Analysis: Claude Prompting Best Practices
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - Scope "guide for Claude 4.6 models (Opus, Sonnet, and Haiku 4.5)" no longer holds. The page now covers Claude Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, Sonnet 4.6, Haiku 5.5, and Haiku 4.5. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - Structure changed: a new first section, "Model-specific guidance", links a dedicated prompting page per model (for example "Prompting Claude Opus 5.5", "Prompting Claude Fable 5.1"), so the per-model behaviour notes this analysis attributes to "Claude 4.6" are no longer the whole picture. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - Migration finding changed: the section "Migrating from Claude Sonnet 4.5 to Claude Sonnet 4.6" was replaced by "Migrating to Claude Sonnet 5.5". Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - Thinking finding needs a qualifier: adaptive thinking still applies to Claude 4.6 and later, but `budget_tokens` is now described as deprecated on Opus 4.6 and Sonnet 4.6 and as returning a 400 error on Claude 4.7 and later models. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - New caveat: Claude Opus 5 is called out as an exception on verbosity (longer default responses; changing `effort` does not reliably change visible response length). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - Still holds: prefilled responses on the last assistant turn are unsupported from Claude 4.6 onward; the overthinking and overeagerness guidance is still present. The analysis's source link (`docs.anthropic.com/.../overview`) is dead; use https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+
 > **Status**: Current
 > **Source document**: [claude-prompting-best-practices.md](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview)
 > **Analysis date**: 2026-03-27
@@ -176,7 +185,7 @@ The `<RULES>` block at the beginning of SKILL.md functions as the skill's system
 The `init-claude` SKILL.md already exemplifies this principle with:
 > *"Research shows that auto-generated comprehensive configuration files reduce agent task success by ~3% while increasing cost by 20%+"*
 
-This motivation helps Claude understand *why* it should be minimalist, not just that it should be.
+This motivation helps Claude understand *why* it should be minimalist, not just that it should be. Note that the figure in that quote comes from the first version of the ETH Zurich study; its current version (v3) reports no statistically significant change in task success and a cost increase of 20-23% (see [`analysis-evaluating-agents-paper.md`](analysis-evaluating-agents-paper.md)).
 
 **Examples in references/**:
 Instead of placing few-shot examples directly in SKILL.md (consuming budget), `references/` is used as progressive disclosure — loaded only when the relevant phase is executed. This aligns with: *"In-context examples are one of the most reliable ways to steer Claude's output format, tone, and structure"* without paying the token cost permanently.
@@ -344,11 +353,11 @@ Anthropic's memory tool is described as a natural complement to context awarenes
 
 | Paper Finding | Connection with Best Practices |
 |---------------|-------------------------------|
-| *"LLM-generated context files tend to decrease agent performance by ~3%"* | Corroborates the minimalism recommendation. Best practices says to be explicit and specific, not comprehensive. |
-| *"Developer-written context files slightly improve (+4%)"* | Developer-written = intentional and focused instructions, aligned with *"think of Claude as a brilliant but new employee"* |
+| LLM-generated context files do not significantly change success (−0.5% and −2%) and raise cost by 20-23% (v3, §4.2) | Consistent with the minimalism recommendation. Best practices says to be explicit and specific, not comprehensive. |
+| Developer-written context files gain 2.4%, not significant, but significantly outperform generated ones (v3, §4.2) | Developer-written = intentional and focused instructions, aligned with *"think of Claude as a brilliant but new employee"* |
 | *"Context files lead to more thorough testing and exploration"* + *"increase costs by over 20%"* | Directly related to the overthinking warning: *"Claude Opus 4.6 does significantly more upfront exploration than previous models."* The 20% cost maps to overtriggering. |
-| *"Unnecessary requirements from context files make tasks harder"* | Aligned with the rule of *"Would removing this cause Claude to make mistakes? If not, cut it."* from context optimization |
-| *"Human-written context files should describe only minimal requirements"* | Total convergence with best practices: be direct, specific, minimalist. |
+| The authors hypothesize that the additional instructions "make the task harder", citing higher reasoning-token use (v3, §4.3) | Aligned with the rule of *"Would removing this cause Claude to make mistakes? If not, cut it."* from context optimization |
+| *"Human-written context files should only include instructions required for coding agents that are not already present in the README"* (v3, §1) | Convergence with best practices: be direct, specific, minimalist. |
 
 ### 7.3 a-guide-to-agents.md and a-guide-to-agents.md
 
@@ -359,7 +368,7 @@ Anthropic's memory tool is described as a natural complement to context awarenes
 | *"Progressive disclosure: give the agent only what it needs right now"* | Multi-window workflows: first window setup, future windows iteration. Conditional references/ in SKILL.md. |
 | *"No 'always', no all-caps forcing. Just a conversational reference."* | *"Claude is much better at appropriate refusals now. Clear prompting without prefill should be sufficient."* + overtriggering calibration |
 | *"Instruction budget: ~150-200 instructions"* | All minimalism recommendations; effort parameter as substitute for over-prompting |
-| *"Never auto-generate your AGENTS.md"* | Total convergence with the ETH Zurich paper and the intentionality principle |
+| *"Never auto-generate your AGENTS.md"* | Consistent with the ETH Zurich paper (v3), which suggests "omitting LLM-generated context files for the time being", and with the intentionality principle |
 
 ---
 

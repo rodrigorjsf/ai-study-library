@@ -3,6 +3,13 @@
 **Source:** https://tylerburleigh.com/blog/2026/02/22
 **Category:** Agentic Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** staged work with written artifacts and a review step at every stage, including a human PR review. This is closer to HumanLayer's revised 2026 position ("read the code") than original RPI was (https://www.humanlayer.com/blog/humanlayer-resources, https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Outdated — "1M context variants … roughly 5x the standard 200k window … use strategically":** on current models 1M is the default window in Claude Code with no `[1m]` suffix; only Opus 4.6 and Sonnet 4.6 still need the variant (https://code.claude.com/docs/en/model-config).
+> - **Needs a caveat — "fully autonomous with automated verification":** HumanLayer's 2026 experience is that test-gated autonomy still erodes maintainability (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md); Anthropic's long-running harness keeps a separate evaluator agent for the same reason (https://www.anthropic.com/engineering/harness-design-long-running-apps).
+> - **Still reasonable — fresh context per phase:** no longer forced by window size (https://code.claude.com/docs/en/model-config), but context rot is still documented (https://platform.claude.com/docs/en/build-with-claude/context-windows). The source URL is still live.
+
 ## Summary
 
 Tyler Burleigh's agentic engineering workflow separates AI coding work into distinct stages—research, planning, implementation, and review—with explicit review cycles and fresh context windows between each phase. The approach builds written artifacts (`RESEARCH.md`, `PLAN.md`, `PLAN-CHECKLIST.md`) as shared sources of truth, and scales up to multi-agent architectures where different models handle different roles. The core insight is that the bottleneck in AI-assisted development is not code generation but ensuring the model understands what to build before it starts.

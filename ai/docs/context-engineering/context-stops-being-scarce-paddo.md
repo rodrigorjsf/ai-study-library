@@ -3,6 +3,14 @@
 **Source:** https://paddo.dev/blog/million-token-context/
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Thesis confirmed and extended:** 1M tokens is now the default on every current Claude model — Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 — with no beta header (https://platform.claude.com/docs/en/about-claude/models/overview, https://platform.claude.com/docs/en/build-with-claude/context-windows).
+> - **Dated — prices and "flat everywhere":** the quoted $5/$25 and $3/$15 are still the Opus 4.6 and Sonnet 4.6 rates, but those are legacy models; the current Opus 5.5 is $4/$20 and Sonnet 5.5 $2/$10 per MTok. Flat pricing has one exception: Haiku 5.5 charges 5x on any request whose prompt exceeds 100K tokens (https://platform.claude.com/docs/en/about-claude/pricing).
+> - **Outdated — Claude Code compaction math (83.5% trigger, ~33K buffer, ~802K usable):** current docs say models with a native 1M window compact "at about 967K tokens by default" (https://code.claude.com/docs/en/model-config).
+> - **Still holds — "1M is a safety net, not a target":** Anthropic's docs keep the context-rot warning (https://platform.claude.com/docs/en/build-with-claude/context-windows), and HumanLayer reported weaker instruction-following on the 1M Opus 4.6 even at small fill levels (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Could not verify:** MRCR v2 scores for the 5.5 generation, the current GPT/Gemini long-context pricing in the comparison table, and the "15% fewer compaction events" attribution. The source URL is still live.
+
 ## Summary
 
 Paddo.dev's analysis of Anthropic making 1M context windows generally available for Claude Opus 4.6 and Sonnet 4.6 at flat pricing. The article argues the real impact isn't expanded capability but the removal of the premium pricing tax on long context — which fundamentally changes workflows by delaying the lossy compaction events that degrade agentic coding sessions. Includes competitive landscape, benchmark data, and practical workflow implications.

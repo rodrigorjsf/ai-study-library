@@ -1,5 +1,12 @@
 # Long Context Research — Paper Collection
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still accurate as a description of the two papers.** Both were run on 2023-era models (GPT-3.5, Claude, Llama-2, MPT, as listed below); the follow-up used 8K–16K windows.
+> - **Could not verify** a replication of either result on 2026 frontier models; do not present the U-curve magnitudes as current.
+> - **Refinement to add to theme 2:** the U-shape is strongest when input fills up to ~50% of the window and turns into a recency-only bias near the limit (https://arxiv.org/abs/2508.07479).
+> - **Missing follow-up for theme 5:** Chroma's "Context Rot" (July 2025, 18 models) is the more recent, broader evidence that performance falls with input length (https://www.trychroma.com/research/context-rot); Anthropic's docs carry the same warning for today's 1M-token models (https://platform.claude.com/docs/en/build-with-claude/context-windows, https://platform.claude.com/docs/en/about-claude/models/overview).
+
 This directory contains research papers and academic articles on **Long Context handling in Language Models**, focusing on how LLMs process and utilize information across extended input sequences.
 
 ## Papers in This Collection

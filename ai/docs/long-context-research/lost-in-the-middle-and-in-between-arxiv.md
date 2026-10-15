@@ -10,6 +10,13 @@
 **Code:** https://github.com/Spongeorge/long-context-multihop
 **Category:** Long Context Research — Follow-up to "Lost in the Middle"
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds as a historical result:** tested on GPT-3.5-Turbo (16K), MPT-7b-8k and Llama-2-7b-longlora-8k. The arXiv record is still live.
+> - **Could not verify on 2026 models:** I found no replication of the "in-between" distance effect on current frontier models with 1M-token windows.
+> - **Related later evidence:** positional effects change with relative window fill (https://arxiv.org/abs/2508.07479), and long-input degradation is steeper when the question and evidence are semantically distant (https://www.trychroma.com/research/context-rot) — consistent with, but not a test of, this paper's multi-hop claim.
+> - **Practical reading in Oct 2026:** keeping interdependent evidence close together is still cheap and harmless; the specific mitigations tested (BART summarisation, KG triples) target 8K–16K windows and are not how current agents manage context (sub-agents, compaction, https://platform.claude.com/docs/en/build-with-claude/context-windows).
+
 ## Abstract / Summary
 
 Previous work finds that recent long-context language models fail to make equal use of information in the middle of their inputs, preferring pieces of information located at the tail ends which creates an undue bias in situations where we would like models to be equally capable of using different parts of the input. Thus far, the problem has mainly only been considered in settings with single pieces of critical information, leading the authors to question what happens when multiple necessary pieces of information are spread out over the inputs. This paper demonstrates the effects of the "lost in the middle" problem in the multi-hop question answering (MHQA) setting — in which multiple reasoning "hops" over disconnected documents are required — and shows that performance degrades not only with respect to the distance of information from the edges of the context, but also between pieces of information. The authors experiment with means of alleviating the problem by reducing superfluous document contents through knowledge graph triple extraction and summarization, and prompting models to reason more thoroughly using chain-of-thought prompting.

@@ -1,5 +1,13 @@
 # Harness Engineering: Building the Operating System for Autonomous Agents
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Provenance:** original source URL not recorded in this file; could not verify where it was published. The check below covers the prose sections; the long code listings (a LangChain `deepagents` + Qwen3-32B demo) were not re-run.
+> - **Still holds:** the definition (the harness is the engineered system around the model) and the pillars — durable instruction files, state on a filesystem, sub-agent isolation, verification gates, human-in-the-loop interrupts. Anthropic's Managed Agents design formalises the same split into session log, harness and sandbox (https://www.anthropic.com/engineering/managed-agents).
+> - **Needs a caveat — fixed agent rosters and periodic context resets:** Anthropic reports that "harnesses encode assumptions that go stale as models improve"; context resets added for Sonnet 4.5 became "dead weight" on Opus 4.5 (https://www.anthropic.com/engineering/managed-agents), and sprint decomposition was removed with Opus 4.6 while the planner and evaluator stayed (https://www.anthropic.com/engineering/harness-design-long-running-apps). Re-test each pillar per model rather than adopting all seven.
+> - **Outdated sizing:** the demo's "80k tokens per claim" budget and "smart zone" framing assume small windows; current Claude models default to 1M (https://platform.claude.com/docs/en/about-claude/models/overview), though context rot is still documented (https://platform.claude.com/docs/en/build-with-claude/context-windows).
+> - **Later counterpoint:** HumanLayer's mid-2026 essay is subtitled "harness engineering is not enough" — passing tests does not reward maintainability, so humans still need to read code (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+
 ```mermaid
 graph TD
     %% Context Window Saturation Chart Representation

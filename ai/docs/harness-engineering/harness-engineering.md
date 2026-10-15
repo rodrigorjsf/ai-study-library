@@ -1,5 +1,14 @@
 # Harness Engineering: The Definitive Framework for Autonomous Coding Agents
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Provenance:** original source URL not recorded in this file; could not verify where it was published or whether it changed.
+> - **Still holds:** sub-agents as a context firewall (https://code.claude.com/docs/en/sub-agents), skills as progressive disclosure (https://code.claude.com/docs/en/skills), and deterministic back-pressure through hooks and tests.
+> - **Outdated numbers:** "200K tokens" as the example capacity and the 40% / 60% zones. Current Claude models have 1M windows (https://platform.claude.com/docs/en/about-claude/models/overview), and HumanLayer replaced the percentage rule with a fixed ~100K-token threshold (https://www.hlyr.dev/blog/long-context-isnt-the-answer).
+> - **Overstated — "MUST be human-crafted … degrading task resolution":** ETH Zurich v3 (Sep 2026) confirms the ~20% cost increase for LLM-generated files, but the success-rate drop (0.5–2%) is not statistically significant, and developer-written files gain only ~2.4% (also not significant) (https://arxiv.org/abs/2602.11988).
+> - **Errors and unverified items:** "Claude 3.5 Opus" does not appear in Anthropic's model lineup (https://platform.claude.com/docs/en/about-claude/models/overview); the cross-model-review idea stands, the example names do not. The MCP "June 2026 roadmap" SEP numbers could not be verified here.
+> - **Superseded — RPI as the fixed workflow:** HumanLayer revised it in 2026 (smaller workflows, "read the code") (https://www.humanlayer.com/blog/humanlayer-resources); Anthropic's planner / generator / evaluator harness and its "every component encodes an assumption about what the model can't do" rule are the newer reference (https://www.anthropic.com/engineering/harness-design-long-running-apps).
+
 ## 1. The Shift from "Vibe Coding" to Systematic Engineering
 
 The era of "vibe coding"—the unstructured process of shouting prompts at a Large Language Model (LLM) in hopes of usable code—has reached its functional limit. While effective for isolated prototypes, this stochastic approach collapses in "brownfield" environments characterized by complex technical debt and deep dependencies. High-performance agentic development requires a strategic pivot toward Harness Engineering.

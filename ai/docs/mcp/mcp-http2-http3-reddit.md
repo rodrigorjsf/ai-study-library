@@ -1,5 +1,14 @@
 # HTTP/2 and HTTP/3 Support in the Future - MCP Transport Evolution
 
+> **Currency check (2026-10-11):** Superseded
+>
+> - Could not verify the Reddit thread: on 2026-10-11 the URL returned only Reddit's anti-bot challenge page, so nothing attributed to "community feedback" below was re-checked. The December 2025 MCP blog post was opened and is still online: https://blog.modelcontextprotocol.io/posts/2025-12-19-mcp-transport-future/
+> - The roadmap described below as planned has shipped — in revision **2026-07-28**, not "June 2026". The `initialize`/`notifications/initialized` handshake is removed; each request carries protocol version and client capabilities in `_meta`; `server/discover` is the discovery RPC: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Sessions were not "elevated to the data model layer" — protocol-level sessions and the `Mcp-Session-Id` header were removed outright; servers that need cross-call state mint explicit handles passed as tool arguments (SEP-2567). SSE resumability (`Last-Event-ID`) was removed too: https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - Elicitation/sampling/roots server-initiated requests were replaced by Multi Round-Trip Requests (`resultType: "input_required"`, SEP-2322). The HTTP GET stream and `resources/subscribe` were replaced by `subscriptions/listen`. `ttlMs` + `cacheScope` shipped on list/read results; ETags are still roadmap work: https://modelcontextprotocol.io/specification/2026-07-28/changelog and https://modelcontextprotocol.io/development/roadmap
+> - Routing info is now in headers: `Mcp-Method` and `Mcp-Name` are required on Streamable HTTP POSTs (SEP-2243): https://blog.modelcontextprotocol.io/posts/2026-07-28/
+> - Still true: the only standard transports are stdio and Streamable HTTP, custom transports are allowed, and no HTTP/3 binding exists. The old HTTP+SSE transport is formally Deprecated. The current roadmap proposes "HTTP over stdio" (HTTP/2 over stdin/stdout); Server Cards are still in a Working Group: https://modelcontextprotocol.io/specification/2026-07-28/basic/transports and https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
+
 **Source:** https://www.reddit.com/r/mcp/comments/1jqbkhd/http2http3_support_in_the_future/ (Reddit - requires verification)
 **Additional Source:** https://blog.modelcontextprotocol.io/posts/2025-12-19-mcp-transport-future/ (Official MCP Blog)
 **Category:** Model Context Protocol (MCP)

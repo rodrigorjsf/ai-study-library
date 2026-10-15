@@ -1,5 +1,12 @@
 # Agent Best Practices
 
+> **Currency check (2026-10-11):** Current (as a summary of the source post; the post itself lags the product docs on worktrees)
+>
+> - The source post is still live and unchanged in substance (dated Jan 9, 2026; fetched as HTML — no raw-markdown endpoint for `/blog/*`). The points below (harness = instructions + tools + model, Plan Mode via `Shift+Tab`, rules in `.cursor/rules/`, skills in `SKILL.md`) still match it. Source: <https://cursor.com/blog/agent-best-practices>
+> - The post itself has fallen behind the product docs on parallel agents: it says to "select the worktree option from the agent dropdown", but the docs now state the UI-native worktrees feature is only available in the Agents Window, and the IDE uses the `/worktree` and `/best-of-n` skills. Source: <https://cursor.com/docs/configuration/worktrees>
+> - The `.cursor/rules/*.mdc` wording below remains correct: the docs now require the `.mdc` extension and ignore a plain `.md` file in `.cursor/rules`. Source: <https://cursor.com/docs/rules>
+> - The post also covers topics this summary omits (images, TDD and git workflows, Agent Review, Bugbot, cloud agents, Debug Mode). The "treat generated code like a PR from a junior developer" wording below is this project's paraphrase, not a phrase from the post.
+
 **Source:** [cursor.com/blog/agent-best-practices](https://cursor.com/blog/agent-best-practices)
 
 Summary of Cursor's guidance for working effectively with its agent. For full details and UI walkthroughs, read the source at the link above.

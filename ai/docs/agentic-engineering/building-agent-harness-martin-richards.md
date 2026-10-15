@@ -3,6 +3,14 @@
 **Source:** https://www.martinrichards.me/post/building_your_own_agent_harness/
 **Category:** Agentic Engineering
 
+> **Currency check (2026-10-11):** Current
+>
+> - **Still holds:** building your own harness out of skills. Skills are now the standard packaging (Agent Skills open standard, https://code.claude.com/docs/en/skills), and HumanLayer ships its own workflow the same way (https://github.com/humanlayer/skills).
+> - **Still holds, and now the mainstream position — explicit human review before code:** HumanLayer's 2026 revisions add more human ownership, not less (https://www.humanlayer.com/blog/humanlayer-resources).
+> - **Add a caveat to "harness > model":** Anthropic's harness posts argue harness pieces must be removed as models improve ("every component encodes an assumption about what the model can't do", https://www.anthropic.com/engineering/harness-design-long-running-apps); HumanLayer argues "harness engineering is not enough" for maintainability (https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Dated detail:** Superpowers is cited at "40k+ stars"; the repo (https://github.com/obra/superpowers) shows about 297k on 2026-10-11.
+> - **Could not verify:** the LangChain Terminal Bench 2.0 figures (52.8% → 66.5%) and the attribution of the term to Mitchell Hashimoto; OpenAI's harness-engineering post returned HTTP 403 to automated fetch. The source URL of this article is still live.
+
 ## Summary
 
 Martin C. Richards argues that agent productivity depends less on which AI model you use and more on how you "harness" it — the set of skills, workflows, and methodology that teaches your agent how you think and how you build. His open-source project Atelier implements a research → plan → implement loop through structured skills, with explicit human annotation cycles before code is written. The harness concept, independently discovered by multiple practitioners, encodes discipline so you don't have to remember it each time.

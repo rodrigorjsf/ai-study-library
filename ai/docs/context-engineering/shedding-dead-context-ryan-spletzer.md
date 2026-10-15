@@ -3,6 +3,14 @@
 **Source:** https://www.spletzer.com/2026/03/shedding-dead-context/
 **Category:** Context Engineering
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** audit instruction files and move procedures into skills. Claude Code docs now say "target under 200 lines per CLAUDE.md file" and ship an audit command (`/doctor prompt-audit`) (https://code.claude.com/docs/en/memory).
+> - **Outdated — "a 200K context window is a budget":** Sonnet 5 and later, Haiku 5.5, Opus 4.7 and later and the Fable models run with the 1M window by default in Claude Code (https://code.claude.com/docs/en/model-config). The same 80K tokens of startup overhead (40% of 200K) is 8% of a 1M window.
+> - **Largely fixed by the harness — MCP manifests eating the window:** tool schemas are deferred by default and loaded through tool search (https://code.claude.com/docs/en/context-window).
+> - **Still a real cost:** every skill description is in context on every turn (capped at 1,536 characters each), so unused skills remain dead context (https://code.claude.com/docs/en/skills).
+> - **"Bigger-window trap" still holds:** context rot is acknowledged in Anthropic's docs (https://platform.claude.com/docs/en/build-with-claude/context-windows). The gloss of the "dumb zone" as the *middle 40–60% of the window* was never the original claim (it was about total fill) and should not be reused. The source URL is still live.
+
 ## Summary
 
 Ryan Spletzer's personal account of discovering that 40% of his 200K Claude Code context window was consumed before any real work began — consumed by plugins, skills, and CLAUDE.md instructions he'd accumulated over time. The article introduces the concept of "dead context," uses the RAM analogy to explain context window mechanics, and provides practical memory management strategies for AI coding tools.

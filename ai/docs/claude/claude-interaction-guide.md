@@ -1,5 +1,12 @@
 # Be clear, direct, and detailed
 
+> **Currency check (2026-10-11):** Superseded
+>
+> - This file mirrors the standalone "Be clear, direct, and detailed" page. That page no longer exists upstream: the old slug `be-clear-and-direct` redirects to the `#be-clear-and-direct` section of the consolidated "Prompting best practices" page (redirect observed 2026-10-11). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - The surviving, current mirror of the consolidated page is [`../claude-code/claude-prompting-best-practices.md`](../claude-code/claude-prompting-best-practices.md). Read that file instead; this one is kept only for history. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - The body here predates the current model lineup. Upstream now covers Claude Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, Sonnet 4.6, Haiku 5.5, and Haiku 4.5, and adds a "Model-specific guidance" section that links one dedicated prompting page per model. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+> - Any advice in this body that relies on prefilling the last assistant turn no longer holds: prefilled responses are unsupported starting with Claude 4.6 models. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices.md
+
 ---
 
 <Note>

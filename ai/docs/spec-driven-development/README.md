@@ -1,5 +1,13 @@
 # Spec-Driven Development — Research Overview
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** the three rigor levels and the critique themes (review overhead, spec rot, false confidence).
+> - **Tool landscape changed:** Tessl now presents itself as an "agent enablement platform" built on a skills registry, not as an SDD framework (https://www.tessl.io/); Kiro is a Code OSS-based IDE plus CLI and web app, not a VS Code extension (https://kiro.dev/); Spec Kit (about 141k stars) now describes itself as a toolkit for "SDD or any other process" (https://github.com/github/spec-kit).
+> - **Missing tools:** BMAD-METHOD (about 54k stars, active, https://github.com/bmad-code-org/BMAD-METHOD) and GSD (about 64k stars; archived 26 Jun 2026 and continued as GSD Core at https://github.com/open-gsd/gsd-core, https://github.com/gsd-build/get-shit-done).
+> - **Later critique to read alongside:** HumanLayer's "Why 'spec is the new code' is not enough" and "Why Software Factories Fail" (https://www.humanlayer.com/blog/humanlayer-resources, https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md).
+> - **Could not verify:** the "up to 50% error reduction" figure repeated below; it comes from the arXiv paper's own citation and was not independently checked.
+
 This directory contains research on **Spec-Driven Development (SDD)** — the practice of treating specifications, not code, as the primary artifact of software development, particularly in the context of AI coding assistants.
 
 ## What is Spec-Driven Development?
@@ -41,7 +49,7 @@ SDD inverts the traditional workflow: instead of writing code and documenting la
 
 - **AI catalyst**: Specs act as "super-prompts" giving AI agents unambiguous, executable contracts — empirical studies show up to 50% error reduction with human-refined specs
 - **Not new**: SDD builds on decades of TDD and BDD wisdom; what's new is tooling, CI/CD maturity, and AI as a spec consumer
-- **Tool landscape (2025-2026)**: GitHub Spec Kit (CLI, most customizable), AWS Kiro (VS Code, simplest), Tessl (most ambitious, spec-as-source)
+- **Tool landscape as captured (late 2025 – early 2026)**: GitHub Spec Kit (CLI, most customizable), AWS Kiro (simplest; a Code OSS-based IDE, described in the saved articles as a VS Code extension), Tessl (most ambitious, spec-as-source). See the currency check at the top for what changed by October 2026 (Tessl repositioned, BMAD-METHOD and GSD not covered).
 - **Sweet spot**: Greenfield features with well-understood requirements; less useful for exploratory/prototype work
 - **Common pitfalls**: Over-specification, spec rot, spec-as-bureaucracy, tooling complexity, false confidence from passing tests
 
@@ -49,6 +57,8 @@ SDD inverts the traditional workflow: instead of writing code and documenting la
 
 - GitHub Spec Kit: https://github.com/github/spec-kit
 - AWS Kiro: https://kiro.dev/
-- Tessl Framework: https://tessl.io/
+- Tessl (now an "agent enablement platform"; Framework status could not be verified on 2026-10-11): https://tessl.io/
+- BMAD-METHOD: https://github.com/bmad-code-org/BMAD-METHOD
+- GSD (archived 2026-06-26; continued as GSD Core): https://github.com/open-gsd/gsd-core
 - Thoughtworks Technology Radar (SDD entry): https://www.thoughtworks.com/radar/techniques/spec-driven-development
 - Specmatic (contract testing): https://specmatic.io/

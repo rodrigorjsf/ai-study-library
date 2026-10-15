@@ -1,5 +1,14 @@
 # Anthropic Engineer Forecasts 2026 as AI Agent 'Full Connectivity' Year, Driven by MCP
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The article is still online (opened 2026-10-11): https://finance.biggo.com/news/aee6b781d1226400 — it is a secondary write-up of a podcast; the quotes were not checked against the recording.
+> - "Skills over MCP" is no longer a forecast: SEP-2640 is Final (merged 2026-09-13) and the `io.modelcontextprotocol/skills` extension is published. But the metrics line "Registry-free skills & server discovery now standard features" overstates it — the extension overview says SDK and host support "is still being implemented": https://modelcontextprotocol.io/extensions/skills/overview
+> - "Server Discovery" (automatic detection via well-known metadata) has not shipped: the August 2026 roadmap post says the Server Card Working Group "continues to work through" the `.well-known` conventions: https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
+> - "A stateless transport protocol proposed by Google would ease MCP deployment" — statelessness is now in the core spec itself (revision 2026-07-28, SEP-2575/SEP-2567): https://modelcontextprotocol.io/specification/2026-07-28/changelog
+> - "97 million monthly SDK downloads" and "SDKs available in Python, TypeScript, C#, and Java" are stale: the release post reports close to half a billion downloads a month, and the official SDK list has ten languages (C#, Go, Java, Kotlin, PHP, Python, Ruby, Rust, Swift, TypeScript): https://blog.modelcontextprotocol.io/posts/2026-07-28/ and https://github.com/modelcontextprotocol/servers
+> - Programmatic tool composition, which the talk argues for, is generally available in the Claude API as programmatic tool calling: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
+
 **Source:** https://finance.biggo.com/news/aee6b781d1226400
 **Category:** Agent Protocols & Communication
 

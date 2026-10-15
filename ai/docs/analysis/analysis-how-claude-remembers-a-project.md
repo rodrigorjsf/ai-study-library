@@ -1,5 +1,14 @@
 # Analysis: How Claude Remembers a Project
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - "First 200 lines of MEMORY.md" is incomplete: the load limit is now the first 200 lines or the first 25KB, whichever comes first. Source: https://code.claude.com/docs/en/memory.md
+> - "Recursive imports (max 5 hops)" no longer holds: the maximum depth is four hops. Source: https://code.claude.com/docs/en/memory.md#import-additional-files
+> - "CLAUDE.md is loaded in full regardless of size" needs a limit: a CLAUDE.md of up to 4 MiB loads in full and a larger file is skipped. Source: https://code.claude.com/docs/en/memory.md
+> - `CLAUDE_CODE_NEW_INIT=true` is now documented as `CLAUDE_CODE_NEW_INIT=1`. Source: https://code.claude.com/docs/en/memory.md
+> - Not covered: native `AGENTS.md` support (v2.1.277+). Claude reads `AGENTS.md` when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the working directory or above it; the **Project instructions** setting changes that. `InstructionsLoaded` hooks do not fire for an `AGENTS.md` read through the setting. Source: https://code.claude.com/docs/en/memory.md#agents-md
+> - Load-order detail not covered: files are concatenated from the filesystem root down to the working directory, and within each directory `CLAUDE.local.md` is appended after `CLAUDE.md`. Subagents can now skip CLAUDE.md with `omitClaudeMd: true`, which qualifies section 5.3. Sources: https://code.claude.com/docs/en/memory.md#how-claude-md-files-load, https://code.claude.com/docs/en/sub-agents.md#supported-frontmatter-fields
+
 > **Status**: Current
 > **Source document**: [Anthropic — How Claude Code Remembers Your Project](https://docs.anthropic.com/en/docs/claude-code/memory)
 > **Analysis date**: 2026-03-27

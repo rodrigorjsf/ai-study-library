@@ -1,5 +1,13 @@
 # Tool Search: Redefining Agent Tool Calling (Epsilla Insights)
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - The article is still online (opened 2026-10-11; client-rendered page, title text present in the HTML): https://www.epsilla.com/blogs/2026-04-19-tool-search-redefining-agent-tool-calling-epsilla-
+> - The Anthropic request shown below (`"type": "tool_search"`, model `claude-sonnet-4`) is not the documented API. The tool types are `tool_search_tool_regex_20251119` and `tool_search_tool_bm25_20251119`, and tools are deferred with `defer_loading`: https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+> - "Claude Sonnet 4+" is wrong on the low end: the docs say Claude Opus 4.1 and earlier models don't support tool search; the supported list starts at Sonnet 4.5 / Opus 4.5 / Haiku 4.5 and now runs through Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1 and Mythos 5.1. `claude-3-sonnet-20240229` in the "traditional" example is a long-retired model: https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+> - Still consistent with the docs: ~55k tokens of definitions for a five-server setup, "over 85 percent" reduction, and selection accuracy degrading past 30–50 tools. The page carries no beta header requirement: https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+> - Could not verify the OpenAI (`tool_search`, GPT-5.4) and Spring AI (`ToolSearchToolCallAdvisor`) claims; no OpenAI or Spring source was opened.
+
 **Source:** https://www.epsilla.com/blogs/2026-04-19-tool-search-redefining-agent-tool-calling-epsilla-
 **Category:** Programmatic Tool Calling
 

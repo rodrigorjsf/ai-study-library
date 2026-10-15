@@ -4,6 +4,14 @@
 **Category:** Spec-Driven Development
 **Platform:** DEV Community (dev.to)
 
+> **Currency check (2026-10-11):** Partially outdated
+>
+> - **Still holds:** the one-page-spec takeaway and the "where SDD breaks down" section (review overhead, poor fit for exploratory work); these match the Thoughtworks critique (https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) and HumanLayer's later "spec is the new code is not enough" position (https://www.humanlayer.com/blog/humanlayer-resources).
+> - **Wrong date framing:** the three tools did not ship "in early 2026" — Böckeler's hands-on review of all three is dated 15 Oct 2025 from use in September 2025 (https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html).
+> - **Inaccurate — Kiro "built as a VS Code extension":** it was a VS Code-based distribution even in 2025 (see the Böckeler article in this folder); today it is a Code OSS-based IDE with CLI, web and mobile clients, and spec mode is one of three modes (https://kiro.dev/).
+> - **Outdated — Tessl "closed beta … spec-as-source":** Tessl's site now sells an "agent enablement platform" and registry (https://www.tessl.io/); could not verify the Framework's status.
+> - **Spec Kit:** still active, about 141k stars, now framed as "SDD or any other process" (https://github.com/github/spec-kit). The walkthrough commands were not re-run. The source URL is still live.
+
 ## Summary
 
 A practical practitioner's guide to Spec-Driven Development focused on the three major tools that shipped in early 2026: GitHub Spec Kit, AWS Kiro, and Tessl Framework. The article contrasts "vibe coding" (loose AI prompts) with SDD's structured approach, walks through getting started with Spec Kit step-by-step, and honestly assesses where SDD breaks down (review overhead, exploratory work, AI non-determinism).
