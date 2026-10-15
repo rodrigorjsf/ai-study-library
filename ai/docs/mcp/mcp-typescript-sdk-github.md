@@ -1,284 +1,181 @@
-# MCP TypeScript SDK - Official GitHub Repository
+# MCP TypeScript SDK
 
-**Source:** https://github.com/modelcontextprotocol/typescript-sdk
+> Source: https://github.com/modelcontextprotocol/typescript-sdk (README fetched from https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md) — mirrored 2026-10-11 (previous capture ~2026-05-01). The previous capture was a condensed summary; this is the full README of the `main` branch. Relative links resolve against the repository.
+
 **Category:** Model Context Protocol (MCP)
 
-## Summary
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> **This is the `main` branch: v2 of the SDK** (`@modelcontextprotocol/server`, `@modelcontextprotocol/client`), the stable release line, implementing the [2026-07-28 MCP spec](https://modelcontextprotocol.io/specification/2026-07-28). Start with the [v2 documentation](https://ts.sdk.modelcontextprotocol.io/v2/); coming from v1, see the [migration guide](https://ts.sdk.modelcontextprotocol.io/v2/migration/upgrade-to-v2).
+>
+> **v1.x** (`@modelcontextprotocol/sdk`) lives on the [`v1.x` branch](https://github.com/modelcontextprotocol/typescript-sdk/tree/v1.x) and continues to receive bug fixes and security updates for at least six months after the v2 release (2026-07-27). Its documentation is at [ts.sdk.modelcontextprotocol.io](https://ts.sdk.modelcontextprotocol.io/).
+>
+> Found a problem in v2? [Open an issue](https://github.com/modelcontextprotocol/typescript-sdk/issues/new?template=v2-feedback.yml).
 
-The official TypeScript SDK for Model Context Protocol (MCP), maintained by Anthropic. The main branch now tracks a V2 pre-alpha with breaking changes; v1.x is still recommended for production use. The SDK provides `@modelcontextprotocol/sdk` package with built-in support for server and client implementations, multiple transports (STDIO, HTTP), and middleware for Node.js, Express, and Hono.
+<!-- prettier-ignore -->
+> [!NOTE]
+> **Contributors without write access can have one open pull request at a time.** Draft pull requests don't count toward the limit. For a feature or a larger change, please [open an issue](https://github.com/modelcontextprotocol/typescript-sdk/issues/new/choose) first; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Content
+[![NPM Version - Server](https://img.shields.io/npm/v/%40modelcontextprotocol%2Fserver?label=%40modelcontextprotocol%2Fserver)](https://www.npmjs.com/package/@modelcontextprotocol/server)
+[![NPM Version - Client](https://img.shields.io/npm/v/%40modelcontextprotocol%2Fclient?label=%40modelcontextprotocol%2Fclient)](https://www.npmjs.com/package/@modelcontextprotocol/client) ![Apache-2.0 licensed](https://img.shields.io/npm/l/%40modelcontextprotocol%2Fserver)
 
-### Overview
+<details>
+<summary>Table of Contents</summary>
 
-The TypeScript SDK implements the full [Model Context Protocol specification](https://spec.modelcontextprotocol.io), providing:
+- [Overview](#overview)
+- [Packages](#packages)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
-- Client and server implementations
-- Protocol types and validation (with Zod)
-- Transport implementations: STDIO and Streamable HTTP
-- Middleware integrations for popular Node.js frameworks
-- Full TypeScript type safety
+</details>
 
----
+## Overview
 
-### Version Status
+The Model Context Protocol (MCP) allows applications to provide context for LLMs in a standardized way, separating the concerns of providing context from the actual LLM interaction.
 
-> ⚠️ **The `main` branch of this repository now tracks the pre-alpha V2 SDK which has breaking changes from V1.** For the stable V1 SDK, see the [`v1` branch](https://github.com/modelcontextprotocol/typescript-sdk/tree/v1). The npm package currently still ships v1. V2 pre-alpha is available as `@modelcontextprotocol/sdk@next`.
+This repository contains the TypeScript SDK implementation of the MCP specification. It runs on **Node.js**, **Bun**, and **Deno**, and ships:
 
----
+- MCP **server** libraries (tools/resources/prompts, Streamable HTTP, stdio, auth helpers)
+- MCP **client** libraries (transports, high-level helpers, OAuth helpers)
+- Optional **middleware packages** for specific runtimes/frameworks (Express, Fastify, Hono, Node.js HTTP)
+- Runnable **examples** (under [`examples/`](https://github.com/modelcontextprotocol/typescript-sdk/tree/main/examples))
 
-### Packages
+## Packages
 
-| Package | Description | npm |
-|---------|-------------|-----|
-| `@modelcontextprotocol/sdk` | Core MCP SDK (client + server) | `npm install @modelcontextprotocol/sdk` |
+This monorepo publishes split packages:
 
----
+- **`@modelcontextprotocol/server`**: build MCP servers
+- **`@modelcontextprotocol/client`**: build MCP clients
 
-### Installation
+Tool and prompt schemas use [Standard Schema](https://standardschema.dev/) — bring Zod v4, Valibot, ArkType, or any compatible library.
+
+### Middleware packages (optional)
+
+The SDK also publishes small "middleware" packages under [`packages/middleware/`](https://github.com/modelcontextprotocol/typescript-sdk/tree/main/packages/middleware) that help you **wire MCP into a specific runtime or web framework**.
+
+They are intentionally thin adapters: they should not introduce new MCP functionality or business logic. See [`packages/middleware/README.md`](packages/middleware/README.md) for details.
+
+- **`@modelcontextprotocol/node`**: Node.js Streamable HTTP transport wrapper for `IncomingMessage` / `ServerResponse`
+- **`@modelcontextprotocol/express`**: Express helpers (app defaults + Host header validation)
+- **`@modelcontextprotocol/fastify`**: Fastify helpers (app defaults + Host header validation)
+- **`@modelcontextprotocol/hono`**: Hono helpers (app defaults + JSON body parsing hook + Host header validation)
+
+## Installation
+
+### Server
 
 ```bash
-npm install @modelcontextprotocol/sdk
+npm install @modelcontextprotocol/server
+# or
+bun add @modelcontextprotocol/server
+# or
+deno add npm:@modelcontextprotocol/server
 ```
 
----
+### Client
 
-### Quick Start: Server
-
-```typescript
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-
-const server = new McpServer({
-  name: "Demo",
-  version: "1.0.0",
-});
-
-// Add a tool
-server.tool("add", { a: z.number(), b: z.number() }, async ({ a, b }) => ({
-  content: [{ type: "text", text: String(a + b) }],
-}));
-
-// Start with stdio transport
-const transport = new StdioServerTransport();
-await server.connect(transport);
+```bash
+npm install @modelcontextprotocol/client
+# or
+bun add @modelcontextprotocol/client
+# or
+deno add npm:@modelcontextprotocol/client
 ```
 
----
+### Optional middleware packages
 
-### Quick Start: Client
+The SDK also publishes optional “middleware” packages that help you **wire MCP into a specific runtime or web framework** (for example Express, Fastify, Hono, or Node.js `http`).
 
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+These packages are intentionally thin adapters and should not introduce additional MCP features or business logic. See [`packages/middleware/README.md`](packages/middleware/README.md) for details.
 
-const client = new Client({ name: "example-client", version: "1.0.0" });
+```bash
+# Node.js HTTP (IncomingMessage/ServerResponse) Streamable HTTP transport:
+npm install @modelcontextprotocol/node
 
-const transport = new StdioClientTransport({
-  command: "node",
-  args: ["server.js"],
-});
+# Express integration:
+npm install @modelcontextprotocol/express express
 
-await client.connect(transport);
+# Fastify integration:
+npm install @modelcontextprotocol/fastify fastify
 
-// List available tools
-const tools = await client.listTools();
-console.log(tools);
-
-// Call a tool
-const result = await client.callTool({ name: "add", arguments: { a: 1, b: 2 } });
-console.log(result);
-
-await client.close();
+# Hono integration:
+npm install @modelcontextprotocol/hono hono
 ```
 
----
+## Getting Started
 
-### Server Features
-
-#### Tools
+Here is what an MCP server looks like. This minimal example exposes a single `greet` tool over stdio:
 
 ```typescript
-// Simple tool
-server.tool("get-weather", { city: z.string() }, async ({ city }) => {
-  const weather = await fetchWeather(city);
-  return { content: [{ type: "text", text: `Weather in ${city}: ${weather}` }] };
-});
-```
+import { McpServer } from '@modelcontextprotocol/server';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import * as z from 'zod/v4';
 
-#### Resources
+const server = new McpServer({ name: 'greeting-server', version: '1.0.0' });
 
-```typescript
-// Static resource
-server.resource("config", "config://app", async (uri) => ({
-  contents: [{ uri: uri.href, text: "App configuration here" }],
-}));
-
-// Dynamic resource with template
-server.resource(
-  "user-profile",
-  new ResourceTemplate("users://{userId}/profile", { list: undefined }),
-  async (uri, { userId }) => ({
-    contents: [{ uri: uri.href, text: `Profile for user ${userId}` }],
-  })
-);
-```
-
-#### Prompts (Skills)
-
-```typescript
-server.prompt("review-code", { code: z.string() }, ({ code }) => ({
-  messages: [
+server.registerTool(
+    'greet',
     {
-      role: "user",
-      content: { type: "text", text: `Please review this code:\n\n${code}` },
+        description: 'Greet someone by name',
+        inputSchema: z.object({ name: z.string() })
     },
-  ],
-}));
-```
+    async ({ name }) => ({
+        content: [{ type: 'text', text: `Hello, ${name}!` }]
+    })
+);
 
----
-
-### Transport Options
-
-#### STDIO Transport (local)
-
-```typescript
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-#### Streamable HTTP Transport (remote)
-
-```typescript
-import express from "express";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-
-const app = express();
-app.use(express.json());
-
-app.post("/mcp", async (req, res) => {
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  await server.connect(transport);
-  await transport.handleRequest(req, res, req.body);
-  res.on("finish", () => server.close());
-});
-
-app.listen(3000);
-```
-
----
-
-### Middleware Integrations
-
-The SDK provides ready-made middleware for popular frameworks:
-
-#### Express Middleware
-
-```typescript
-import { createExpressMcpMiddleware } from "@modelcontextprotocol/sdk/middleware/express.js";
-
-const app = express();
-app.use(express.json());
-app.use("/mcp", createExpressMcpMiddleware(server));
-app.listen(3000);
-```
-
-#### Hono Middleware
-
-```typescript
-import { Hono } from "hono";
-import { createHonoMcpMiddleware } from "@modelcontextprotocol/sdk/middleware/hono.js";
-
-const app = new Hono();
-app.use("/mcp/*", createHonoMcpMiddleware(server));
-export default app;
-```
-
----
-
-### Authentication Support
-
-The SDK includes OAuth 2.1-compliant authentication helpers:
-
-```typescript
-import { OAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth.js";
-
-// Implement OAuth provider for your auth system
-class MyAuthProvider implements OAuthServerProvider {
-  async authorize(req: OAuthRequest): Promise<OAuthResponse> {
-    // Your auth logic
-  }
+async function main() {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
 }
+
+main();
 ```
 
----
+Ready to build something real? Follow the step-by-step tutorials:
 
-### Error Handling
+- [Build your first server](docs/get-started/first-server.md) — a stdio weather-alert server, from `npm init` to a tool call
+- [Build your first client](docs/get-started/first-client.md) — connect to that server, list its tools, and call them
 
-```typescript
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+For runnable, end-to-end examples beyond the tutorials, see:
 
-server.tool("my-tool", { id: z.string() }, async ({ id }) => {
-  const result = await fetchById(id);
-  if (!result) {
-    throw new McpError(ErrorCode.InvalidRequest, `Item not found: ${id}`);
-  }
-  return { content: [{ type: "text", text: JSON.stringify(result) }] };
-});
-```
+- [`examples/README.md`](examples/README.md) — runnable, self-verifying client/server example pairs (one story per directory)
 
----
+## Documentation
 
-### Sampling / Elicitation
+- [Build a server](docs/get-started/first-server.md) — your first MCP server, step by step
+- [Build a client](docs/get-started/first-client.md) — your first MCP client, step by step
+- [Documentation site](https://ts.sdk.modelcontextprotocol.io/v2/) — the full guides: tools, resources, prompts, serving over HTTP and stdio, clients, OAuth, and migration
+- [Troubleshooting](docs/troubleshooting.md) — common errors and their fixes
+- [API reference](https://ts.sdk.modelcontextprotocol.io/v2/api/)
+- [MCP documentation](https://modelcontextprotocol.io/docs)
+- [MCP specification](https://modelcontextprotocol.io/specification/latest)
 
-```typescript
-// Client-side: request LLM completion from the host
-const result = await server.requestSampling({
-  messages: [{ role: "user", content: { type: "text", text: "What is 2+2?" } }],
-  maxTokens: 100,
-});
-```
+### Building docs locally
 
----
+To work on the documentation site locally:
 
-### Testing
-
-The SDK includes utilities for testing MCP servers and clients without needing actual transport:
-
-```typescript
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-
-const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-await server.connect(serverTransport);
-await client.connect(clientTransport);
-// Now test client↔server interaction in memory
-```
-
----
-
-### V2 Changes (Pre-Alpha)
-
-The V2 pre-alpha introduces:
-- Simplified API surface for the most common patterns
-- Improved TypeScript types
-- Streamlined transport registration
-- Built-in middleware for Express/Hono/Node.js (see above)
-- Breaking changes from V1 — migration guide in progress
-
-To install V2 pre-alpha:
 ```bash
-npm install @modelcontextprotocol/sdk@next
+pnpm docs:api      # Generate the API reference markdown (output: docs/api/)
+pnpm docs:dev      # Start the VitePress dev server for the V2 site
+pnpm docs:build    # Build the V2 site (output: docs/.vitepress/dist/)
+pnpm docs:multi    # Build the combined V1 + V2 site (output: tmp/docs-combined/)
 ```
 
----
+The `docs:multi` script builds the V2 site from the current checkout, checks out the `v1.x` branch via a git worktree to build the V1 site, and produces a combined site with V1 docs at the root and V2 docs under `/v2/`.
 
-### Resources
+## v1 (legacy) documentation and fixes
 
-- [MCP Specification](https://spec.modelcontextprotocol.io)
-- [MCP Documentation](https://modelcontextprotocol.io)
-- [Python SDK](https://github.com/modelcontextprotocol/python-sdk)
-- [MCP Inspector (debugging tool)](https://github.com/modelcontextprotocol/inspector)
-- [Reference Servers](https://github.com/modelcontextprotocol/servers)
+If you are using the **v1** generation of the SDK, the **v1 API documentation** is available at [`https://ts.sdk.modelcontextprotocol.io/`](https://ts.sdk.modelcontextprotocol.io/). The v1 source code and any v1-specific fixes live on the long-lived
+[`v1.x` branch](https://github.com/modelcontextprotocol/typescript-sdk/tree/v1.x). V2 API docs are at [`/v2/`](https://ts.sdk.modelcontextprotocol.io/v2/).
+
+## Contributing
+
+Issues and pull requests are welcome on GitHub at <https://github.com/modelcontextprotocol/typescript-sdk>.
+
+## License
+
+This project is licensed under the Apache License 2.0 for new contributions, with existing code under MIT. See the [LICENSE](LICENSE) file for details.

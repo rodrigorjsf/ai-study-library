@@ -4,6 +4,8 @@
 
 # Optimizing skill descriptions
 
+> Source: https://agentskills.io/skill-creation/optimizing-descriptions.md — mirrored 2026-10-11 (previous capture ~2026-05-01).
+
 > How to improve your skill's description so it triggers reliably on relevant prompts.
 
 A skill only helps if it gets activated. The `description` field in your `SKILL.md` frontmatter is the primary mechanism agents use to decide whether to load a skill for a given task. An under-specified description means the skill won't trigger when it should; an over-broad description means it triggers when it shouldn't.
@@ -12,7 +14,7 @@ This guide covers how to systematically test and improve your skill's descriptio
 
 ## How skill triggering works
 
-Agents use [progressive disclosure](/what-are-skills#how-skills-work) to manage context. At startup, they load only the `name` and `description` of each available skill — just enough to decide when a skill might be relevant. When a user's task matches a description, the agent reads the full `SKILL.md` into context and follows its instructions.
+Agents use [progressive disclosure](/specification#progressive-disclosure) to manage context. At startup, they load only the `name` and `description` of each available skill — just enough to decide when a skill might be relevant. When a user's task matches a description, the agent reads the full `SKILL.md` into context and follows its instructions.
 
 This means the description carries the entire burden of triggering. If the description doesn't convey when the skill is useful, the agent won't know to reach for it.
 
@@ -93,7 +95,7 @@ A should-trigger query passes if its trigger rate is above a threshold (0.5 is a
 
 With 20 queries at 3 runs each, that's 60 invocations. You'll want to script this. Here's the general structure — replace the `claude` invocation and detection logic in `check_triggered` with whatever your agent client provides:
 
-```bash  theme={null}
+```bash theme={null}
 #!/bin/bash
 QUERIES_FILE="${1:?Usage: $0 <queries.json>}"
 SKILL_NAME="my-skill"
@@ -176,7 +178,7 @@ Once you've selected the best description:
 
 Before and after:
 
-```yaml  theme={null}
+```yaml theme={null}
 # Before
 description: Process CSV files.
 

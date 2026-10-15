@@ -1,82 +1,33 @@
-# Semantic & Agentic Search
+# Search
 
-Agent combines multiple search tools to find relevant code across your codebase. You describe what you're looking for in natural language, and Agent picks the right strategy.
+> Source: https://cursor.com/docs/agent/tools/search — mirrored 2026-10-11 (previous capture ~2026-05-01).
+>
+> **Mirror note (2026-10-11):** Upstream retitled this page from "Semantic & Agentic Search" to "Search" and removed the semantic-search, indexing, configuration and tips sections that the previous capture held.
 
 ## Instant Grep
 
-The fastest way to find code is an exact match: a function name, variable, error string, or regex pattern. Agent uses **grep** (powered by ripgrep) automatically when you reference specific symbols.
+The fastest way to find code is an exact match: a function name, variable, error string, or regex pattern. Agent uses grep automatically when you reference specific symbols.
 
-**Example:** Searching for `import.*PaymentService` in `middleware/session.ts`
+Cursor ships with [Instant Grep](/changelog/2-1#instant-grep-beta), a custom search engine that outperforms `ripgrep` on large codebases. It runs automatically; no configuration needed.
 
-## Semantic search
+Instant Grep supports full regex and word-boundary matching, so Agent can construct patterns like `import.*PaymentService` or `PaymentFailedError` to trace references across files.
 
-When you describe a concept rather than a specific symbol, Agent uses semantic (vector) search against its index of your codebase.
+## Privacy and security
 
-### How indexing works
+Instant Grep builds and queries its index on your machine. Cursor does not upload file paths or code to build a search index, and it does not store embeddings of your codebase for search.
 
-Cursor breaks your code into meaningful chunks (functions, classes, logical blocks), converts each chunk into a vector embedding that captures its semantic meaning, and stores the results in a vector database. When you search, your query is converted into a vector using the same model and matched against the stored embeddings.
-
-Indexing begins automatically when you open a workspace. Semantic search becomes available at **80% completion**. The index stays current through automatic sync every **5 minutes**, processing only changed files.
-
-| Change | Action |
-|---|---|
-| New files | Added to the index automatically |
-| Modified files | Old embeddings removed, new ones created |
-| Deleted files | Removed from the index |
-
-### Configuration
-
-Navigate to **Cursor Settings > Indexing** to configure which files are indexed.
-
-- Respects `.gitignore` and `.cursorignore` for exclusions
-- View included files at **Cursor Settings > Indexing & Docs > View included files**
-
-### Privacy and security
-
-File paths are encrypted before being sent to Cursor's servers. Code content is never stored in plaintext; it is held in memory during indexing, then discarded. Embeddings are created without storing filenames or source code. When Agent searches, Cursor retrieves the embeddings and decrypts the chunks on the client side.
-
-## How Agent combines search tools
-
-Agent picks the right tool based on your prompt:
-
-| Prompt style | Tools used | Example |
-|---|---|---|
-| Specific symbol or string | Instant grep | `PaymentService` |
-| Concept or behavior | Semantic search, then grep to fill in details | *"where do we handle payment failures"* |
-| Complex exploration | Multiple searches, file reads, reference following | *"understand the full auth flow"* |
-
-You don't choose the tool. Describe what you need and Agent decides. For complex tasks, it chains searches together: semantic search to find entry points, grep to trace references, and file reads to build full context.
+When Agent opens a match, that file content can still be included in the model request. [Data Use](/data-use) describes how Cursor handles that data.
 
 ## Explore subagent
 
-Agent uses the **Explore subagent** automatically when it decides a task benefits from broad search. You can also request it directly.
+Agent can spawn an [Explore subagent](https://cursor.com/docs/subagents.md) that runs in its own context window with a faster model. It executes many parallel searches without bloating the main conversation, returning only the relevant findings.
+
+Agent uses the Explore subagent automatically when it decides a task benefits from broad search. You can also request it directly: "use a subagent to find all the places we validate user input."
 
 This is useful for context management. Searching through many files generates a lot of context. The subagent keeps the main conversation focused by summarizing results instead of dumping raw file contents.
 
-## Tips for better search results
-
-- **Start specific, then go broad.** Begin with a concrete symbol or function name (e.g., `processOrder`) before broadening to conceptual queries.
-- **Explore before changing.** Use search to understand the codebase before making edits.
-- **Reference concrete code.** Mention specific file names, function names, or error strings when possible.
-
 ## FAQ
-
-### Is my source code stored on Cursor servers?
-
-No. Cursor creates embeddings without storing filenames or source code. Filenames are obfuscated and code chunks are encrypted. When Agent searches, Cursor retrieves the embeddings and decrypts the chunks on the client side.
-
-### How long are indexed codebases retained?
-
-Indexed codebases are deleted after **6 weeks of inactivity**. Reopening the project triggers re-indexing.
-
-### Can I customize path encryption?
-
-Yes — configure custom encryption keys via `.cursor/keys`.
-
-### How does team sharing work?
-
-Indexes can be shared across team members for faster indexing of similar codebases. Cursor respects file access permissions and only shares accessible content.
 
 ### Does Cursor support multi-root workspaces?
 
-Yes, Cursor supports multi-root workspaces. See the multi-root workspaces documentation for details.
+Yes. Cursor supports [multi-root workspaces](https://code.visualstudio.com/docs/editor/workspaces#_multiroot-workspaces). Each workspace folder's context is available to Agent. Some features that rely on a single git root, like worktrees, are disabled for multi-root workspaces. Cloud Agents do not support multi-root workspaces.

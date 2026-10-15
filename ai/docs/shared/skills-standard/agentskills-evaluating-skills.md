@@ -4,6 +4,8 @@
 
 # Evaluating skill output quality
 
+> Source: https://agentskills.io/skill-creation/evaluating-skills.md — mirrored 2026-10-11 (previous capture ~2026-05-01).
+
 > How to test whether your skill produces good outputs using eval-driven iteration.
 
 You wrote a skill, tried it on a prompt, and it seemed to work. But does it work reliably — across varied prompts, in edge cases, better than no skill at all? Running structured evaluations (evals) answers these questions and gives you a feedback loop for improving the skill systematically.

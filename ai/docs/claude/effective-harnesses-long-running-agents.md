@@ -1,5 +1,7 @@
 # Effective harnesses for long-running agents
 
+> Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents — verified against upstream 2026-10-11 (previous capture ~2026-05-01). Upstream is unchanged since publication (dateModified 2025-11-26); the body is the earlier capture, repaired on 2026-10-11 by restoring the missing `Future work` heading and the truncated `Acknowledgements` and `Footnotes` sections from the upstream HTML.
+
 ## Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 
 As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days. However, getting agents to make consistent progress across multiple context windows remains an open problem.
@@ -108,9 +110,20 @@ Given all this, a typical session starts off with the following assistant messag
 |Claude marks features as done prematurely.|Set up a feature list file.|Self-verify all features. Only mark features as “passing” after careful testing.|
 |Claude has to spend time figuring out how to run the app.|Write an `init.sh` script that can run the development server.|Start the session by reading `init.sh`.|
 
+### Future work
 
 This research demonstrates one possible set of solutions in a long-running agent harness to enable the model to make incremental progress across many context windows. However, there remain open questions.
 
 Most notably, it’s still unclear whether a single, general-purpose coding agent performs best across contexts, or if better performance can be achieved through a multi-agent architecture. It seems reasonable that specialized agents like a testing agent, a quality assurance agent, or a code cleanup agent, could do an even better job at sub-tasks across the software development lifecycle.
 
 Additionally, this demo is optimized for full-stack web app development. A future direction is to generalize these findings to other fields. It’s likely that some or all of these lessons can be applied to the types of long-running agentic tasks required in, for example, scientific research or financial modeling.
+
+### Acknowledgements
+
+Written by Justin Young. Special thanks to David Hershey, Prithvi Rajasakeran, Jeremy Hadfield, Naia Bouscal, Michael Tingley, Jesse Mu, Jake Eaton, Marius Buleandara, Maggie Vo, Pedram Navid, Nadine Yasser, and Alex Notov for their contributions.
+
+This work reflects the collective efforts of several teams across Anthropic who made it possible for Claude to safely do long-horizon autonomous software engineering, especially the code RL & Claude Code teams. Interested candidates who would like to contribute are welcome to apply at [anthropic.com/careers](http://anthropic.com/careers).
+
+### Footnotes
+
+1. We refer to these as separate agents in this context only because they have different initial user prompts. The system prompt, set of tools, and overall agent harness was otherwise identical.
