@@ -1,0 +1,5 @@
+interface:
+  display_name: "Repo Audit Study"
+  short_description: "Audit agent-tooling repositories (architecture, security, harness integration), compare them, and publish a verified study with diagrams and an HTML deck."
+policy:
+  allow_implicit_invocation: false

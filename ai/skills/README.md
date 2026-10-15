@@ -10,8 +10,11 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 | [`memory-consolidation`](memory-consolidation/SKILL.md) | model-invoked | Spawns the background `dreamer` subagent for the same pass, with the spawn prompt it needs. |
 | [`pdf`](pdf/SKILL.md) | model-invoked | Structure-aware PDF to Markdown extraction. See [`pdf/README.md`](pdf/README.md). |
 | [`study-plan-generator`](study-plan-generator/SKILL.md) | model-invoked | Builds study plans and NotebookLM prompts for a topic. |
+| [`repo-audit-study`](repo-audit-study/SKILL.md) | user-invoked | Audits agent-tooling repositories at a pinned commit (architecture, security, harness integration), compares them, plans enterprise adoption, and publishes a verified study with diagrams and a deck. |
+| [`verified-research`](verified-research/SKILL.md) | model-invoked | Primary-source research where every quote is confirmed against a saved copy of its source. |
+| [`html-presentation`](html-presentation/SKILL.md) | model-invoked | Standalone HTML deck from a study, following `DESIGN.md` when present; persists a claude.ai Design canvas as HTML. |
 
-The rest of this page documents `coding-standards` and `test-suite-review`.
+The rest of this page documents `coding-standards`, `test-suite-review` and the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`).
 
 ## Where the two skills come from
 
@@ -200,3 +203,51 @@ With the baseline timings in hand, the skill recommends only the levers the meas
 ## Status
 
 Both skills were checked for structure only (links resolve, frontmatter and `openai.yaml` present). Neither has been run end to end on a real repository yet. The tool options in `ECOSYSTEMS.md` are a cache of each tool's documentation: only the PIT options and Stryker's `coverageAnalysis` were confirmed against the docs, and the file tells the agent to confirm each option against the installed version.
+
+## The audit trio
+
+`repo-audit-study`, `verified-research` and `html-presentation` encode the process used to produce
+[`ai/docs/agent-memory/`](../docs/agent-memory/README.md): pinned clones read as untrusted data, parallel
+subagent briefs, main-thread verification, OSV.dev supply-chain scan, chapters with Mermaid, archify
+diagrams with `path:line` sources, an adversarially reviewed comparison, an adoption plan reviewed before it is
+called ready, and a deck kept in the repository.
+
+```mermaid
+flowchart LR
+    A[Scope with the user] --> B[Pin and isolate clones]
+    B --> C[Subagents: architecture, security, integration]
+    B --> D[verified-research]
+    C --> E[Main-thread verification + OSV scan]
+    D --> E
+    E --> F[Chapters]
+    F --> G[archify diagrams]
+    F --> H{Two or more repos?}
+    H -- yes --> I[Comparison + adversarial review]
+    H -- no --> J
+    I --> J{Plan requested?}
+    J -- yes --> K[Outline + questions, then plan, then review]
+    J -- no --> L
+    K --> L[html-presentation]
+    L --> M[Link check, honest close]
+
+    classDef gate fill:#fde68a,stroke:#b45309,color:#111
+    classDef done fill:#bbf7d0,stroke:#15803d,color:#111
+    class A,I,K gate
+    class M done
+```
+
+| Skill | Files | Scripts |
+|---|---|---|
+| `repo-audit-study` | `SKILL.md` (ten steps), `ARCHITECTURE-BRIEF.md`, `SECURITY-BRIEF.md`, `INTEGRATION-BRIEF.md` (subagent prompts), `VERIFY.md`, `REPORT.md`, `DIAGRAMS.md`, `COMPARE.md`, `PLAN.md` | `osv_scan.py` (OSV.dev over lockfiles), `check_links.py` (links and anchors) |
+| `verified-research` | `SKILL.md` | `verify_quotes.py` (quotes against saved sources) |
+| `html-presentation` | `SKILL.md`, `DECK.md` | `export_canvas.py` (Design canvas → standalone HTML) |
+
+`repo-audit-study` is user-invoked (`/repo-audit-study`): it fans out several subagents and is expensive. The
+other two are model-invoked so the audit, or any other task, can reach them.
+
+**Status:** the three scripts were run against the data of the `agent-memory` study and reproduce its
+results (108 of 110 quotes matched automatically, the other 2 confirmed by hand; 97 links, 0 broken; the
+exported deck reproduces the committed deck byte for byte). The skills as a whole have not yet been run end to end on
+a new repository. Diagrams need the `archify` skill; the comparison and plan reviews need an advisor or a critic
+subagent.
+
