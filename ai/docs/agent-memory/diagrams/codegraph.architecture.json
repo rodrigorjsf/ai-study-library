@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "codegraph — arquitetura real com Cursor e Claude Code (commit 3f714bc)",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/colbymchenry/codegraph",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "3f714bcc480e372d232f2d5e9b37b84256a205e1"
+    },
+    "views": [
+      {
+        "id": "consulta",
+        "label": "Consulta MCP",
+        "focus": [
+          "cursor",
+          "claude",
+          "proxy",
+          "daemon",
+          "pool",
+          "db"
+        ],
+        "note": "Host inicia o proxy por stdio; o proxy fala com o daemon por socket Unix 0600."
+      },
+      {
+        "id": "indexacao",
+        "label": "Indexação",
+        "focus": [
+          "daemon",
+          "watcher",
+          "extract",
+          "resolve",
+          "db"
+        ],
+        "note": "Watcher dispara sync por hash; kernel Rust ou WASM extrai; resolução cria arestas."
+      },
+      {
+        "id": "egresso",
+        "label": "Saídas da máquina",
+        "focus": [
+          "daemon",
+          "telemetry",
+          "github"
+        ],
+        "note": "Telemetria de uso ligada por padrão e checagem diária de versão; nenhum código sai."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "cursor",
+      "type": "frontend",
+      "label": "Cursor IDE",
+      "sublabel": "só mcp.json",
+      "pos": [
+        40,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/installer/targets/cursor.ts",
+          "line": 171
+        }
+      ]
+    },
+    {
+      "id": "claude",
+      "type": "frontend",
+      "label": "Claude Code",
+      "sublabel": "MCP + hook + CLAUDE.md",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/installer/targets/claude.ts",
+          "line": 169
+        }
+      ]
+    },
+    {
+      "id": "proxy",
+      "type": "backend",
+      "label": "Proxy MCP",
+      "sublabel": "serve --mcp · stdio",
+      "pos": [
+        300,
+        210
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/mcp/proxy.ts",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "id": "daemon",
+      "type": "backend",
+      "label": "Daemon",
+      "sublabel": "1 por projeto",
+      "pos": [
+        560,
+        210
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/mcp/daemon.ts",
+          "line": 299
+        }
+      ]
+    },
+    {
+      "id": "pool",
+      "type": "backend",
+      "label": "Pool de consultas",
+      "sublabel": "worker_threads",
+      "pos": [
+        820,
+        210
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/mcp/query-pool.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "watcher",
+      "type": "backend",
+      "label": "Watcher",
+      "sublabel": "fs.watch · sync por hash",
+      "pos": [
+        560,
+        390
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/sync/watcher.ts",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "id": "extract",
+      "type": "backend",
+      "label": "Extração",
+      "sublabel": "kernel Rust ou WASM",
+      "pos": [
+        820,
+        390
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/extraction/kernel/loader.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "resolve",
+      "type": "backend",
+      "label": "Resolução",
+      "sublabel": "framework · import · nome",
+      "pos": [
+        1080,
+        390
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/resolution/index.ts",
+          "line": 1431
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": ".codegraph/",
+      "sublabel": "SQLite WAL + FTS5",
+      "pos": [
+        1080,
+        210
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/db/schema.sql",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "type": "external",
+      "label": "Telemetria",
+      "sublabel": "padrão ligada",
+      "pos": [
+        820,
+        20
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/telemetry/index.ts",
+          "line": 251
+        }
+      ]
+    },
+    {
+      "id": "github",
+      "type": "external",
+      "label": "GitHub Releases",
+      "sublabel": "checagem diária",
+      "pos": [
+        300,
+        20
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/upgrade/update-check.ts",
+          "line": 89
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Estação do dev (sem porta TCP)",
+      "wraps": [
+        "proxy",
+        "daemon",
+        "pool",
+        "watcher",
+        "extract",
+        "resolve",
+        "db"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-cur",
+      "from": "cursor",
+      "to": "proxy",
+      "label": "stdio",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-cla",
+      "from": "claude",
+      "to": "proxy",
+      "label": "stdio",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-sock",
+      "from": "proxy",
+      "to": "daemon",
+      "label": "socket 0600",
+      "variant": "security"
+    },
+    {
+      "id": "c-pool",
+      "from": "daemon",
+      "to": "pool",
+      "label": "explore"
+    },
+    {
+      "id": "c-read",
+      "from": "pool",
+      "to": "db",
+      "label": "BM25 + grafo"
+    },
+    {
+      "id": "c-watch",
+      "from": "daemon",
+      "to": "watcher"
+    },
+    {
+      "id": "c-ext",
+      "from": "watcher",
+      "to": "extract",
+      "label": "arquivos"
+    },
+    {
+      "id": "c-res",
+      "from": "extract",
+      "to": "resolve"
+    },
+    {
+      "id": "c-store",
+      "from": "resolve",
+      "to": "db",
+      "label": "arestas"
+    },
+    {
+      "id": "c-tel",
+      "from": "daemon",
+      "to": "telemetry",
+      "label": "uso agregado",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "c-gh",
+      "from": "daemon",
+      "to": "github",
+      "label": "versão",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "right"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cursor × Claude Code",
+      "items": [
+        "Cursor: só MCP, sem hook nem regra",
+        "Claude Code: MCP + hook de prompt"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Sem LLM, sem código saindo",
+      "items": [
+        "Telemetria só com nomes e contagens",
+        "Busca determinística, sem embeddings"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Riscos",
+      "items": [
+        "projectPath lê outros repositórios",
+        "Código devolvido sem cerca untrusted"
+      ]
+    }
+  ]
+}
