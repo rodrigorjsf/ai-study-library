@@ -3,6 +3,12 @@
 - ALWAYS when planning or before write a plan, work back and forth with me, starting with your open questions and outline before writing the plan.
 - ALWAYS delegate a plan review to the advisor before claiming it is ready for execution.
 
+## Harness coverage
+
+- Cover Cursor IDE beside Claude Code in every study, analysis, plan and diagram in this repository: install path, hook events, how context reaches the agent, MCP, and parity gaps.
+- Check each integration against the harness's own hook, plugin and MCP docs (`ai/docs/claude-code/`, `ai/docs/cursor/`), not the tool's description of itself.
+- In diagrams, give Cursor and Claude Code separate nodes when their mechanisms differ.
+
 # RTK (Rust Token Killer) - Token-Optimized Commands
 
 @RTK.md
