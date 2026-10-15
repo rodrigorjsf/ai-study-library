@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>codegraph: auditoria</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">11 · CODEGRAPH v1.6.2 @ 3f714bc · CAPÍTULOS 09 E 10</span>
+      <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">codegraph: nenhum código sai, mas o código que entra no agente não é cercado</h1>
+    </div>
+    <div style="display: flex; gap: 20px; flex: 0 0 auto">
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; line-height: 1; color: #0F5E3A">0</span><span style="font-size: 14px">Críticos / Altos</span></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; line-height: 1; color: #7A4F00">6</span><span style="font-size: 14px">Médios</span></div>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">O QUE É</span>
+      <span style="font-size: 15px; line-height: 1.55">Grafo de símbolos por repositório (tree-sitter + SQLite FTS5). Uma chamada <b>codegraph_explore</b> devolve código, caminhos de chamada e raio de impacto. Sem LLM, sem embeddings.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">NO CURSOR</span>
+      <span style="font-size: 15px; line-height: 1.55">Só uma entrada em mcp.json: sem hook, sem regra. Proxy por stdio, daemon por socket Unix 0600, nenhuma porta TCP.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">TELEMETRIA</span>
+      <span style="font-size: 15px; line-height: 1.55">Ligada por padrão, com machine_id persistente. Só nomes de comandos, linguagens e contagens; a allowlist do servidor barra o resto.</span>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr); background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden; font-size: 15px; line-height: 1.4; flex-grow: 1">
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">ID</div>
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">ACHADO MÉDIO</div>
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">HARDENING</div>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F1</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">projectPath lê qualquer repositório indexado da máquina</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Indexar só repos autorizados; aprovação por chamada no Cursor</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F2</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Código volta cru; instruções mandam "confiar sem reverificar"</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Regra de federação trata a saída como não confiável</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F3</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Instaladores sem checksum; upgrade roda install.sh da main</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Espelho npm interno com versão fixa; nunca codegraph upgrade</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F4</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Telemetria ligada por padrão; install --yes pula o consentimento</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">codegraph telemetry off + DO_NOT_TRACK + bloqueio no proxy</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F5</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Socket alternativo em /tmp pode ser sequestrado (multiusuário)</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">TMPDIR por usuário em hosts compartilhados</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F6</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">UI em 127.0.0.1:4747 sem token (multiusuário)</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Não usar a UI em hosts compartilhados</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

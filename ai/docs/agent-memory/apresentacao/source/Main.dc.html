@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Capa e veredito</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 72px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 40px">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">
+    <span>ESTUDO · 14 OUT 2026 · ANÁLISE ESTÁTICA DE CÓDIGO</span>
+    <span>ai-memory @ 705aba7 (v3.0.0) · claude-mem @ fef3402 (v13.39.0)</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 18px">
+    <h1 style="margin: 0; font-family: 'Archivo', 'Helvetica Neue', sans-serif; font-weight: 800; font-size: 76px; line-height: 1.02; letter-spacing: -0.02em; max-width: 1240px">Memória de longo prazo para agentes de código</h1>
+    <p style="margin: 0; font-size: 24px; line-height: 1.45; color: #2B3340; max-width: 1180px">Dois caminhos para o mesmo problema: <b style="color: {{amColor}}">ai-memory</b> grava arquivos e trata o LLM como opcional; <b style="color: {{cmColor}}">claude-mem</b> faz um LLM comprimir cada ação do agente.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 20px; border-top: 8px solid {{amColor}}">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">akitaonrails/ai-memory · Rust · MIT</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 40px">Arquivos primeiro, LLM opcional</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{amColor}}">~20</span><span style="font-size: 16px; color: #2B3340">harnesses com captura (29 no total)</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{amColor}}">0</span><span style="font-size: 16px; color: #2B3340">chamadas de LLM por padrão</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{amColor}}">6</span><span style="font-size: 16px; color: #2B3340">GHSAs publicados e corrigidos</span></div>
+      </div>
+      <ul style="margin: 0; padding-left: 22px; font-size: 19px; line-height: 1.55; color: #1C232D">
+        <li>Wiki Markdown versionado em git é a fonte de verdade</li>
+        <li>Handoff tipado, reivindicado uma única vez, entre harnesses</li>
+        <li>Sem telemetria; risco principal: API sem token por padrão</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 20px; border-top: 8px solid {{cmColor}}">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">thedotmack/claude-mem · TypeScript/Bun · Apache-2.0</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 40px">LLM primeiro, banco como verdade</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{cmColor}}">12</span><span style="font-size: 16px; color: #2B3340">harnesses com captura</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{cmColor}}">1</span><span style="font-size: 16px; color: #2B3340">chamada de LLM por ferramenta</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: {{cmColor}}">0</span><span style="font-size: 16px; color: #2B3340">GHSAs, apesar de fixes de segurança</span></div>
+      </div>
+      <ul style="margin: 0; padding-left: 22px; font-size: 19px; line-height: 1.55; color: #1C232D">
+        <li>Observações tipadas e busca em 3 camadas (progressive disclosure)</li>
+        <li>Tool I/O vai ao LLM e PostHog fica ligado por padrão</li>
+        <li>Worker local sem autenticação; auto-update a partir do GitHub</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display: flex; gap: 24px; align-items: stretch">
+    <div style="flex: 1 1 0; background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 24px 32px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #A9B4C2">EMPRESA SEM VAZAMENTO · VÁRIOS HARNESSES</span>
+      <span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">ai-memory, com auth e LLM interno ou desligado</span>
+    </div>
+    <div style="flex: 1 1 0; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 24px 32px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">DEV SOLO · SÓ CLAUDE CODE · CÓDIGO NÃO SENSÍVEL</span>
+      <span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">claude-mem, com telemetria desligada</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"amColor":{"editor":"color","default":"#1F4FD1","options":["#1F4FD1","#0F6E8C","#3B3FB6"]},"cmColor":{"editor":"color","default":"#B9480F","options":["#B9480F","#A3361A","#9A5B00"]},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { amColor: this.props.amColor ?? '#1F4FD1', cmColor: this.props.cmColor ?? '#B9480F' };
+  }
+}
+</script>
+</body>
+</html>

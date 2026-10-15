@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Plano: Âncora e roadmap</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">10 · PARTES C E D · PONTE ÂNCORA, NEPTUNE E ORDEM DE ENTREGA</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">Memória que sabe quando ficou velha</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C1 · DIAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Federação</b>
+      <span style="font-size: 14px; line-height: 1.5">3 MCPs no Cursor + uma regra que diz quando usar cada um. Sem código novo.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C2 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Âncoras</b>
+      <span style="font-size: 14px; line-height: 1.5">Webhook não bloqueante resolve símbolos via codegraph CLI/MCP e grava anchors no frontmatter.</span>
+    </div>
+    <div style="background: #FFF1E8; border: 2px solid #C2410C; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C3 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Obsolescência</b>
+      <span style="font-size: 14px; line-height: 1.5">ok / moved / changed / removed numa tabela lateral; a página só muda na transição.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C4 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Contexto unificado</b>
+      <span style="font-size: 14px; line-height: 1.5">Brief do ai-memory + blast radius do codegraph num único teto de tokens.</span>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #7E22CE">D · AWS NEPTUNE (SÓ CONSULTA)</span>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55">
+        <li>Role IAM só leitura: o MCP oficial "will run any query sent to it"</li>
+        <li>Credenciais temporárias via IAM Identity Center; nada em mcp.json</li>
+        <li>Audit logs (Database) e CloudTrail data events (Analytics)</li>
+        <li>Resultado do Neptune tratado como conteúdo não confiável</li>
+        <li>Acesso é por cluster/grafo: particionar o que for sensível</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">ONDE A ÂNCORA RODA</span>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55">
+        <li><b>Local:</b> sidecar na estação, branch + master</li>
+        <li><b>Time:</b> estação resolve âncoras e envia metadado; servidor checa só a master</li>
+        <li>Credencial própria, só para metadado de âncora</li>
+        <li>Se cair, a escrita segue sem âncora (fail-open)</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; flex-grow: 1; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden">
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">1</span><b style="font-size: 16px">Piloto local seguro</b><span style="font-size: 14px; line-height: 1.5">A0, A1 essencial, A2, codegraph endurecido. 5 devs.</span></div>
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">2</span><b style="font-size: 16px">Cursor + federação</b><span style="font-size: 14px; line-height: 1.5">A5, A3, C1, codegraph B4–B6. Canário Claude Code → Cursor passando.</span></div>
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">3</span><b style="font-size: 16px">Servidor do time</b><span style="font-size: 14px; line-height: 1.5">A4, A1 restante, Neptune só leitura (D1–D7).</span></div>
+    <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #C2410C">4</span><b style="font-size: 16px">Âncora</b><span style="font-size: 14px; line-height: 1.5">C2–C4. Nível master depende do contrato de schema D8.</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

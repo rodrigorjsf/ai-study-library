@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Plano: fork endurecido</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">09 · PARTE A · CADA ITEM FECHA UM ACHADO DO CAPÍTULO 03 OU 07</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">O fork: seguro por padrão e de primeira classe no Cursor</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A0 · GOVERNANÇA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Fork controlado</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Tag 3.0.x fixada, sync mensal + imediato em GHSA</li>
+        <li>Build reprodutível, cosign, SBOM, provenance</li>
+        <li>rustls ≥ 0.23.46; espelho interno, sem curl | sh</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 2px solid #B42318; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #B42318">A1 · SEGURO POR PADRÃO</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Fecha H1, M1–M5, L1–L4</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Auth obrigatória mesmo em loopback</li>
+        <li>bootstrap sanitizado; require_approval = true</li>
+        <li>Captura por allowlist; digest de perfil desligado</li>
+        <li>Tokens de agente sem ferramentas destrutivas</li>
+        <li>Webhook de segredos bloqueante; retenção 90 dias</li>
+        <li>Kill switch de egresso; audit log encadeado</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A2 · TLS E CA CORPORATIVA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Funciona atrás de inspeção TLS</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Já lê o trust store do SO (native roots)</li>
+        <li>Novo: [tls] ca_bundle e certificado de cliente (mTLS)</li>
+        <li>Hooks nativos herdam a config; proxy com PKI interna</li>
+        <li>codegraph: NODE_EXTRA_CA_CERTS · Neptune: AWS_CA_BUNDLE</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A3 · POLÍTICA DE LLM</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Interno ou vendor ZDR</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Padrão: nenhum llm_provider</li>
+        <li>Host do LLM precisa estar na allowlist</li>
+        <li>Reranker LLM proibido no perfil vendor</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A4 · TOPOLOGIA HÍBRIDA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Local por padrão, time opcional</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Perfis enterprise-local e enterprise-team</li>
+        <li>Um servidor por fronteira de confiança, OIDC</li>
+        <li>MDM: binário assinado, CA, hooks em /etc/cursor</li>
+      </ul>
+    </div>
+    <div style="background: #E8EEFB; border: 2px solid #1F4FD1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A5 · CURSOR DE PRIMEIRA CLASSE</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Contexto chega de verdade</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>sessionStart devolve additional_context</li>
+        <li>Handoff em duas fases (reserva + confirma, mesmo session_id)</li>
+        <li>preToolUse responde permission: allow</li>
+        <li>afterAgentResponse, subagentes, escopo de projeto</li>
+      </ul>
+    </div>
+  </div>
+  <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 16px 24px; display: flex; gap: 24px; align-items: center">
+    <b style="font-family: 'Archivo', sans-serif; font-size: 18px; flex: 0 0 auto">Princípio</b>
+    <span style="font-size: 15px; line-height: 1.5">Preferir pontos de extensão (config, admission webhooks) a mudanças no núcleo, e propor upstream as correções do Cursor (A5.1, A5.2), para o fork não divergir.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

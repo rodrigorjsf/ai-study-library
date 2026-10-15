@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memória para Agentes: ai-memory vs claude-mem</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+:root{--ground:#DDE2E8;--ink:#10151C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ground:#0B0F14;--ink:#E6EAF0}}
+:root[data-theme="dark"]{--ground:#0B0F14;--ink:#E6EAF0}
+html,body{margin:0;background:var(--ground);color:var(--ink)}
+.deck{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px 16px}
+.slide{width:1600px;height:1000px;transform-origin:top left;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.board{position:relative;overflow:hidden}
+.wrap{overflow:hidden}
+</style>
+</head>
+<body>
+<main class="deck">
+<div class="wrap"><section class="slide" aria-label="01 · Capa e veredito"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 72px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 40px">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">
+    <span>ESTUDO · 14 OUT 2026 · ANÁLISE ESTÁTICA DE CÓDIGO</span>
+    <span>ai-memory @ 705aba7 (v3.0.0) · claude-mem @ fef3402 (v13.39.0)</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 18px">
+    <h1 style="margin: 0; font-family: 'Archivo', 'Helvetica Neue', sans-serif; font-weight: 800; font-size: 76px; line-height: 1.02; letter-spacing: -0.02em; max-width: 1240px">Memória de longo prazo para agentes de código</h1>
+    <p style="margin: 0; font-size: 24px; line-height: 1.45; color: #2B3340; max-width: 1180px">Dois caminhos para o mesmo problema: <b style="color: #1F4FD1">ai-memory</b> grava arquivos e trata o LLM como opcional; <b style="color: #B9480F">claude-mem</b> faz um LLM comprimir cada ação do agente.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 20px; border-top: 8px solid #1F4FD1">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">akitaonrails/ai-memory · Rust · MIT</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 40px">Arquivos primeiro, LLM opcional</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #1F4FD1">~20</span><span style="font-size: 16px; color: #2B3340">harnesses com captura (29 no total)</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #1F4FD1">0</span><span style="font-size: 16px; color: #2B3340">chamadas de LLM por padrão</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #1F4FD1">6</span><span style="font-size: 16px; color: #2B3340">GHSAs publicados e corrigidos</span></div>
+      </div>
+      <ul style="margin: 0; padding-left: 22px; font-size: 19px; line-height: 1.55; color: #1C232D">
+        <li>Wiki Markdown versionado em git é a fonte de verdade</li>
+        <li>Handoff tipado, reivindicado uma única vez, entre harnesses</li>
+        <li>Sem telemetria; risco principal: API sem token por padrão</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 20px; border-top: 8px solid #B9480F">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">thedotmack/claude-mem · TypeScript/Bun · Apache-2.0</span>
+        <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 40px">LLM primeiro, banco como verdade</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #B9480F">12</span><span style="font-size: 16px; color: #2B3340">harnesses com captura</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #B9480F">1</span><span style="font-size: 16px; color: #2B3340">chamada de LLM por ferramenta</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; color: #B9480F">0</span><span style="font-size: 16px; color: #2B3340">GHSAs, apesar de fixes de segurança</span></div>
+      </div>
+      <ul style="margin: 0; padding-left: 22px; font-size: 19px; line-height: 1.55; color: #1C232D">
+        <li>Observações tipadas e busca em 3 camadas (progressive disclosure)</li>
+        <li>Tool I/O vai ao LLM e PostHog fica ligado por padrão</li>
+        <li>Worker local sem autenticação; auto-update a partir do GitHub</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display: flex; gap: 24px; align-items: stretch">
+    <div style="flex: 1 1 0; background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 24px 32px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #A9B4C2">EMPRESA SEM VAZAMENTO · VÁRIOS HARNESSES</span>
+      <span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">ai-memory, com auth e LLM interno ou desligado</span>
+    </div>
+    <div style="flex: 1 1 0; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 24px 32px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">DEV SOLO · SÓ CLAUDE CODE · CÓDIGO NÃO SENSÍVEL</span>
+      <span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">claude-mem, com telemetria desligada</span>
+    </div>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="02 · Conceitos de memória"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 64px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">02 · CONCEITOS</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; letter-spacing: -0.01em">O ciclo escrever → gerenciar → ler</h1>
+    <p style="margin: 0; font-size: 20px; color: #2B3340; max-width: 1200px">Um LLM não lembra nada entre chamadas. Toda memória de agente é um laço que captura, organiza e devolve contexto à próxima sessão (Du, 2026, arXiv:2603.07670).</p>
+  </div>
+  <div style="position: relative; width: 1424px; height: 236px">
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 232px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 530px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 828px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 1126px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+    <svg width="8" height="64" viewBox="0 0 8 64" preserveAspectRatio="none" style="position: absolute; left: 1304px; top: 136px; width: 8px; height: 64px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 4 0 L 4 64"></path></svg>
+    <svg width="1192" height="8" viewBox="0 0 1192 8" preserveAspectRatio="none" style="position: absolute; left: 116px; top: 196px; width: 1192px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 0 4 L 1192 4"></path></svg>
+    <svg width="8" height="63" viewBox="0 0 8 63" preserveAspectRatio="none" style="position: absolute; left: 112px; top: 137px; width: 8px; height: 63px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 63 L 4 4" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+    <div style="position: absolute; left: 0px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Capturar</b><br>hooks, transcripts</span></div>
+    <div style="position: absolute; left: 298px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Gerenciar</b><br>consolidar, esquecer</span></div>
+    <div style="position: absolute; left: 596px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Armazenar</b><br>arquivos, SQLite, vetores</span></div>
+    <div style="position: absolute; left: 894px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Recuperar</b><br>BM25, embeddings, RRF</span></div>
+    <div style="position: absolute; left: 1192px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #10151C; color: #F3F5F7; border: 1px solid #10151C; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Injetar</b><br>no contexto da sessão</span></div>
+    <div style="position: absolute; left: 0px; top: 0px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">FLUXO DE UMA MEMÓRIA DE AGENTE</div>
+    <div style="position: absolute; left: 632px; top: 212px; width: 160px; text-align: center; font-size: 14px; line-height: 16px; color: #4A5361">próxima sessão</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 28px 32px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">Os 4 tipos de memória (CoALA, 2023)</h2>
+      <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; font-size: 16px; line-height: 1.4">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">TIPO</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">AI-MEMORY</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #B9480F">CLAUDE-MEM</span>
+        <b>Working</b><span>janela de contexto (do harness)</span><span>janela de contexto (do harness)</span>
+        <b>Episódica</b><span>observações + handoffs</span><span>observações e resumos por LLM</span>
+        <b>Semântica</b><span>páginas do wiki + perfil</span><span>observações decision / discovery</span>
+        <b>Procedural</b><span>_rules/ e procedures/</span><span>modos JSON</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 28px 32px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">O que a literatura cobra de uma memória</h2>
+      <ul style="margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.5; display: flex; flex-direction: column; gap: 6px">
+        <li><b>Seletividade:</b> mais contexto piora o modelo (Context Rot, Chroma 2025; Lost in the Middle, 2023)</li>
+        <li><b>Busca híbrida:</b> BM25 + embeddings reduziu falhas de recuperação em 49% (Anthropic, 2024)</li>
+        <li><b>Esquecimento:</b> decaimento inspirado em Ebbinghaus (MemoryBank, 2023)</li>
+        <li><b>Desconfiança:</b> com menos de 0,1% de envenenamento, o AgentPoison passa de 80% de sucesso</li>
+        <li><b>Servidor local seguro:</b> MCP exige validar <code>Origin</code> contra DNS rebinding</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="03 · ai-memory: arquitetura"><div class="board" style="width:1600px;height:1000px">
+
+<div style="position: relative; width: 1600px; height: 1000px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; overflow: hidden">
+<div style="position: absolute; left: 600px; top: 120px; width: 824px; height: 462px; box-sizing: border-box; background: #E6EBF5; border: 1px dashed #1F4FD1; border-radius: 8px"></div>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 280px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#1F4FD1" stroke="none" style="stroke: none; fill: #1F4FD1; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 560px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#1F4FD1" stroke="none" style="stroke: none; fill: #1F4FD1; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 840px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #B42318; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B42318" stroke="none" style="stroke: none; fill: #B42318; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 1120px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+<svg width="8" height="51" viewBox="0 0 8 51" preserveAspectRatio="none" style="position: absolute; left: 1288px; top: 249px; width: 8px; height: 51px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 51 L 4 4" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 728px; top: 388px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-6" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-6)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 448px; top: 388px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-7" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-7)"></path></svg>
+<svg width="343" height="8" viewBox="0 0 343 8" preserveAspectRatio="none" style="position: absolute; left: 840px; top: 200px; width: 343px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-8" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 339 4" marker-end="url(#dc-arrow-head-filled-8)"></path></svg>
+<svg width="8" height="96" viewBox="0 0 8 96" preserveAspectRatio="none" style="position: absolute; left: 168px; top: 204px; width: 8px; height: 96px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 4 0 L 4 96"></path></svg>
+<svg width="451" height="8" viewBox="0 0 451 8" preserveAspectRatio="none" style="position: absolute; left: 172px; top: 200px; width: 451px; height: 8px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-9" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#1F4FD1" stroke="none" style="stroke: none; fill: #1F4FD1; fill: context-stroke"/></marker></defs><path d="M 0 4 L 447 4" marker-end="url(#dc-arrow-head-filled-9)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 841px; top: 510px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-10" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 63 4 L 4 4" marker-end="url(#dc-arrow-head-filled-10)"></path></svg>
+<svg width="8" height="101" viewBox="0 0 8 101" preserveAspectRatio="none" style="position: absolute; left: 1008px; top: 558px; width: 8px; height: 101px; overflow: visible; fill: none; stroke: #6B7280; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><defs><marker id="dc-arrow-head-filled-11" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B7280" stroke="none" style="stroke: none; fill: #6B7280; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 97" marker-end="url(#dc-arrow-head-filled-11)"></path></svg>
+<div style="position: absolute; left: 64px; top: 40px; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">ai-memory · arquitetura real</div>
+<div style="position: absolute; left: 64px; top: 96px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">03 · COMMIT 705aba7 · REFERÊNCIAS arquivo:linha NO CAPÍTULO 02</div>
+<div style="position: absolute; left: 64px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #E8EEFB; border: 1px solid #1F4FD1; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Claude Code · Cursor</b><br>+ 27 harnesses</span></div>
+<div style="position: absolute; left: 344px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Hooks</b><br>curl 0,2 s · nativo Rust</span></div>
+<div style="position: absolute; left: 624px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Hook router</b><br>/hook · /handoff</span></div>
+<div style="position: absolute; left: 904px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FDECEC; border: 1px solid #B42318; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Sanitizer</b><br>tipo Sanitized&lt;T&gt;</span></div>
+<div style="position: absolute; left: 1184px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Writer actor</b><br>1 thread · fila 1024</span></div>
+<div style="position: absolute; left: 624px; top: 160px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">MCP router</b><br>/mcp · 23 tools</span></div>
+<div style="position: absolute; left: 1184px; top: 160px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 1px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">SQLite (índice)</b><br>FTS5 + vetores · reconstruível</span></div>
+<div style="position: absolute; left: 344px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 1px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Hook spool</b><br>arquivos locais 0700</span></div>
+<div style="position: absolute; left: 624px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 2px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Wiki Markdown + git</b><br>fonte de verdade</span></div>
+<div style="position: absolute; left: 904px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Workers</b><br>decay · lint · auto-improve</span></div>
+<div style="position: absolute; left: 904px; top: 660px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 2px dashed #6B7280; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Provedor LLM</b><br>opcional · llm_provider</span></div>
+<div style="position: absolute; left: 616px; top: 128px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #1F4FD1">AI-MEMORY SERVE · 127.0.0.1:49374</div>
+<div style="position: absolute; left: 342px; top: 176px; width: 60px; text-align: center; font-size: 13px; line-height: 16px; color: #1F4FD1">MCP</div>
+<div style="position: absolute; left: 942px; top: 176px; width: 140px; text-align: center; font-size: 13px; line-height: 16px; color: #4A5361">busca RRF k=60</div>
+<div style="position: absolute; left: 744px; top: 420px; width: 120px; font-size: 13px; line-height: 16px; color: #4A5361">sessions/id.md</div>
+<div style="position: absolute; left: 464px; top: 420px; width: 80px; font-size: 13px; line-height: 16px; color: #4A5361">fila local</div>
+<div style="position: absolute; left: 1024px; top: 600px; width: 56px; font-size: 13px; line-height: 16px; color: #4A5361">opt-in</div>
+<div style="position: absolute; left: 64px; top: 640px; width: 784px; height: 296px; box-sizing: border-box; padding: 24px 28px; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-family: 'Archivo', sans-serif; font-size: 22px">Como funciona</b>
+<span style="font-size: 16px; line-height: 1.5">1. O hook manda o evento ao servidor em loopback; a resposta é 202 e o agente nunca espera.</span>
+<span style="font-size: 16px; line-height: 1.5">2. O writer só aceita <b>Sanitized&lt;T&gt;</b>: o compilador obriga a passar pelo scrub de segredos.</span>
+<span style="font-size: 16px; line-height: 1.5">3. No SessionEnd, um resumo <b>por regras</b> vira sessions/id.md com commit git, e nasce um handoff.</span>
+<span style="font-size: 16px; line-height: 1.5">4. Na próxima sessão, em qualquer harness, o handoff é reivindicado uma vez e injetado com cerca "untrusted".</span>
+</div>
+<div style="position: absolute; left: 1184px; top: 640px; width: 352px; height: 296px; box-sizing: border-box; padding: 24px 28px; background: #10151C; color: #F3F5F7; border-radius: 6px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-family: 'Archivo', sans-serif; font-size: 22px">Atenção nos padrões</b>
+<span style="font-size: 15px; line-height: 1.5">Sem token configurado, o middleware de auth não faz nada (auth.rs:12).</span>
+<span style="font-size: 15px; line-height: 1.5">Com LLM ligado, o auto-improve aprova regras sozinho (require_approval = false).</span>
+</div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="04 · claude-mem: arquitetura"><div class="board" style="width:1600px;height:1000px">
+
+<div style="position: relative; width: 1600px; height: 1000px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; overflow: hidden">
+<div style="position: absolute; left: 320px; top: 120px; width: 824px; height: 462px; box-sizing: border-box; background: #F8ECE4; border: 1px dashed #B9480F; border-radius: 8px"></div>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 280px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #B9480F; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B9480F" stroke="none" style="stroke: none; fill: #B9480F; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 560px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #B9480F; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B9480F" stroke="none" style="stroke: none; fill: #B9480F; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 840px; top: 340px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 59 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+<svg width="279" height="8" viewBox="0 0 279 8" preserveAspectRatio="none" style="position: absolute; left: 1120px; top: 340px; width: 279px; height: 8px; overflow: visible; fill: none; stroke: #B42318; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B42318" stroke="none" style="stroke: none; fill: #B42318; fill: context-stroke"/></marker></defs><path d="M 0 4 L 273 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 448px; top: 388px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 1008px; top: 388px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-6" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-6)"></path></svg>
+<svg width="63" height="8" viewBox="0 0 63 8" preserveAspectRatio="none" style="position: absolute; left: 841px; top: 510px; width: 63px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-7" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 63 4 L 4 4" marker-end="url(#dc-arrow-head-filled-7)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 728px; top: 388px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-8" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-8)"></path></svg>
+<svg width="8" height="51" viewBox="0 0 8 51" preserveAspectRatio="none" style="position: absolute; left: 728px; top: 249px; width: 8px; height: 51px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-9" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 47" marker-end="url(#dc-arrow-head-filled-9)"></path></svg>
+<svg width="8" height="96" viewBox="0 0 8 96" preserveAspectRatio="none" style="position: absolute; left: 168px; top: 204px; width: 8px; height: 96px; overflow: visible; fill: none; stroke: #B9480F; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 4 0 L 4 96"></path></svg>
+<svg width="451" height="8" viewBox="0 0 451 8" preserveAspectRatio="none" style="position: absolute; left: 172px; top: 200px; width: 451px; height: 8px; overflow: visible; fill: none; stroke: #B9480F; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-10" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B9480F" stroke="none" style="stroke: none; fill: #B9480F; fill: context-stroke"/></marker></defs><path d="M 0 4 L 447 4" marker-end="url(#dc-arrow-head-filled-10)"></path></svg>
+<svg width="8" height="81" viewBox="0 0 8 81" preserveAspectRatio="none" style="position: absolute; left: 728px; top: 558px; width: 8px; height: 81px; overflow: visible; fill: none; stroke: #B42318; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><defs><marker id="dc-arrow-head-filled-11" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#B42318" stroke="none" style="stroke: none; fill: #B42318; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 77" marker-end="url(#dc-arrow-head-filled-11)"></path></svg>
+<div style="position: absolute; left: 64px; top: 40px; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">claude-mem · arquitetura real</div>
+<div style="position: absolute; left: 64px; top: 96px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">04 · COMMIT fef3402 · REFERÊNCIAS arquivo:linha NO CAPÍTULO 04</div>
+<div style="position: absolute; left: 64px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FBEDE4; border: 1px solid #B9480F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Claude Code · Cursor</b><br>+ 10 com captura</span></div>
+<div style="position: absolute; left: 344px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Hook CLI</b><br>launcher → Bun</span></div>
+<div style="position: absolute; left: 624px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 2px solid #B42318; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Worker (Express)</b><br>127.0.0.1 · sem auth</span></div>
+<div style="position: absolute; left: 904px; top: 300px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">LLM observador</b><br>sem ferramentas · XML</span></div>
+<div style="position: absolute; left: 1400px; top: 300px; width: 136px; height: 88px; box-sizing: border-box; padding: 8px 10px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 2px dashed #B42318; border-radius: 6px; font-size: 14px; line-height: 1.3"><span><b style="font-size: 16px">Anthropic</b><br>Haiku 4.5 (padrão)</span></div>
+<div style="position: absolute; left: 624px; top: 160px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">MCP server</b><br>stdio · 19 tools</span></div>
+<div style="position: absolute; left: 344px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 1px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Hook spool</b><br>payload BRUTO</span></div>
+<div style="position: absolute; left: 624px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 2px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">SQLite + FTS5</b><br>fonte de verdade</span></div>
+<div style="position: absolute; left: 904px; top: 470px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFF7E6; border: 1px solid #B7791F; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">Chroma</b><br>uvx chroma-mcp (Python)</span></div>
+<div style="position: absolute; left: 624px; top: 640px; width: 216px; height: 88px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 2px dashed #B42318; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 18px">PostHog</b><br>telemetria ligada</span></div>
+<div style="position: absolute; left: 336px; top: 128px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #B9480F">MÁQUINA DO DESENVOLVEDOR · ~/.claude-mem</div>
+<div style="position: absolute; left: 1188px; top: 312px; width: 140px; text-align: center; font-size: 13px; line-height: 16px; color: #B42318">tool I/O em outcome</div>
+<div style="position: absolute; left: 342px; top: 176px; width: 60px; text-align: center; font-size: 13px; line-height: 16px; color: #B9480F">MCP</div>
+<div style="position: absolute; left: 464px; top: 420px; width: 80px; font-size: 13px; line-height: 16px; color: #4A5361">1 JSON/evento</div>
+<div style="position: absolute; left: 1024px; top: 420px; width: 90px; font-size: 13px; line-height: 16px; color: #4A5361">sync vetorial</div>
+<div style="position: absolute; left: 744px; top: 590px; width: 100px; font-size: 13px; line-height: 16px; color: #B42318">padrão ON</div>
+<div style="position: absolute; left: 64px; top: 760px; width: 1472px; height: 176px; box-sizing: border-box; padding: 22px 28px; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 6px"><b style="font-family: 'Archivo', sans-serif; font-size: 20px">Captura</b><span style="font-size: 15px; line-height: 1.5">Hooks assíncronos gravam um JSON por evento no spool e cutucam o worker (orçamento de 250 ms). A fila de compressão fica em RAM.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><b style="font-family: 'Archivo', sans-serif; font-size: 20px">Compressão</b><span style="font-size: 15px; line-height: 1.5">Cada ferramenta vira um prompt ao LLM, que devolve &lt;observation&gt;. No SessionStart, um índice de 50 observações é injetado.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><b style="font-family: 'Archivo', sans-serif; font-size: 20px; color: #B42318">Egresso padrão</b><span style="font-size: 15px; line-height: 1.5">Conteúdo de ferramentas vai à Anthropic na conta logada; com fallback de cota, mesmo quem usa Ollama pode cair nela.</span></div>
+</div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="05 · Segurança empresarial"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">05 · SEGURANÇA · ANÁLISE ESTÁTICA · NADA FOI EXECUTADO</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">Vazamento de informação interna: onde cada um falha</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 0; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden; font-size: 16px; line-height: 1.35">
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 14px">RISCO</div>
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 20px; border-top: 4px solid #6E93F0">ai-memory</div>
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 20px; border-top: 4px solid #F08A55">claude-mem</div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Egresso de conteúdo por padrão</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>Não; só download do modelo (huggingface.co)</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Sim: tool I/O vai ao LLM (Haiku, conta logada)</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Telemetria</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>Nenhuma</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>PostHog ligado (GeoIP, tier de cobrança); SECURITY.md nega</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Auth do servidor local</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Existe, mas desligada por padrão no loopback</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Inexistente; outro usuário local reescreve settings</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Envenenamento de memória</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Cerca "untrusted"; com LLM, regras auto-aprovadas</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Sem cerca; saída de ferramenta crua no prompt</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Segredos</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Sanitizador tipado por regex; persiste no git se escapar</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Redação opt-in, desligada; spool guarda payload bruto</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Cadeia de suprimentos</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>deny + audit + gitleaks, actions por SHA; sem assinatura</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>autoUpdate do GitHub, lockfile ignorado, 0 GHSAs</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Licença</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>MIT</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Apache-2.0, mas cowork é PolyForm-Noncommercial</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">CVE em dependências (OSV.dev)</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">BAIXO</span><span>rustls 0.23.45, corrigido na 0.23.46</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">BAIXO</span><span>shell-quote CRÍTICO, sem caminho de execução</span></div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 24px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Hardening mínimo: ai-memory</b>
+      <span style="font-size: 15px; line-height: 1.5">Token sempre (em arquivo de header) · llm_provider vazio ou interno · proibir bootstrap na nuvem · require_approval = true · regex extras · modo allowlist</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 24px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Hardening mínimo: claude-mem</b>
+      <span style="font-size: 15px; line-height: 1.5">Provedor interno + fallback off · DO_NOT_TRACK · bloquear cmem.ai e PostHog · redação ligada · sem autoUpdate · nunca em host multiusuário</span>
+    </div>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="06 · Cursor e Claude Code"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">06 · INTEGRAÇÃO · CONTRATOS DE HOOK DO CLAUDE CODE E DO CURSOR</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">O contexto chega ao agente?</h1>
+    <p style="margin: 0; font-size: 19px; color: #2B3340; max-width: 1300px">O Cursor aceita injeção no <code style="font-family: 'IBM Plex Mono', monospace">sessionStart</code> pelo campo <code style="font-family: 'IBM Plex Mono', monospace">additional_context</code>. Nenhuma das duas ferramentas usa esse campo.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); gap: 16px; flex-grow: 1">
+    <div></div>
+    <div style="padding: 10px 16px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; border-bottom: 3px solid #10151C">Claude Code</div>
+    <div style="padding: 10px 16px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; border-bottom: 3px solid #10151C">Cursor IDE</div>
+
+    <div style="display: flex; align-items: center; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; color: #1F4FD1">ai-memory</div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">INJEÇÃO OK</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">9 eventos · plugin ou settings.json</span></div>
+      <span style="font-size: 16px; line-height: 1.5">SessionStart devolve handoff + brief no formato documentado. Captura tudo, nunca bloqueia. Escopo de projeto disponível; modo allowlist por repositório.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">NÃO VERIFICADA</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">8 eventos · merge em ~/.cursor/hooks.json</span></div>
+      <span style="font-size: 16px; line-height: 1.5">sessionStart devolve o envelope do Claude (hookSpecificOutput). O GET /handoff é destrutivo: o handoff pode ser consumido sem aparecer. Contorno: memory_handoff_accept via MCP.</span>
+    </div>
+
+    <div style="display: flex; align-items: center; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; color: #B9480F">claude-mem</div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">INJEÇÃO OK</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">8 eventos · plugin com autoUpdate</span></div>
+      <span style="font-size: 16px; line-height: 1.5">Timeline no SessionStart e por arquivo no PreToolUse. O Read Gate nega leituras de 32 KB ou mais com histórico. Só denylist de projetos.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">SEM INJEÇÃO PADRÃO</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">5 eventos · npx -y sem versão</span></div>
+      <span style="font-size: 16px; line-height: 1.5">Só uma regra .mdc, escrita após um resumo e apenas em instalação de projeto. Sobrescreve ~/.cursor/hooks.json. Read/Grep nativos não são capturados.</span>
+    </div>
+  </div>
+  <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 18px 26px; display: flex; gap: 28px; align-items: center">
+    <b style="font-family: 'Archivo', sans-serif; font-size: 20px; flex: 0 0 auto">Antes de adotar no Cursor</b>
+    <span style="font-size: 16px; line-height: 1.5">Teste canário: crie um handoff no Claude Code, abra o Cursor e confira se o contexto aparece. Faça backup de ~/.cursor/hooks.json.</span>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="07 · Comparativo e recomendação"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">07 · COMPARATIVO · JUÍZO SOBRE EVIDÊNCIA DE CÓDIGO, REVISADO ADVERSARIALMENTE</span>
+      <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">Vantagem real, mas estreita</h1>
+    </div>
+    <div style="display: flex; gap: 28px; align-items: baseline">
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 64px; color: #1F4FD1; line-height: 1">3,20</span><span style="font-size: 15px">ai-memory</span></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 64px; color: #B9480F; line-height: 1">2,80</span><span style="font-size: 15px">claude-mem</span></div>
+    </div>
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 22px 28px; display: grid; grid-template-columns: 300px 60px minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; align-items: center; font-size: 16px">
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">CRITÉRIO</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">PESO</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">AI-MEMORY (0–5)</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #B9480F">CLAUDE-MEM (0–5)</span>
+
+    <b>Retorno (ROI)</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>3</b></div>
+
+    <b>Usabilidade no Claude Code</b><span>15%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 304px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>4</b></div>
+
+    <b>Usabilidade no Cursor</b><span>15%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 152px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>2</b></div>
+
+    <b>Desacoplamento de harness</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 304px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>4</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>3</b></div>
+
+    <b>Segurança / não vazamento</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 152px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>2</b></div>
+
+    <b>Maturidade e governança</b><span>10%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #1F4FD1; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: #B9480F; border-radius: 3px"></div><b>3</b></div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; flex-grow: 1">
+    <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A9B4C2">EMPRESA · CLAUDE CODE + CURSOR</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">ai-memory endurecido</b>
+      <span style="font-size: 15px; line-height: 1.5">Sem egresso de dados nem telemetria por padrão; auth, ACL e auditoria nativos. Fixar versão e testar o handoff no Cursor.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">DEV SOLO · SÓ CLAUDE CODE</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">claude-mem</b>
+      <span style="font-size: 15px; line-height: 1.5">Com só ROI e usabilidade no Claude Code: 3,50 × 3,00 a favor dele. Desligar telemetria e definir o fallback.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">ANTES DE PADRONIZAR</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">Piloto de 2–4 semanas</b>
+      <span style="font-size: 15px; line-height: 1.5">Medir tokens injetados, contexto obsoleto, custo de LLM e se o Cursor recebe contexto. Só isso transforma as notas em medição.</span>
+    </div>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="08 · Plano: arquitetura alvo"><div class="board" style="width:1600px;height:1000px">
+
+<div style="position: relative; width: 1600px; height: 1000px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; overflow: hidden">
+<svg width="80" height="8" viewBox="0 0 80 8" preserveAspectRatio="none" style="position: absolute; left: 264px; top: 476px; width: 80px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 0 4 L 80 4"></path></svg>
+<svg width="8" height="440" viewBox="0 0 8 440" preserveAspectRatio="none" style="position: absolute; left: 340px; top: 260px; width: 8px; height: 440px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 4 0 L 4 440"></path></svg>
+<svg width="79" height="8" viewBox="0 0 79 8" preserveAspectRatio="none" style="position: absolute; left: 344px; top: 256px; width: 79px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 75 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="79" height="8" viewBox="0 0 79 8" preserveAspectRatio="none" style="position: absolute; left: 344px; top: 476px; width: 79px; height: 8px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#1F4FD1" stroke="none" style="stroke: none; fill: #1F4FD1; fill: context-stroke"/></marker></defs><path d="M 0 4 L 75 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="79" height="8" viewBox="0 0 79 8" preserveAspectRatio="none" style="position: absolute; left: 344px; top: 696px; width: 79px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 75 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+<svg width="159" height="8" viewBox="0 0 159 8" preserveAspectRatio="none" style="position: absolute; left: 784px; top: 476px; width: 159px; height: 8px; overflow: visible; fill: none; stroke: #1F4FD1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#1F4FD1" stroke="none" style="stroke: none; fill: #1F4FD1; fill: context-stroke"/></marker></defs><path d="M 0 4 L 155 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+<svg width="159" height="8" viewBox="0 0 159 8" preserveAspectRatio="none" style="position: absolute; left: 784px; top: 696px; width: 159px; height: 8px; overflow: visible; fill: none; stroke: #7E22CE; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#7E22CE" stroke="none" style="stroke: none; fill: #7E22CE; fill: context-stroke"/></marker></defs><path d="M 0 4 L 155 4" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+<svg width="8" height="40" viewBox="0 0 8 40" preserveAspectRatio="none" style="position: absolute; left: 1090px; top: 380px; width: 8px; height: 40px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 4 0 L 4 40"></path></svg>
+<svg width="490" height="8" viewBox="0 0 490 8" preserveAspectRatio="none" style="position: absolute; left: 604px; top: 376px; width: 490px; height: 8px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 0 4 L 490 4"></path></svg>
+<svg width="8" height="59" viewBox="0 0 8 59" preserveAspectRatio="none" style="position: absolute; left: 600px; top: 321px; width: 8px; height: 59px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-6" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#C2410C" stroke="none" style="stroke: none; fill: #C2410C; fill: context-stroke"/></marker></defs><path d="M 4 59 L 4 4" marker-end="url(#dc-arrow-head-filled-6)"></path></svg>
+<svg width="8" height="99" viewBox="0 0 8 99" preserveAspectRatio="none" style="position: absolute; left: 1090px; top: 540px; width: 8px; height: 99px; overflow: visible; fill: none; stroke: #7E22CE; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><defs><marker id="dc-arrow-head-filled-7" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#7E22CE" stroke="none" style="stroke: none; fill: #7E22CE; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 95" marker-end="url(#dc-arrow-head-filled-7)"></path></svg>
+<svg width="79" height="8" viewBox="0 0 79 8" preserveAspectRatio="none" style="position: absolute; left: 1245px; top: 696px; width: 79px; height: 8px; overflow: visible; fill: none; stroke: #7E22CE; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-8" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#7E22CE" stroke="none" style="stroke: none; fill: #7E22CE; fill: context-stroke"/></marker></defs><path d="M 79 4 L 4 4" marker-end="url(#dc-arrow-head-filled-8)"></path></svg>
+<div style="position: absolute; left: 64px; top: 40px; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">Plano · três escopos, cada um no seu papel</div>
+<div style="position: absolute; left: 64px; top: 98px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">08 · FORK DO AI-MEMORY + CODEGRAPH + AWS NEPTUNE NO CURSOR · CAPÍTULO 08</div>
+<div style="position: absolute; left: 64px; top: 420px; width: 200px; height: 120px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #10151C; color: #F3F5F7; border-radius: 6px; font-size: 15px; line-height: 1.35"><span><b style="font-size: 22px">Cursor IDE</b><br>hooks + 3 MCPs<br>CA corporativa</span></div>
+<div style="position: absolute; left: 424px; top: 200px; width: 360px; height: 120px; box-sizing: border-box; padding: 12px 18px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 15px; line-height: 1.4"><span><b style="font-size: 19px">codegraph</b> · escopo CÓDIGO<br>"Como o código é agora, nesta branch?" Índice local, telemetria e update desligados</span></div>
+<div style="position: absolute; left: 424px; top: 420px; width: 360px; height: 120px; box-sizing: border-box; padding: 12px 18px; display: flex; align-items: center; background: #E8EEFB; border: 2px solid #1F4FD1; border-radius: 6px; font-size: 15px; line-height: 1.4"><span><b style="font-size: 19px">ai-memory fork</b> · escopo TRABALHO<br>Decisões, falhas e handoffs do dev/time. Auth obrigatória, mTLS, egresso por allowlist</span></div>
+<div style="position: absolute; left: 424px; top: 640px; width: 360px; height: 120px; box-sizing: border-box; padding: 12px 18px; display: flex; align-items: center; background: #F5EEFC; border: 1px solid #7E22CE; border-radius: 6px; font-size: 15px; line-height: 1.4"><span><b style="font-size: 19px">MCP do Neptune</b> · escopo ORGANIZAÇÃO<br>Já existente. Sem modo só leitura: a role IAM é a única barreira</span></div>
+<div style="position: absolute; left: 944px; top: 420px; width: 300px; height: 120px; box-sizing: border-box; padding: 12px 18px; display: flex; align-items: center; background: #FFF1E8; border: 2px solid #C2410C; border-radius: 6px; font-size: 15px; line-height: 1.4"><span><b style="font-size: 19px">Serviço Âncora</b><br>Admission webhook não bloqueante + job. Liga memória a símbolo</span></div>
+<div style="position: absolute; left: 944px; top: 640px; width: 300px; height: 120px; box-sizing: border-box; padding: 12px 18px; display: flex; align-items: center; background: #F5EEFC; border: 2px solid #7E22CE; border-radius: 6px; font-size: 15px; line-height: 1.4"><span><b style="font-size: 19px">AWS Neptune</b><br>Database + Analytics. Só consulta: nada é publicado nele</span></div>
+<div style="position: absolute; left: 1324px; top: 640px; width: 212px; height: 120px; box-sizing: border-box; padding: 12px 14px; display: flex; align-items: center; background: #FFFFFF; border: 1px dashed #7E22CE; border-radius: 6px; font-size: 14px; line-height: 1.4"><span><b style="font-size: 17px">Pipeline de release</b><br>LLM avalia a master e atualiza</span></div>
+<div style="position: absolute; left: 818px; top: 448px; width: 96px; text-align: center; font-size: 13px; line-height: 16px; color: #1F4FD1">write_page</div>
+<div style="position: absolute; left: 808px; top: 668px; width: 116px; text-align: center; font-size: 13px; line-height: 16px; color: #7E22CE">SigV4 · leitura</div>
+<div style="position: absolute; left: 770px; top: 352px; width: 160px; text-align: center; font-size: 13px; line-height: 16px; color: #C2410C">CLI / MCP (branch)</div>
+<div style="position: absolute; left: 1106px; top: 582px; width: 110px; font-size: 13px; line-height: 16px; color: #7E22CE">IAM só leitura</div>
+<div style="position: absolute; left: 1250px; top: 668px; width: 70px; text-align: center; font-size: 13px; line-height: 16px; color: #7E22CE">master</div>
+<div style="position: absolute; left: 64px; top: 820px; width: 1472px; height: 128px; box-sizing: border-box; padding: 20px 28px; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-family: 'Archivo', sans-serif; font-size: 18px">Obsolescência em dois níveis</b><span style="font-size: 14px; line-height: 1.45">Branch: codegraph local. Master: Neptune. A memória ancorada vira "obsoleta" quando o símbolo muda em qualquer um.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-family: 'Archivo', sans-serif; font-size: 18px">Âncora estável</b><span style="font-size: 14px; line-height: 1.45">repo + arquivo + kind + qualified_name + hash. Nunca o ID do nó do codegraph, que inclui a linha.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-family: 'Archivo', sans-serif; font-size: 18px">Decisão em aberto (D8)</b><span style="font-size: 14px; line-height: 1.45">Contrato de schema com o dono do pipeline do Neptune para consultar símbolos e decisões.</span></div>
+</div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="09 · Plano: fork endurecido"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">09 · PARTE A · CADA ITEM FECHA UM ACHADO DO CAPÍTULO 03 OU 07</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">O fork: seguro por padrão e de primeira classe no Cursor</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A0 · GOVERNANÇA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Fork controlado</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Tag 3.0.x fixada, sync mensal + imediato em GHSA</li>
+        <li>Build reprodutível, cosign, SBOM, provenance</li>
+        <li>rustls ≥ 0.23.46; espelho interno, sem curl | sh</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 2px solid #B42318; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #B42318">A1 · SEGURO POR PADRÃO</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Fecha H1, M1–M5, L1–L4</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Auth obrigatória mesmo em loopback</li>
+        <li>bootstrap sanitizado; require_approval = true</li>
+        <li>Captura por allowlist; digest de perfil desligado</li>
+        <li>Tokens de agente sem ferramentas destrutivas</li>
+        <li>Webhook de segredos bloqueante; retenção 90 dias</li>
+        <li>Kill switch de egresso; audit log encadeado</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A2 · TLS E CA CORPORATIVA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Funciona atrás de inspeção TLS</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Já lê o trust store do SO (native roots)</li>
+        <li>Novo: [tls] ca_bundle e certificado de cliente (mTLS)</li>
+        <li>Hooks nativos herdam a config; proxy com PKI interna</li>
+        <li>codegraph: NODE_EXTRA_CA_CERTS · Neptune: AWS_CA_BUNDLE</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A3 · POLÍTICA DE LLM</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Interno ou vendor ZDR</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Padrão: nenhum llm_provider</li>
+        <li>Host do LLM precisa estar na allowlist</li>
+        <li>Reranker LLM proibido no perfil vendor</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A4 · TOPOLOGIA HÍBRIDA</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Local por padrão, time opcional</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>Perfis enterprise-local e enterprise-team</li>
+        <li>Um servidor por fronteira de confiança, OIDC</li>
+        <li>MDM: binário assinado, CA, hooks em /etc/cursor</li>
+      </ul>
+    </div>
+    <div style="background: #E8EEFB; border: 2px solid #1F4FD1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F4FD1">A5 · CURSOR DE PRIMEIRA CLASSE</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 20px">Contexto chega de verdade</b>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5">
+        <li>sessionStart devolve additional_context</li>
+        <li>Handoff em duas fases (reserva + confirma, mesmo session_id)</li>
+        <li>preToolUse responde permission: allow</li>
+        <li>afterAgentResponse, subagentes, escopo de projeto</li>
+      </ul>
+    </div>
+  </div>
+  <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 16px 24px; display: flex; gap: 24px; align-items: center">
+    <b style="font-family: 'Archivo', sans-serif; font-size: 18px; flex: 0 0 auto">Princípio</b>
+    <span style="font-size: 15px; line-height: 1.5">Preferir pontos de extensão (config, admission webhooks) a mudanças no núcleo, e propor upstream as correções do Cursor (A5.1, A5.2), para o fork não divergir.</span>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="10 · Plano: Âncora e roadmap"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">10 · PARTES C E D · PONTE ÂNCORA, NEPTUNE E ORDEM DE ENTREGA</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">Memória que sabe quando ficou velha</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C1 · DIAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Federação</b>
+      <span style="font-size: 14px; line-height: 1.5">3 MCPs no Cursor + uma regra que diz quando usar cada um. Sem código novo.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C2 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Âncoras</b>
+      <span style="font-size: 14px; line-height: 1.5">Webhook não bloqueante resolve símbolos via codegraph CLI/MCP e grava anchors no frontmatter.</span>
+    </div>
+    <div style="background: #FFF1E8; border: 2px solid #C2410C; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C3 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Obsolescência</b>
+      <span style="font-size: 14px; line-height: 1.5">ok / moved / changed / removed numa tabela lateral; a página só muda na transição.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #C2410C">C4 · SEMANAS</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Contexto unificado</b>
+      <span style="font-size: 14px; line-height: 1.5">Brief do ai-memory + blast radius do codegraph num único teto de tokens.</span>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #7E22CE">D · AWS NEPTUNE (SÓ CONSULTA)</span>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55">
+        <li>Role IAM só leitura: o MCP oficial "will run any query sent to it"</li>
+        <li>Credenciais temporárias via IAM Identity Center; nada em mcp.json</li>
+        <li>Audit logs (Database) e CloudTrail data events (Analytics)</li>
+        <li>Resultado do Neptune tratado como conteúdo não confiável</li>
+        <li>Acesso é por cluster/grafo: particionar o que for sensível</li>
+      </ul>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">ONDE A ÂNCORA RODA</span>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55">
+        <li><b>Local:</b> sidecar na estação, branch + master</li>
+        <li><b>Time:</b> estação resolve âncoras e envia metadado; servidor checa só a master</li>
+        <li>Credencial própria, só para metadado de âncora</li>
+        <li>Se cair, a escrita segue sem âncora (fail-open)</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; flex-grow: 1; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden">
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">1</span><b style="font-size: 16px">Piloto local seguro</b><span style="font-size: 14px; line-height: 1.5">A0, A1 essencial, A2, codegraph endurecido. 5 devs.</span></div>
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">2</span><b style="font-size: 16px">Cursor + federação</b><span style="font-size: 14px; line-height: 1.5">A5, A3, C1, codegraph B4–B6. Canário Claude Code → Cursor passando.</span></div>
+    <div style="padding: 18px 20px; border-right: 1px solid #E3E7EC; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #1F4FD1">3</span><b style="font-size: 16px">Servidor do time</b><span style="font-size: 14px; line-height: 1.5">A4, A1 restante, Neptune só leitura (D1–D7).</span></div>
+    <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 32px; color: #C2410C">4</span><b style="font-size: 16px">Âncora</b><span style="font-size: 14px; line-height: 1.5">C2–C4. Nível master depende do contrato de schema D8.</span></div>
+  </div>
+</div>
+</div></section></div>
+<div class="wrap"><section class="slide" aria-label="11 · codegraph: auditoria"><div class="board" style="width:1600px;height:1000px">
+
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 52px 72px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">11 · CODEGRAPH v1.6.2 @ 3f714bc · CAPÍTULOS 09 E 10</span>
+      <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.01em">codegraph: nenhum código sai, mas o código que entra no agente não é cercado</h1>
+    </div>
+    <div style="display: flex; gap: 20px; flex: 0 0 auto">
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; line-height: 1; color: #0F5E3A">0</span><span style="font-size: 14px">Críticos / Altos</span></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; line-height: 1; color: #7A4F00">6</span><span style="font-size: 14px">Médios</span></div>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">O QUE É</span>
+      <span style="font-size: 15px; line-height: 1.55">Grafo de símbolos por repositório (tree-sitter + SQLite FTS5). Uma chamada <b>codegraph_explore</b> devolve código, caminhos de chamada e raio de impacto. Sem LLM, sem embeddings.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">NO CURSOR</span>
+      <span style="font-size: 15px; line-height: 1.55">Só uma entrada em mcp.json: sem hook, sem regra. Proxy por stdio, daemon por socket Unix 0600, nenhuma porta TCP.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">TELEMETRIA</span>
+      <span style="font-size: 15px; line-height: 1.55">Ligada por padrão, com machine_id persistente. Só nomes de comandos, linguagens e contagens; a allowlist do servidor barra o resto.</span>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr); background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden; font-size: 15px; line-height: 1.4; flex-grow: 1">
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">ID</div>
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">ACHADO MÉDIO</div>
+    <div style="padding: 12px 18px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 13px">HARDENING</div>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F1</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">projectPath lê qualquer repositório indexado da máquina</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Indexar só repos autorizados; aprovação por chamada no Cursor</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F2</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Código volta cru; instruções mandam "confiar sem reverificar"</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Regra de federação trata a saída como não confiável</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F3</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Instaladores sem checksum; upgrade roda install.sh da main</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Espelho npm interno com versão fixa; nunca codegraph upgrade</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F4</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Telemetria ligada por padrão; install --yes pula o consentimento</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">codegraph telemetry off + DO_NOT_TRACK + bloqueio no proxy</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F5</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Socket alternativo em /tmp pode ser sequestrado (multiusuário)</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">TMPDIR por usuário em hosts compartilhados</span>
+    <b style="padding: 11px 18px; border-top: 1px solid #E3E7EC">F6</b><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">UI em 127.0.0.1:4747 sem token (multiusuário)</span><span style="padding: 11px 18px; border-top: 1px solid #E3E7EC">Não usar a UI em hosts compartilhados</span>
+  </div>
+</div>
+</div></section></div>
+</main>
+<script>
+function fit(){var w=Math.min(1,(document.documentElement.clientWidth-32)/1600);
+document.querySelectorAll('.wrap').forEach(function(x){x.style.width=(1600*w)+'px';x.style.height=(1000*w)+'px';
+x.firstElementChild.style.transform='scale('+w+')';});}
+window.addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>

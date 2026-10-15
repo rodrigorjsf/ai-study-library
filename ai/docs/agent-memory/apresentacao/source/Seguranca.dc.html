@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Segurança empresarial</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">05 · SEGURANÇA · ANÁLISE ESTÁTICA · NADA FOI EXECUTADO</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">Vazamento de informação interna: onde cada um falha</h1>
+  </div>
+  <div style="display: grid; grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 0; background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; overflow: hidden; font-size: 16px; line-height: 1.35">
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'IBM Plex Mono', monospace; font-size: 14px">RISCO</div>
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 20px; border-top: 4px solid #6E93F0">ai-memory</div>
+    <div style="padding: 14px 20px; background: #10151C; color: #F3F5F7; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 20px; border-top: 4px solid #F08A55">claude-mem</div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Egresso de conteúdo por padrão</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>Não; só download do modelo (huggingface.co)</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Sim: tool I/O vai ao LLM (Haiku, conta logada)</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Telemetria</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>Nenhuma</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>PostHog ligado (GeoIP, tier de cobrança); SECURITY.md nega</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Auth do servidor local</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Existe, mas desligada por padrão no loopback</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Inexistente; outro usuário local reescreve settings</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Envenenamento de memória</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Cerca "untrusted"; com LLM, regras auto-aprovadas</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Sem cerca; saída de ferramenta crua no prompt</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Segredos</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Sanitizador tipado por regex; persiste no git se escapar</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>Redação opt-in, desligada; spool guarda payload bruto</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Cadeia de suprimentos</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>deny + audit + gitleaks, actions por SHA; sem assinatura</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">ALTO</span><span>autoUpdate do GitHub, lockfile ignorado, 0 GHSAs</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">Licença</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">OK</span><span>MIT</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">MÉDIO</span><span>Apache-2.0, mas cowork é PolyForm-Noncommercial</span></div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; font-weight: 600">CVE em dependências (OSV.dev)</div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">BAIXO</span><span>rustls 0.23.45, corrigido na 0.23.46</span></div>
+    <div style="padding: 12px 20px; border-top: 1px solid #E3E7EC; display: flex; gap: 10px; align-items: center"><span style="flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">BAIXO</span><span>shell-quote CRÍTICO, sem caminho de execução</span></div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 24px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Hardening mínimo: ai-memory</b>
+      <span style="font-size: 15px; line-height: 1.5">Token sempre (em arquivo de header) · llm_provider vazio ou interno · proibir bootstrap na nuvem · require_approval = true · regex extras · modo allowlist</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 18px 24px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-family: 'Archivo', sans-serif; font-size: 19px">Hardening mínimo: claude-mem</b>
+      <span style="font-size: 15px; line-height: 1.5">Provedor interno + fallback off · DO_NOT_TRACK · bloquear cmem.ai e PostHog · redação ligada · sem autoUpdate · nunca em host multiusuário</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

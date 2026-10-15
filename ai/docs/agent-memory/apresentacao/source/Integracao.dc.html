@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Integração com Cursor e Claude Code</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">06 · INTEGRAÇÃO · CONTRATOS DE HOOK DO CLAUDE CODE E DO CURSOR</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">O contexto chega ao agente?</h1>
+    <p style="margin: 0; font-size: 19px; color: #2B3340; max-width: 1300px">O Cursor aceita injeção no <code style="font-family: 'IBM Plex Mono', monospace">sessionStart</code> pelo campo <code style="font-family: 'IBM Plex Mono', monospace">additional_context</code>. Nenhuma das duas ferramentas usa esse campo.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); gap: 16px; flex-grow: 1">
+    <div></div>
+    <div style="padding: 10px 16px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; border-bottom: 3px solid #10151C">Claude Code</div>
+    <div style="padding: 10px 16px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; border-bottom: 3px solid #10151C">Cursor IDE</div>
+
+    <div style="display: flex; align-items: center; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; color: {{amColor}}">ai-memory</div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">INJEÇÃO OK</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">9 eventos · plugin ou settings.json</span></div>
+      <span style="font-size: 16px; line-height: 1.5">SessionStart devolve handoff + brief no formato documentado. Captura tudo, nunca bloqueia. Escopo de projeto disponível; modo allowlist por repositório.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #FCF1D9; color: #7A4F00; font-size: 13px; font-weight: 600">NÃO VERIFICADA</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">8 eventos · merge em ~/.cursor/hooks.json</span></div>
+      <span style="font-size: 16px; line-height: 1.5">sessionStart devolve o envelope do Claude (hookSpecificOutput). O GET /handoff é destrutivo: o handoff pode ser consumido sem aparecer. Contorno: memory_handoff_accept via MCP.</span>
+    </div>
+
+    <div style="display: flex; align-items: center; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 24px; color: {{cmColor}}">claude-mem</div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #E3F4EA; color: #0F5E3A; font-size: 13px; font-weight: 600">INJEÇÃO OK</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">8 eventos · plugin com autoUpdate</span></div>
+      <span style="font-size: 16px; line-height: 1.5">Timeline no SessionStart e por arquivo no PreToolUse. O Read Gate nega leituras de 32 KB ou mais com histórico. Só denylist de projetos.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="padding: 3px 10px; border-radius: 999px; background: #FDECEC; color: #9B1C14; font-size: 13px; font-weight: 600">SEM INJEÇÃO PADRÃO</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">5 eventos · npx -y sem versão</span></div>
+      <span style="font-size: 16px; line-height: 1.5">Só uma regra .mdc, escrita após um resumo e apenas em instalação de projeto. Sobrescreve ~/.cursor/hooks.json. Read/Grep nativos não são capturados.</span>
+    </div>
+  </div>
+  <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 18px 26px; display: flex; gap: 28px; align-items: center">
+    <b style="font-family: 'Archivo', sans-serif; font-size: 20px; flex: 0 0 auto">Antes de adotar no Cursor</b>
+    <span style="font-size: 16px; line-height: 1.5">Teste canário: crie um handoff no Claude Code, abra o Cursor e confira se o contexto aparece. Faça backup de ~/.cursor/hooks.json.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"amColor":{"editor":"color","default":"#1F4FD1"},"cmColor":{"editor":"color","default":"#B9480F"},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { amColor: this.props.amColor ?? '#1F4FD1', cmColor: this.props.cmColor ?? '#B9480F' };
+  }
+}
+</script>
+</body>
+</html>

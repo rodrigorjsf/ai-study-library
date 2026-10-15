@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Conceitos de memória para agentes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 64px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">02 · CONCEITOS</span>
+    <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 52px; letter-spacing: -0.01em">O ciclo escrever → gerenciar → ler</h1>
+    <p style="margin: 0; font-size: 20px; color: #2B3340; max-width: 1200px">Um LLM não lembra nada entre chamadas. Toda memória de agente é um laço que captura, organiza e devolve contexto à próxima sessão (Du, 2026, arXiv:2603.07670).</p>
+  </div>
+  <div style="position: relative; width: 1424px; height: 236px">
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 232px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 530px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 828px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+    <svg width="65" height="8" viewBox="0 0 65 8" preserveAspectRatio="none" style="position: absolute; left: 1126px; top: 84px; width: 65px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 0 4 L 61 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+    <svg width="8" height="64" viewBox="0 0 8 64" preserveAspectRatio="none" style="position: absolute; left: 1304px; top: 136px; width: 8px; height: 64px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 4 0 L 4 64"></path></svg>
+    <svg width="1192" height="8" viewBox="0 0 1192 8" preserveAspectRatio="none" style="position: absolute; left: 116px; top: 196px; width: 1192px; height: 8px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 0 4 L 1192 4"></path></svg>
+    <svg width="8" height="63" viewBox="0 0 8 63" preserveAspectRatio="none" style="position: absolute; left: 112px; top: 137px; width: 8px; height: 63px; overflow: visible; fill: none; stroke: #4A5361; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#4A5361" stroke="none" style="stroke: none; fill: #4A5361; fill: context-stroke"/></marker></defs><path d="M 4 63 L 4 4" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+    <div style="position: absolute; left: 0px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Capturar</b><br>hooks, transcripts</span></div>
+    <div style="position: absolute; left: 298px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Gerenciar</b><br>consolidar, esquecer</span></div>
+    <div style="position: absolute; left: 596px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Armazenar</b><br>arquivos, SQLite, vetores</span></div>
+    <div style="position: absolute; left: 894px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #FFFFFF; border: 1px solid #C3CAD4; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Recuperar</b><br>BM25, embeddings, RRF</span></div>
+    <div style="position: absolute; left: 1192px; top: 40px; width: 232px; height: 96px; box-sizing: border-box; padding: 10px 14px; display: flex; align-items: center; justify-content: center; text-align: center; background: #10151C; color: #F3F5F7; border: 1px solid #10151C; border-radius: 6px; font-size: 17px; line-height: 1.35"><span><b style="font-size: 20px">Injetar</b><br>no contexto da sessão</span></div>
+    <div style="position: absolute; left: 0px; top: 0px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 14px; color: #4A5361">FLUXO DE UMA MEMÓRIA DE AGENTE</div>
+    <div style="position: absolute; left: 632px; top: 212px; width: 160px; text-align: center; font-size: 14px; line-height: 16px; color: #4A5361">próxima sessão</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; flex-grow: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 28px 32px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">Os 4 tipos de memória (CoALA, 2023)</h2>
+      <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; font-size: 16px; line-height: 1.4">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">TIPO</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{amColor}}">AI-MEMORY</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{cmColor}}">CLAUDE-MEM</span>
+        <b>Working</b><span>janela de contexto (do harness)</span><span>janela de contexto (do harness)</span>
+        <b>Episódica</b><span>observações + handoffs</span><span>observações e resumos por LLM</span>
+        <b>Semântica</b><span>páginas do wiki + perfil</span><span>observações decision / discovery</span>
+        <b>Procedural</b><span>_rules/ e procedures/</span><span>modos JSON</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 28px 32px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 26px">O que a literatura cobra de uma memória</h2>
+      <ul style="margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.5; display: flex; flex-direction: column; gap: 6px">
+        <li><b>Seletividade:</b> mais contexto piora o modelo (Context Rot, Chroma 2025; Lost in the Middle, 2023)</li>
+        <li><b>Busca híbrida:</b> BM25 + embeddings reduziu falhas de recuperação em 49% (Anthropic, 2024)</li>
+        <li><b>Esquecimento:</b> decaimento inspirado em Ebbinghaus (MemoryBank, 2023)</li>
+        <li><b>Desconfiança:</b> com menos de 0,1% de envenenamento, o AgentPoison passa de 80% de sucesso</li>
+        <li><b>Servidor local seguro:</b> MCP exige validar <code>Origin</code> contra DNS rebinding</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"amColor":{"editor":"color","default":"#1F4FD1"},"cmColor":{"editor":"color","default":"#B9480F"},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { amColor: this.props.amColor ?? '#1F4FD1', cmColor: this.props.cmColor ?? '#B9480F' };
+  }
+}
+</script>
+</body>
+</html>

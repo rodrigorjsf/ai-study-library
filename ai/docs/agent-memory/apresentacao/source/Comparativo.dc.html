@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Comparativo e recomendação</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1F4FD1}a:hover{color:#163a9c}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1000px; box-sizing: border-box; padding: 56px 88px; background: #F3F5F7; color: #10151C; font-family: 'IBM Plex Sans', 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #4A5361">07 · COMPARATIVO · JUÍZO SOBRE EVIDÊNCIA DE CÓDIGO, REVISADO ADVERSARIALMENTE</span>
+      <h1 style="margin: 0; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 48px; letter-spacing: -0.01em">Vantagem real, mas estreita</h1>
+    </div>
+    <div style="display: flex; gap: 28px; align-items: baseline">
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 64px; color: {{amColor}}; line-height: 1">3,20</span><span style="font-size: 15px">ai-memory</span></div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 64px; color: {{cmColor}}; line-height: 1">2,80</span><span style="font-size: 15px">claude-mem</span></div>
+    </div>
+  </div>
+  <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 22px 28px; display: grid; grid-template-columns: 300px 60px minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; align-items: center; font-size: 16px">
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">CRITÉRIO</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">PESO</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{amColor}}">AI-MEMORY (0–5)</span>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{cmColor}}">CLAUDE-MEM (0–5)</span>
+
+    <b>Retorno (ROI)</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>3</b></div>
+
+    <b>Usabilidade no Claude Code</b><span>15%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 304px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>4</b></div>
+
+    <b>Usabilidade no Cursor</b><span>15%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 152px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>2</b></div>
+
+    <b>Desacoplamento de harness</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 304px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>4</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>3</b></div>
+
+    <b>Segurança / não vazamento</b><span>20%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 152px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>2</b></div>
+
+    <b>Maturidade e governança</b><span>10%</span>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{amColor}}; border-radius: 3px"></div><b>3</b></div>
+    <div style="display: flex; gap: 10px; align-items: center"><div style="width: 228px; height: 14px; background: {{cmColor}}; border-radius: 3px"></div><b>3</b></div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; flex-grow: 1">
+    <div style="background: #10151C; color: #F3F5F7; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A9B4C2">EMPRESA · CLAUDE CODE + CURSOR</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">ai-memory endurecido</b>
+      <span style="font-size: 15px; line-height: 1.5">Sem egresso de dados nem telemetria por padrão; auth, ACL e auditoria nativos. Fixar versão e testar o handoff no Cursor.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">DEV SOLO · SÓ CLAUDE CODE</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">claude-mem</b>
+      <span style="font-size: 15px; line-height: 1.5">Com só ROI e usabilidade no Claude Code: 3,50 × 3,00 a favor dele. Desligar telemetria e definir o fallback.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D5DAE1; border-radius: 6px; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #4A5361">ANTES DE PADRONIZAR</span>
+      <b style="font-family: 'Archivo', sans-serif; font-size: 24px">Piloto de 2–4 semanas</b>
+      <span style="font-size: 15px; line-height: 1.5">Medir tokens injetados, contexto obsoleto, custo de LLM e se o Cursor recebe contexto. Só isso transforma as notas em medição.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"amColor":{"editor":"color","default":"#1F4FD1"},"cmColor":{"editor":"color","default":"#B9480F"},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { amColor: this.props.amColor ?? '#1F4FD1', cmColor: this.props.cmColor ?? '#B9480F' };
+  }
+}
+</script>
+</body>
+</html>

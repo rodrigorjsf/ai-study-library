@@ -1,0 +1,114 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-14T20:55:00Z"
+  },
+  "title": "Memória para Agentes: ai-memory vs claude-mem",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1600,
+      "h": 1000,
+      "title": "01 · Capa e veredito"
+    },
+    "Conceitos.dc.html": {
+      "x": 1680,
+      "y": 0,
+      "w": 1600,
+      "h": 1000,
+      "title": "02 · Conceitos de memória"
+    },
+    "AiMemoryArq.dc.html": {
+      "x": 0,
+      "y": 1120,
+      "w": 1600,
+      "h": 1000,
+      "title": "03 · ai-memory: arquitetura"
+    },
+    "ClaudeMemArq.dc.html": {
+      "x": 1680,
+      "y": 1120,
+      "w": 1600,
+      "h": 1000,
+      "title": "04 · claude-mem: arquitetura"
+    },
+    "Seguranca.dc.html": {
+      "x": 0,
+      "y": 2240,
+      "w": 1600,
+      "h": 1000,
+      "title": "05 · Segurança empresarial"
+    },
+    "Integracao.dc.html": {
+      "x": 1680,
+      "y": 2240,
+      "w": 1600,
+      "h": 1000,
+      "title": "06 · Cursor e Claude Code"
+    },
+    "Comparativo.dc.html": {
+      "x": 0,
+      "y": 3360,
+      "w": 1600,
+      "h": 1000,
+      "title": "07 · Comparativo e recomendação"
+    },
+    "PlanoArquitetura.dc.html": {
+      "x": 1680,
+      "y": 3360,
+      "w": 1600,
+      "h": 1000,
+      "title": "08 · Plano: arquitetura alvo"
+    },
+    "PlanoFork.dc.html": {
+      "x": 0,
+      "y": 4480,
+      "w": 1600,
+      "h": 1000,
+      "title": "09 · Plano: fork endurecido"
+    },
+    "PlanoRoadmap.dc.html": {
+      "x": 1680,
+      "y": 4480,
+      "w": 1600,
+      "h": 1000,
+      "title": "10 · Plano: Âncora e roadmap"
+    },
+    "Codegraph.dc.html": {
+      "x": 0,
+      "y": 5600,
+      "w": 1600,
+      "h": 1000,
+      "title": "11 · codegraph: auditoria"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Conceitos.dc.html",
+    "AiMemoryArq.dc.html",
+    "ClaudeMemArq.dc.html",
+    "Seguranca.dc.html",
+    "Integracao.dc.html",
+    "Comparativo.dc.html",
+    "PlanoArquitetura.dc.html",
+    "PlanoFork.dc.html",
+    "PlanoRoadmap.dc.html",
+    "Codegraph.dc.html"
+  ],
+  "notes": {
+    "titulo": {
+      "x": 0,
+      "y": -300,
+      "text": "ai-memory × claude-mem — estudo de memória para agentes",
+      "kind": "title1",
+      "maxW": 3280
+    }
+  },
+  "designSystems": []
+}
