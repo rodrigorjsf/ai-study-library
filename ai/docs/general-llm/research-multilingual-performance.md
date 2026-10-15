@@ -1,5 +1,13 @@
 # LLM Multilingual Performance & Language Overhead
 
+> **Revision 2026-10-11:** Academic findings unchanged; the practical conclusion "instructions should be in English" is weaker for current Claude models than this document implies, and all tokenizer measurements are for OpenAI tokenizers.
+>
+> - **Softened:** Anthropic reports Portuguese (Brazil) at 97.8% (Sonnet 4.5) and 96.1% (Haiku 4.5) of English performance on human-translated MMLU; no figures are published for Opus/Sonnet/Haiku 5.5 or Fable 5.1. Source: https://platform.claude.com/docs/en/build-with-claude/multilingual-support
+> - **Current vendor guidance** is to state the input/output language explicitly (system prompt) and use native scripts — it does not say to write instructions in English. Source: https://platform.claude.com/docs/en/build-with-claude/multilingual-support
+> - **Not transferable:** the 1.48× Portuguese overhead is for `cl100k_base`; Claude's tokenizer changed with Opus 4.7 and produces more tokens per word than its predecessor. Overhead on it was not measured. Source: https://platform.claude.com/docs/en/about-claude/models/overview
+> - **Still valid as history:** Petrov et al., Wendler et al., Etxaniz et al., Sabiá results — tied to the models they tested (GPT-3.5/4 era, Llama-2). Whether "models think in English" holds for 2026 models: could not verify.
+> - **Stale comparisons:** Sabiá-2 vs GPT-4 / GPT-3.5 price and accuracy comparisons refer to retired model generations.
+
 **Scope**: Tokenization disparities across languages, internal English-thinking phenomenon, empirical performance gaps, self-translate strategy, English vs Portuguese deep dive, and specialized Portuguese LLMs.  
 **Part of**: [LLM Context Engineering: Comprehensive Research Synthesis](research-context-engineering-comprehensive.md)  
 **Related scopes**: [Context Rot & Management](research-context-rot-and-management.md) | [Whitespace & Formatting](research-whitespace-and-formatting.md) | [Agent Workflows](research-agent-workflows-and-patterns.md)

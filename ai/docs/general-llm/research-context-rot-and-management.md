@@ -1,5 +1,14 @@
 # LLM Context Rot and Context Window Management
 
+> **Revision 2026-10-11:** Research findings stand; the management-strategy section predates 1M-default windows and server-side compaction, and one placement recommendation is corrected inline.
+>
+> - **Still valid:** context rot as a phenomenon — restated in current Anthropic docs. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Changed:** all current Claude models default to a 1M-token window at standard pricing (Haiku 5.5 charges more above 100K-token prompts); this raises the ceiling but does not remove degradation. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Added since writing:** server-side compaction (beta, Claude 4.6+) is now Anthropic's "primary strategy", with context editing (tool-result clearing, thinking-block clearing) and the memory tool alongside. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Changed:** automatic context-awareness budget tags are injected only on Sonnet 5, Sonnet 4.6, Sonnet 4.5 and Haiku 4.5; Opus 4.7+, Sonnet 5.5, Haiku 5.5 and Fable models do not receive them (task budgets, beta, replace them). Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Corrected inline:** "Long reference data goes in the middle" — Anthropic says long data at the top, query last. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Could not verify:** a Chroma rerun on 2026 models; the "five most recently accessed files" detail of Claude Code compaction; whether the 10–20% lost-in-the-middle drop holds on current models (Liu et al. tested 2023 models).
+
 **Scope**: Context rot mechanisms, attention budget constraints, lost-in-the-middle effect, context poisoning, prompt compression, window management strategies, RAG quality, and multi-turn degradation.  
 **Part of**: [LLM Context Engineering: Comprehensive Research Synthesis](research-context-engineering-comprehensive.md)  
 **Related scopes**: [Whitespace & Formatting](research-whitespace-and-formatting.md) | [Multilingual Performance](research-multilingual-performance.md) | [Agent Workflows](research-agent-workflows-and-patterns.md)
@@ -113,7 +122,7 @@ A **U-shaped performance curve** — recall is highest at positions near the sta
 
 **Quantitative impact**: Performance drops **10–20%** when key information is buried in the middle vs. placed at the beginning or end.
 
-**Practical implication**: Place the most critical instructions at the **start** and **end** of configuration files. Long reference data goes in the middle. Queries go last — Anthropic reports that queries at the end can improve response quality by **up to 30%**.
+**Practical implication**: Place the most critical instructions at the **start** and **end** of configuration files. ~~Long reference data goes in the middle.~~ → correction (rev. 2026-10-11): for prompts with long documents, Anthropic puts the documents first and the instructions and query after them [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)]. Queries go last — Anthropic reports that queries at the end can improve response quality by **up to 30%**.
 
 ---
 

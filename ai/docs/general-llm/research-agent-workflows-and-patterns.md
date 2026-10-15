@@ -1,5 +1,14 @@
 # Practical Agent Workflows and Patterns
 
+> **Revision 2026-10-11:** Still valid. The workflows described (explore→plan→code→verify, initializer + coding agent, structured state artifacts, progressive disclosure) match current Anthropic guidance; one detail updated inline.
+>
+> - **Updated:** auto memory loads the "first 200 lines or 25KB", not just 200 lines. Source: https://code.claude.com/docs/en/memory
+> - **Addition:** subdirectory `AGENTS.md` files are now also loaded on demand by Claude Code when no `CLAUDE.md` exists there. Source: https://code.claude.com/docs/en/memory
+> - **Still valid:** start-fresh-over-compaction, tests/`init.sh`/progress files as state, a different prompt for the first context window. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Changed context:** all current Claude models have a 1M-token window, so "runs out of context mid-implementation" bites later, but Anthropic still documents context rot and curation as necessary. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Nuance:** the built-in Explore subagent now runs on the main conversation's model, not Haiku. Source: https://code.claude.com/docs/en/sub-agents
+> - **Not re-checked:** the Harper Reed and Latent Space quotes (historical, dated sources); links under docs.anthropic.com were not individually tested — current canonical hosts are code.claude.com and platform.claude.com.
+
 **Scope**: Explore→Plan→Code→Verify loop, Spec→Plan→Execute workflow, two-agent architecture for long-running tasks, instruction specificity, progressive disclosure patterns, and Boris Cherny's simplicity philosophy.  
 **Part of**: [LLM Context Engineering: Comprehensive Research Synthesis](research-context-engineering-comprehensive.md)  
 **Related scopes**: [Context Rot & Management](research-context-rot-and-management.md) | [Whitespace & Formatting](research-whitespace-and-formatting.md) | [Multilingual Performance](research-multilingual-performance.md)
@@ -84,7 +93,7 @@ Each coding session starts with:
 | **File imports** | `@path` references expanded when parent loads | `@docs/git-instructions.md` |
 | **Dynamic injection** | Shell commands in skills: `` !`gh pr diff` `` | Real-time data at skill invocation |
 | **Subagents** | Isolated context, return summaries | Explore agent for codebase research |
-| **Auto memory** | First 200 lines loaded; topic files on-demand | `~/.claude/projects/<project>/memory/` |
+| **Auto memory** | First 200 lines loaded (*[rev. 2026-10-11]* now "first 200 lines or 25KB" — [source](https://code.claude.com/docs/en/memory)); topic files on-demand | `~/.claude/projects/<project>/memory/` |
 
 > **See also**: [§6.3 Progressive Disclosure](research-context-rot-and-management.md#63-progressive-disclosure) in Context Rot & Management for the theoretical foundation of these patterns.
 

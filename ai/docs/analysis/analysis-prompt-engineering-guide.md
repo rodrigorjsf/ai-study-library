@@ -1,9 +1,18 @@
 # Analysis: Prompt Engineering Guide
 
-> **Status**: Current
+> **Status**: ~~Current~~ → Partially superseded — see the Revision 2026-10-11 block below
 > **Source document**: [Prompt Engineering Guide](docs/prompt-engineering-guide.md)
 > **Analysis date**: 2026-03-27
 > **Scope**: Comprehensive prompt engineering techniques analysis for agent infrastructure
+
+> **Revision 2026-10-11:** The artifact-placement logic (zero-shot in always-loaded files, examples and chaining in on-demand skills) stands; the "paradigm inversion" headline and every `<thinking>`-tag template are invalidated for current Claude models.
+>
+> - **Invalidated:** "reasoning models (… Claude with extended thinking) perform worse with … few-shot". For Claude: "Multishot examples work with thinking"; 3–5 examples in `<example>` tags remain recommended. Keep the claim only for the non-Claude models it was sourced from. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Invalidated/harmful:** the SKILL.md and sub-agent templates that instruct `<thinking>…</thinking>` blocks (§2 CoT application, Phase templates). On Fable 5.1, Opus 5.5 and Sonnet 5.5 a prompt asking the model to write out its reasoning "may be declined"; rely on adaptive thinking and set `effort`. Keeping `<answer>`-style output tags is fine. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Terminology:** "extended thinking" with `budget_tokens` is rejected on Claude 4.7+; all current models use adaptive thinking (`low`…`max` effort, incl. `xhigh`). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Still valid:** role prompt at the top of sub-agent prompts; task/query at the end; no ALL-CAPS/"NEVER" emphasis; prompt chaining for multi-phase skills when intermediate outputs need inspection; self-check steps (except tune down on Opus 5, which over-verifies). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Still valid:** structured JSON for inter-agent returns — now backed by GA structured outputs (`output_config.format`). Source: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+> - **Could not verify:** token-cost percentages relative to a CLAUDE.md budget on the current Claude tokenizer; the Wharton "2–3% / 20–80%" CoT figures on 2026 models.
 
 ---
 
@@ -11,7 +20,7 @@
 
 The `prompt-engineering-guide.md` is the most extensive and dense document in the project, cataloging over 58 prompt engineering techniques with quantitative benchmarks, token costs, and applicability in multi-agent architectures. Its importance for agent infrastructure is direct: every SKILL.md, every sub-agent prompt, every rule in `.claude/rules/`, every hook, and every memory entry is ultimately a prompt — and the effectiveness of these artifacts depends on the correct (or incorrect) application of the techniques cataloged in this guide.
 
-The most relevant finding for the project is the **paradigm inversion**: advanced reasoning models (o1, R1, Claude with extended thinking) perform worse with classic techniques like few-shot and explicit CoT. This directly impacts the writing of skills and sub-agent prompts — techniques that work in conversational prompts can be counterproductive in agentic contexts. The guide also documents the transition from "prompt engineering" to "context engineering," aligning perfectly with `research-context-engineering-comprehensive.md` and validating the progressive disclosure approach advocated in `a-guide-to-agents.md`.
+The most relevant finding for the project is the **paradigm inversion**: advanced reasoning models (o1, R1, Claude with extended thinking) perform worse with classic techniques like few-shot and explicit CoT. *[rev. 2026-10-11]* For current Claude models only the explicit-CoT half holds; few-shot examples are still recommended and "work with thinking" [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)]. This directly impacts the writing of skills and sub-agent prompts — techniques that work in conversational prompts can be counterproductive in agentic contexts. The guide also documents the transition from "prompt engineering" to "context engineering," aligning perfectly with `research-context-engineering-comprehensive.md` and validating the progressive disclosure approach advocated in `a-guide-to-agents.md`.
 
 For the `agent-engineering-toolkit`, this document serves as the **technical reference base** for all prompting decisions across both skill sets (plugin and standalone). Every technique cataloged here has direct application in at least one of the artifacts that skills generate: AGENTS.md, CLAUDE.md, SKILL.md, rules, hooks, or sub-agent prompts.
 
@@ -170,7 +179,7 @@ Analyze the test patterns in `tests/` and return:
 
 **When NOT to use.** Advanced reasoning models (o1, R1) — only 2-3% marginal improvement with 20-80% more time. Small models (<100B) — "fluent but illogical" chains. Simple one-step tasks. In limited-context artifacts (rules, hooks).
 
-**Application in skills.** Use implicit CoT in analysis phases — instruct the model to "analyze each aspect before concluding." Use XML tags `<thinking>` and `<answer>` for structured separation when the phase requires complex reasoning.
+**Application in skills.** Use implicit CoT in analysis phases — instruct the model to "analyze each aspect before concluding." ~~Use XML tags `<thinking>` and `<answer>` for structured separation when the phase requires complex reasoning.~~ → as of 2026-10: do not ask current Claude models to write reasoning into `<thinking>` tags (may be declined on Fable 5.1 / Opus 5.5 / Sonnet 5.5); rely on adaptive thinking and raise `effort` for the skill instead [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)]. The `<thinking>` examples further down this document are kept as history.
 
 ```markdown
 ## Phase 3: Convention Analysis
@@ -450,20 +459,22 @@ This matrix maps each main technique from the prompt engineering guide to the pr
 
 ### 4.1 Technique → Document Mapping
 
+> **Note (2026-10-11).** The `Evaluating-AGENTS-paper` column previously attributed a position on each technique to the ETH Zurich study. The study (v3) evaluates whether context files change task success and cost; it says nothing about these prompting techniques, so those cells now read "Not addressed by the paper". What it does show is in [`analysis-evaluating-agents-paper.md`](analysis-evaluating-agents-paper.md).
+
 | Technique | Evaluating-AGENTS-paper | research-context-engineering-comprehensive | claude-prompting-best-practices | a-guide-to-agents | a-guide-to-agents (CLAUDE.md) |
 |-----------|------------------------|---------------------------------------------|-------------------------------|-------------------|-------------------------------|
-| **Role Prompting** | Confirms that role prompting in AGENTS.md defines scope effectively | Consumes minimal attention budget (10-30 tokens) | Recommended in system prompt for persistence across turns | Project one-liner is implicit role prompting | CLAUDE.md can define project persona |
-| **Zero-Shot** | Most effective instructions in AGENTS.md are zero-shot | Maximizes attention budget efficiency | Recommended as starting point before adding complexity | "Ideal AGENTS.md should be as small as possible" — zero-shot is the path | Rules and CLAUDE.md should be zero-shot |
-| **Few-Shot** | Examples in AGENTS.md cost fixed tokens; avoid | Each example consumes 50-200+ tokens of limited budget | Recommends 3-5 examples in XML tags for format tasks | "Move specific rules to separate files" — avoid examples in root | Skills can use few-shot; CLAUDE.md should not |
-| **System vs User** | AGENTS.md is fundamentally a system prompt | Instruction positioning affects adherence (lost-in-middle) | Place role in system, examples in user, queries at end | Root/package hierarchy is system/user hierarchy | CLAUDE.md/rules/skills hierarchy mirrors system/user |
-| **Chain-of-Thought** | Not documented in AGENTS.md configs | CoT consumes significant tokens; use only when necessary | Recommends `<thinking>` and `<answer>` tags for Claude | Not relevant for static AGENTS.md | Analysis skills can use CoT in exploration phases |
-| **ReAct** | Exploration loop is implicit in AGENTS.md evaluation | ReAct cycles progressively consume context | Foundation of Claude Code's agentic loop | Agents "are fast at navigating documentation hierarchies" — ReAct | Claude Code operates in native ReAct loop |
-| **Prompt Chaining** | Multi-criteria evaluation is an implicit chain | Each chain link is a compaction opportunity | "Explicit chaining useful when you need to inspect intermediaries" | Progressive disclosure is a resolution chain | Multi-phase skills are prompt chains |
-| **Structured Output** | Metrics in structured format for evaluation | JSON preferred for inter-agent state (less prone to modification) | XML has 15-20% boost in Claude; JSON for inter-system | AGENTS.md is Markdown; intermediate outputs can be JSON | Rules can specify formats; memory uses Markdown |
-| **RAG Patterns** | AGENTS.md as "pre-loaded context" is static RAG | Progressive disclosure + JIT = agentic RAG | "Agentic RAG: LLM decides when to retrieve" | "Let the agent generate JIT documentation" — agentic RAG | Skills with `references/` are pre-curated RAG |
-| **Meta-Prompting** | Meta-analysis of AGENTS.md effectiveness | Automatic optimization significantly outperforms manual | Anthropic's prompt generator is meta-prompting | AGENTS.md refactoring prompt is a meta-prompt | Initialization skill generates prompts for future agents |
-| **Self-Critique** | AGENTS.md quality validation | Critique-revision cycles cost 2-3x per response | Evaluate → revise loop is recommended pattern | "Find contradictions" in refactoring prompt | Validation phase in skills is self-critique |
-| **Step-Back** | Ask "What is this repo for?" before analyzing | Abstraction reduces tokens spent on irrelevant exploration | 7-27% improvement over CoT | Project one-liner is an implicit step-back | Before generating CLAUDE.md, understand the project's purpose |
+| **Role Prompting** | Not addressed by the paper | Consumes minimal attention budget (10-30 tokens) | Recommended in system prompt for persistence across turns | Project one-liner is implicit role prompting | CLAUDE.md can define project persona |
+| **Zero-Shot** | Not addressed by the paper | Maximizes attention budget efficiency | Recommended as starting point before adding complexity | "Ideal AGENTS.md should be as small as possible" — zero-shot is the path | Rules and CLAUDE.md should be zero-shot |
+| **Few-Shot** | Not addressed by the paper | Each example consumes 50-200+ tokens of limited budget | Recommends 3-5 examples in XML tags for format tasks | "Move specific rules to separate files" — avoid examples in root | Skills can use few-shot; CLAUDE.md should not |
+| **System vs User** | Not addressed by the paper | Instruction positioning affects adherence (lost-in-middle) | Place role in system, examples in user, queries at end | Root/package hierarchy is system/user hierarchy | CLAUDE.md/rules/skills hierarchy mirrors system/user |
+| **Chain-of-Thought** | Not addressed by the paper | CoT consumes significant tokens; use only when necessary | Recommends `<thinking>` and `<answer>` tags for Claude | Not relevant for static AGENTS.md | Analysis skills can use CoT in exploration phases |
+| **ReAct** | Not addressed by the paper | ReAct cycles progressively consume context | Foundation of Claude Code's agentic loop | Agents "are fast at navigating documentation hierarchies" — ReAct | Claude Code operates in native ReAct loop |
+| **Prompt Chaining** | Not addressed by the paper | Each chain link is a compaction opportunity | "Explicit chaining useful when you need to inspect intermediaries" | Progressive disclosure is a resolution chain | Multi-phase skills are prompt chains |
+| **Structured Output** | Not addressed by the paper | JSON preferred for inter-agent state (less prone to modification) | XML has 15-20% boost in Claude; JSON for inter-system | AGENTS.md is Markdown; intermediate outputs can be JSON | Rules can specify formats; memory uses Markdown |
+| **RAG Patterns** | Not addressed by the paper | Progressive disclosure + JIT = agentic RAG | "Agentic RAG: LLM decides when to retrieve" | "Let the agent generate JIT documentation" — agentic RAG | Skills with `references/` are pre-curated RAG |
+| **Meta-Prompting** | Not addressed by the paper | Automatic optimization significantly outperforms manual | Anthropic's prompt generator is meta-prompting | AGENTS.md refactoring prompt is a meta-prompt | Initialization skill generates prompts for future agents |
+| **Self-Critique** | Not addressed by the paper | Critique-revision cycles cost 2-3x per response | Evaluate → revise loop is recommended pattern | "Find contradictions" in refactoring prompt | Validation phase in skills is self-critique |
+| **Step-Back** | Not addressed by the paper | Abstraction reduces tokens spent on irrelevant exploration | 7-27% improvement over CoT | Project one-liner is an implicit step-back | Before generating CLAUDE.md, understand the project's purpose |
 
 ### 4.2 Convergent Principles
 

@@ -1,5 +1,14 @@
 # A Complete Guide To AGENTS.md
 
+> **Revision 2026-10-11:** Mirrored third-party article — core advice (keep the file minimal, progressive disclosure, no all-caps forcing) still holds; one factual claim about Claude Code is now wrong and is annotated inline, the author's wording is otherwise untouched.
+>
+> - **Outdated:** "Claude Code doesn't use `AGENTS.md`". Since Claude Code v2.1.277 it reads `AGENTS.md` natively when no `CLAUDE.md`/`CLAUDE.local.md` exists in the working directory or above; with both present only `CLAUDE.md` loads unless *Project instructions* is set to `claude-md-and-agents-md`. The symlink still works but is no longer required; an `@AGENTS.md` import is the documented fallback. Source: https://code.claude.com/docs/en/memory
+> - **Status of the standard:** agents.md now states it is "stewarded by the Agentic AI Foundation under the Linux Foundation" and "used by over 60k open-source projects"; nearest-file-wins precedence for nested files is unchanged. Claude Code is not among the agents shown on the agents.md home page (its fuller "all supported agents" list was not opened). Source: https://agents.md/
+> - **Still valid:** target under 200 lines per `CLAUDE.md`, path-scoped `.claude/rules/` with `paths` frontmatter, nested files loaded on demand. Source: https://code.claude.com/docs/en/memory
+> - **Still valid:** the "light touch, no all-caps forcing" advice — Anthropic's current guide still says to dial back `CRITICAL: You MUST`-style language. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Could not verify:** the HumanLayer "~150-200 instructions" budget for current (2026) models; no primary measurement found.
+> - **Evidence since publication:** Gloaguen et al. (arXiv:2602.11988v3, 2026-09-29) found that LLM-generated context files add 20-23% cost with no significant change in task success, and that developer-written files significantly outperform them; the authors suggest omitting generated files. This supports the "never auto-generate" advice. See `Evaluating-AGENTS-paper.md`. Source: https://arxiv.org/abs/2602.11988v3
+
 Have you ever felt concerned about the size of your `AGENTS.md` file?
 
 Maybe you should be. A bad `AGENTS.md` file can confuse your agent, become a maintenance nightmare, and cost you tokens on every request.
@@ -20,7 +29,7 @@ The `AGENTS.md` file is an open standard supported by many - though not all - to
 <details>
   <summary>CLAUDE.md</summary>
 
-Notably, Claude Code doesn't use `AGENTS.md` - it uses `CLAUDE.md` instead. You can symlink between them to keep all your tools working the same way:
+~~Notably, Claude Code doesn't use `AGENTS.md` - it uses `CLAUDE.md` instead.~~ → as of 2026-10: Claude Code (v2.1.277+) reads `AGENTS.md` natively when the repository has no `CLAUDE.md` [[source](https://code.claude.com/docs/en/memory)]. You can symlink between them to keep all your tools working the same way:
 
 ```bash
 # Create a symlink from AGENTS.md to CLAUDE.md

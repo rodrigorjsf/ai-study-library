@@ -1,5 +1,12 @@
 # LLM Whitespace & Formatting in Context Windows
 
+> **Revision 2026-10-11:** Qualitative conclusions hold (whitespace is cheap, structure helps, do not minify prompts); the token counts are specific to GPT-4o's `o200k_base` and should not be read as Claude numbers.
+>
+> - **Not transferable:** Claude uses a different tokenizer, which changed again with Opus 4.7 (1M tokens ≈ 555k words, vs ≈ 750k on earlier models). Exact whitespace token costs on current Claude models were not measured — use the token-counting API. Source: https://platform.claude.com/docs/en/about-claude/models/overview
+> - **Still valid:** XML tags to separate instructions, context, examples and inputs; consistent, descriptive tag names; nesting for hierarchy. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Stale link:** reference [21] (docs.anthropic.com … context-windows, "Docs, 2024") — current page is https://platform.claude.com/docs/en/build-with-claude/context-windows and now describes 1M-token windows.
+> - **Could not verify:** any 2026 re-measurement of the formatting-sensitivity papers cited here.
+
 **Scope**: BPE tokenizer behavior with whitespace, structural formatting impact on output quality, token costs of formatting elements, and best practices.  
 **Part of**: [LLM Context Engineering: Comprehensive Research Synthesis](research-context-engineering-comprehensive.md)  
 **Related scopes**: [Context Rot & Management](research-context-rot-and-management.md) | [Multilingual Performance](research-multilingual-performance.md) | [Agent Workflows](research-agent-workflows-and-patterns.md)

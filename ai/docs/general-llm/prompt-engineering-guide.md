@@ -1,5 +1,16 @@
 # Prompt Engineering: Complete Technical Guide to Techniques from 2022 to 2026
 
+> **Revision 2026-10-11:** Technique catalogue and paper benchmarks remain valid as history; the model-tier decision matrix and the Claude-specific CoT/structured-output guidance are outdated and are annotated inline.
+>
+> - **Outdated — model names:** "Claude Sonnet 4.5", "GPT-4o", "Gemini 1.5 Pro" as "standard frontier models". Current Claude lineup is Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 (all 1M context, adaptive thinking). Source: https://platform.claude.com/docs/en/about-claude/models/overview
+> - **Outdated — reasoning vs. standard split for Claude:** every current Claude model thinks adaptively (always on for Fable 5.1 / Opus 5.5), so the "standard frontier → few-shot CoT" row no longer applies to Claude. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Outdated/harmful — `<thinking>`/`<answer>` manual CoT as the default:** now a fallback for thinking-off only; on Fable 5.1, Opus 5.5 and Sonnet 5.5 a prompt asking the model to write out its reasoning "may be declined". Use adaptive thinking + `effort` instead; `budget_tokens` returns a 400 on Claude 4.7 and later. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Narrowed — "few-shot hurts reasoning models":** kept for o1/R1 as sourced, but Anthropic states "Multishot examples work with thinking" and still recommends 3–5 examples in `<example>` tags. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Outdated — "Anthropic Structured Outputs (beta since November 2025)":** now GA via `output_config.format`, no beta header. Source: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+> - **Still valid:** role in the system prompt, XML tags for structure, long documents first with the query last ("up to 30 percent"), dialing back ALL-CAPS/"NEVER" emphasis, prompt chaining when intermediate outputs must be inspected, "think thoroughly" over prescriptive steps. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Could not verify:** the "15–20% performance boost" from XML on Claude (not in current Anthropic docs); the "~85% zero-shot accuracy", "150–300 words sweet spot" and "degrades after ~3,000 tokens" figures on 2026 models. Assistant prefill is not discussed in this guide; note it is rejected (400) on Claude 4.6+ models.
+> - **Not re-checked:** academic benchmark numbers (GSM8K, Game of 24, etc.) — historical results on the cited models; the long reference list was not link-checked.
+
 Prompt engineering has evolved from an informal art into a rigorous technical discipline with **over 58 documented techniques** and direct impact on AI system quality, cost, and reliability. This report covers the major techniques — from foundational (zero-shot, few-shot) to frontier (agentic patterns, DSPy, Graph of Thoughts) — with comparative analysis of performance, token cost, and applicability in multi-agent architectures. The most important finding of the last two years is a paradigm inversion: **advanced reasoning models (o1, R1, GPT-5) frequently perform worse with classic techniques like few-shot and explicit CoT**, requiring engineers to reassess established assumptions. The field is rapidly transitioning from "prompt engineering" to "context engineering" — the holistic management of all context fed to the model at each step.
 
 ---
@@ -34,7 +45,7 @@ Prompt engineering has evolved from an informal art into a rigorous technical di
 
 **Best practices.** Anthropic recommends **3–5 diverse and relevant examples**, encapsulated in XML tags (`<example>`, `</example>`). Research by Min et al. (2022) revealed that **the label space and input distribution matter more than label correctness** — even random labels outperform zero-shot. **Example order matters significantly** (Lu et al., 2021); testing multiple orderings is recommended.
 
-**When NOT to use.** With **advanced reasoning models** (o1, R1, GPT-5): examples can **hurt performance** by constraining the reasoning process. After ~5–10 examples, returns are diminishing. Standard few-shot does not help with complex multi-step reasoning — use CoT instead.
+**When NOT to use.** With **advanced reasoning models** (o1, R1, GPT-5): examples can **hurt performance** by constraining the reasoning process. After ~5–10 examples, returns are diminishing. *[rev. 2026-10-11]* For current Claude models this caveat does not apply: Anthropic states "Multishot examples work with thinking" and recommends 3–5 examples [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)]. Standard few-shot does not help with complex multi-step reasoning — use CoT instead.
 
 **Token cost.** Moderate to high: each example adds 50–200+ tokens. In multi-agent systems, examples compete with the limited context window budget of subagents.
 
@@ -60,7 +71,7 @@ The **system prompt** defines the model's persistent behavioral framework — id
 
 **When NOT to use.** Small models (<100B parameters) produce "fluent but illogical" chains that **hurt** accuracy. With **reasoning models** (o1, R1), a Wharton study (2025) found only **2–3% marginal improvement** with a **20–80% increase in response time**. A NeurIPS 2024 study ("Chain of Thoughtlessness") demonstrated that CoT only helps when annotated examples closely match the query — as problems generalize, accuracy drops to standard prompting levels. **Simple single-step tasks** gain little to nothing.
 
-**Token cost.** CoT requests take **35–600% longer** than direct requests. The **Chain of Draft (CoD)** alternative matches accuracy using only **~7.6% of the tokens**. Anthropic recommends using XML tags (`<thinking>`, `<answer>`) for structured separation and always allowing the model to externalize its reasoning.
+**Token cost.** CoT requests take **35–600% longer** than direct requests. The **Chain of Draft (CoD)** alternative matches accuracy using only **~7.6% of the tokens**. ~~Anthropic recommends using XML tags (`<thinking>`, `<answer>`) for structured separation and always allowing the model to externalize its reasoning.~~ → as of 2026-10: manual CoT is a fallback for when thinking is off; on Fable 5.1, Opus 5.5 and Sonnet 5.5 rely on adaptive thinking (lower `effort` if cost matters) — a prompt asking for reasoning in `<thinking>` tags "may be declined"; `<answer>` tags for the final answer remain fine [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)].
 
 ### Tree of Thoughts (ToT): exploration and backtracking
 
@@ -116,9 +127,9 @@ Techniques for forcing LLM outputs into machine-readable formats. Three levels o
 
 **Critical finding on reasoning.** Forcing JSON during reasoning **degrades accuracy by 10–15%** ("Let Me Speak Freely?" study, EMNLP 2024). The recommended practice is a **two-stage approach**: free reasoning first, structured formatting second — accuracy jumps from **48% to 61%** on aggregation tasks. Placing reasoning fields **before** answer fields in the schema allows the model to "think" within the structured format.
 
-**Format comparison.** Minified JSON is more token-efficient and achieves **78.5% LLM comprehension accuracy**. XML is **14% less efficient** but Anthropic specifically trained Claude to recognize XML, yielding a **15–20% performance boost**. YAML is suitable for human configuration. TOON (tabular format) uses **40% fewer tokens** for tabular data.
+**Format comparison.** Minified JSON is more token-efficient and achieves **78.5% LLM comprehension accuracy**. XML is **14% less efficient** but Anthropic specifically trained Claude to recognize XML, yielding a **15–20% performance boost** (*[rev. 2026-10-11]* figure could not be verified in current Anthropic docs, which only say XML tags "help Claude parse complex prompts unambiguously"). YAML is suitable for human configuration. TOON (tabular format) uses **40% fewer tokens** for tabular data.
 
-**Modern tools.** OpenAI Structured Outputs (native API with `strict: true`); Anthropic Structured Outputs (beta since November 2025, constrained decoding); Outlines (open-source); XGrammar (near-zero overhead — ~50μs per token); Instructor (high-level Pydantic library).
+**Modern tools.** OpenAI Structured Outputs (native API with `strict: true`); Anthropic Structured Outputs (~~beta since November 2025~~ → as of 2026-10: GA, configured via `output_config.format`, no beta header [[source](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)]; constrained decoding); Outlines (open-source); XGrammar (near-zero overhead — ~50μs per token); Instructor (high-level Pydantic library).
 
 ### RAG Prompting Patterns: grounded external context
 
@@ -205,7 +216,7 @@ For **simple classification and extraction**, start with zero-shot — if insuff
 The most counter-intuitive finding of 2025–2026: **the optimal technique depends on the model**. Kusano et al. (2025) tested 23 prompt types across 12 LLMs with radically different results.
 
 - **Reasoning models** (o1, o3, R1, GPT-5): zero-shot, no examples, no "think step by step" — these instructions **hurt** performance.
-- **Standard frontier models** (GPT-4o, Claude Sonnet 4.5, Gemini 1.5 Pro): few-shot CoT, XML tags for Claude, structured templates for GPT.
+- **Standard frontier models** (GPT-4o, Claude Sonnet 4.5, Gemini 1.5 Pro): few-shot CoT, XML tags for Claude, structured templates for GPT. *[rev. 2026-10-11]* These models are superseded; all current Claude models (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5) use adaptive thinking, so for Claude treat this row as merged with the row above — except that examples still help [[models](https://platform.claude.com/docs/en/about-claude/models/overview), [prompting](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)].
 - **Mid-tier models** (GPT-4o-mini, Claude Haiku, Llama 3 8B): complex prompting with more examples and explicit CoT — **benefit the most** from prompt engineering.
 - **Small models** (<10B params): extensive few-shot, detailed instructions. CoT only works with models of **100B+** parameters.
 
@@ -255,7 +266,7 @@ LangChain's **four context strategies** for multi-agent systems are fundamental:
 
 ### Combinations that hurt or are redundant
 
-**Few-shot + reasoning models** (o1, R1): examples constrain the reasoning process and **reduce** performance. **Explicit CoT + reasoning models**: redundant — these models already reason internally; CoT instructions are counterproductive. **Self-Consistency + simple tasks**: massive cost (5–30x) with minimal benefit. **ToT + simple reasoning**: over-engineering where CoT suffices. **Aggressive formatting (ALL-CAPS, "NEVER", "ABSOLUTELY NOT") + recent Claude models**: produces worse results. **Long context + complex reasoning**: performance degrades after ~3,000 tokens.
+**Few-shot + reasoning models** (o1, R1): examples constrain the reasoning process and **reduce** performance. **Explicit CoT + reasoning models**: redundant — these models already reason internally; CoT instructions are counterproductive (*[rev. 2026-10-11]* confirmed and strengthened for current Claude models; the few-shot half of this sentence is **not** confirmed for Claude — see the revision block). **Self-Consistency + simple tasks**: massive cost (5–30x) with minimal benefit. **ToT + simple reasoning**: over-engineering where CoT suffices. **Aggressive formatting (ALL-CAPS, "NEVER", "ABSOLUTELY NOT") + recent Claude models**: produces worse results. **Long context + complex reasoning**: performance degrades after ~3,000 tokens.
 
 ### The 6-layer stacking strategy
 
@@ -282,7 +293,7 @@ The most consistent recommendation from Anthropic and OpenAI remains deceptively
 
 - [Multishot Prompting — Claude API Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/multishot-prompting)
 - [Chain of Thought Prompting — Claude API Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/chain-of-thought)
-- [Let Claude Think (Extended Thinking)](https://docs.anthropic.com/en/docs/let-claude-think)
+- [Let Claude Think (Extended Thinking)](https://docs.anthropic.com/en/docs/let-claude-think) — *[rev. 2026-10-11]* superseded: fixed `budget_tokens` budgets are rejected on Claude 4.7+; see adaptive thinking + `effort` in [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 - [Chain Complex Prompts (Prompt Chaining) — Claude API Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/chain-prompts)
 - [Long Context Prompting Tips — Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips)
 - [Prompt Generator — Claude API Docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/prompt-generator)

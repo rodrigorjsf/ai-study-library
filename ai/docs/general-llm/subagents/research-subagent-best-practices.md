@@ -1,5 +1,17 @@
 # Research: Claude Code Subagent Definition Best Practices
 
+> **Revision 2026-10-11:** Substantially outdated on mechanics (nesting, built-in agent models, model aliases, effort levels, skill-listing budget); the design advice (minimal tools, focused descriptions, isolate context, avoid overuse) still holds. Corrections are inline.
+>
+> - **Wrong now — nesting:** "Subagents cannot spawn other subagents". Current default: "a subagent can spawn subagents of its own, up to three layers below the main conversation", tunable with `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` (`1` disables nesting). Source: https://code.claude.com/docs/en/sub-agents
+> - **Wrong now — built-ins:** Explore runs on the main conversation's model (not Haiku); built-ins are Explore, Plan, general-purpose, statusline-setup (Sonnet), claude-code-guide (Haiku) and `claude`; no "Bash" agent is listed. Source: https://code.claude.com/docs/en/sub-agents
+> - **Wrong now — aliases:** `haiku`/`sonnet`/`opus` resolve to Haiku 5.5 / Sonnet 5.5 / Opus 5.5 on the Anthropic API, plus `fable` (Fable 5.1) and `best`; `[1m]` has no effect on these models (1M is native). Third-party clouds may resolve to older models. Source: https://code.claude.com/docs/en/model-config
+> - **Wrong now — effort:** levels are `low`, `medium`, `high`, `xhigh`, `max`; `max` is not Opus-4.6-only; default is `medium` on Opus/Sonnet/Haiku 5.5. Source: https://code.claude.com/docs/en/model-config
+> - **Changed — `CLAUDE_CODE_SUBAGENT_MODEL`:** since v2.1.251 it is a fallback default (per-invocation `model` and frontmatter win); `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` restores force-all behaviour. Source: https://code.claude.com/docs/en/sub-agents
+> - **Changed — skill listing budget:** scales at 1% of the context window (not 2%), configurable via `skillListingBudgetFraction`; each entry's description is capped at 1,536 characters. Source: https://code.claude.com/docs/en/skills
+> - **Changed — frontmatter:** additional documented fields `omitClaudeMd`, `color`, `initialPrompt`, `experimental`; `Agent(type)` lists are ignored inside subagent definitions (main-thread `--agent` only). Source: https://code.claude.com/docs/en/sub-agents
+> - **Still valid:** only `name` + `description` required; plugin agents ignore `hooks`, `mcpServers`, `permissionMode`; dial back "CRITICAL: You MUST"; watch for subagent overuse (now documented for Opus 5 as well as 4.6); "think thoroughly" over prescriptive steps; SKILL.md under 500 lines. Sources: https://code.claude.com/docs/en/sub-agents , https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices , https://code.claude.com/docs/en/skills
+> - **Not re-checked:** community repository patterns and star counts (section on everything-claude-code), hook event details, agent-teams comparison beyond the spawning row; "subagents receive only their system prompt" was not re-verified against the current startup-loading rules.
+
 > **Date**: 2026-03-22
 > **Sources**: Official Anthropic documentation, community repositories, prompt engineering guides
 > **Scope**: Subagent definition, SKILL.md integration, prompt engineering, execution model, community patterns
@@ -38,7 +50,7 @@ Key findings:
 - **Subagents receive ONLY their system prompt** (the markdown body) plus basic environment details — NOT the full Claude Code system prompt or conversation history.
 - **`context: fork`** in skills creates a new isolated context where the skill content becomes the task prompt.
 - **Model selection** defaults to `inherit` (same as main conversation). Use `haiku` for fast/cheap exploration, `sonnet` for standard work, `opus` for complex reasoning.
-- **Subagents cannot spawn other subagents** — this prevents infinite nesting.
+- ~~**Subagents cannot spawn other subagents** — this prevents infinite nesting.~~ → as of 2026-10: subagents can spawn subagents, by default up to three layers below the main conversation (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`) [[source](https://code.claude.com/docs/en/sub-agents)].
 - **Community patterns** strongly favor read-only agents for reviews and domain-specific agents for language/framework tasks.
 
 ---
@@ -60,7 +72,7 @@ Claude Code ships with these built-in subagents:
 
 | Agent | Model | Tools | Purpose |
 |-------|-------|-------|---------|
-| **Explore** | Haiku (fast) | Read-only (no Write/Edit) | File discovery, code search, codebase exploration |
+| **Explore** | ~~Haiku (fast)~~ → main conversation's model [[source](https://code.claude.com/docs/en/sub-agents)] | Read-only (no Write/Edit) | File discovery, code search, codebase exploration |
 | **Plan** | Inherits | Read-only (no Write/Edit) | Codebase research for planning mode |
 | **general-purpose** | Inherits | All tools | Complex research, multi-step operations, code modifications |
 | **Bash** | Inherits | Terminal commands | Running commands in separate context |
@@ -95,7 +107,7 @@ To encourage proactive delegation, include phrases like **"use proactively"** in
 | `hooks` | No | Lifecycle hooks scoped to this subagent | — |
 | `memory` | No | Persistent memory scope: `user`, `project`, or `local` | — |
 | `background` | No | Set `true` to always run as background task | `false` |
-| `effort` | No | Effort level override: `low`, `medium`, `high`, `max` (Opus 4.6 only) | Inherits from session |
+| `effort` | No | Effort level override: `low`, `medium`, `high`, ~~`max` (Opus 4.6 only)~~ → `xhigh`, `max`; availability depends on the model [[source](https://code.claude.com/docs/en/model-config)] | Inherits from session |
 | `isolation` | No | Set to `worktree` for isolated git worktree | — |
 
 ### Field Interaction Rules
@@ -103,7 +115,7 @@ To encourage proactive delegation, include phrases like **"use proactively"** in
 - If both `tools` and `disallowedTools` are set, `disallowedTools` is applied first, then `tools` is resolved against the remaining pool.
 - A tool listed in both is removed.
 - If `Agent` is omitted from the `tools` list entirely, the agent cannot spawn any subagents.
-- `Agent(agent_type)` syntax restricts which subagent types can be spawned (only applies to `--agent` mode).
+- `Agent(agent_type)` syntax restricts which subagent types can be spawned (only applies to `--agent` mode). *[rev. 2026-10-11]* Confirmed: inside a subagent definition, listing `Agent` allows spawning (depth permitting) but the type list is ignored [[source](https://code.claude.com/docs/en/sub-agents)].
 
 ### CLI-Defined Subagents (JSON format)
 
@@ -289,7 +301,7 @@ The commands execute immediately (preprocessing), and output replaces the placeh
 
 ### Key Constraints
 
-- **Subagents cannot spawn other subagents** — prevents infinite nesting
+- ~~**Subagents cannot spawn other subagents** — prevents infinite nesting~~ → as of 2026-10: nesting allowed up to three layers by default [[source](https://code.claude.com/docs/en/sub-agents)]
 - **Background subagents** auto-deny any permissions not pre-approved
 - If a background subagent needs to ask clarifying questions, the tool call fails but the subagent continues
 
@@ -330,6 +342,8 @@ Each subagent invocation creates a new instance with fresh context. To continue 
 | `sonnet[1m]` | Sonnet with 1M context | Long sessions with large codebases |
 | `opus[1m]` | Opus with 1M context | Long sessions with complex reasoning |
 
+> *[rev. 2026-10-11]* This table is outdated. On the Anthropic API `haiku` → Haiku 5.5, `sonnet` → Sonnet 5.5, `opus` → Opus 5.5, plus `fable` → Fable 5.1 and `best`; all have a native 1M window, so `sonnet[1m]`/`opus[1m]` have no effect on them. [[source](https://code.claude.com/docs/en/model-config)]
+
 ### When to Use Each Model
 
 | Use Case | Recommended Model | Rationale |
@@ -350,12 +364,14 @@ Each subagent invocation creates a new instance with fresh context. To continue 
 CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6
 ```
 
+> *[rev. 2026-10-11]* Since v2.1.251 this variable is a fallback default, not an override — a per-invocation or frontmatter `model` wins; set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` to apply one model to every subagent. The current Sonnet ID is `claude-sonnet-5-5`. [[source](https://code.claude.com/docs/en/sub-agents)]
+
 ### Cost Considerations
 
 - **Haiku** is significantly cheaper per token than Sonnet
 - **Sonnet** is the sweet spot for most subagent tasks
 - **Opus** should be reserved for tasks that genuinely require deep reasoning
-- The built-in **Explore** agent already defaults to Haiku for cost efficiency
+- ~~The built-in **Explore** agent already defaults to Haiku for cost efficiency~~ → as of 2026-10: Explore uses the main conversation's model; set `model: haiku` on your own exploration agent if you want the cheaper tier [[source](https://code.claude.com/docs/en/sub-agents)]
 - Prompt caching is enabled by default and applies to subagents
 
 ### Effort Levels
@@ -367,7 +383,9 @@ Effort levels control adaptive reasoning depth. Set via the `effort` frontmatter
 | `low` | Minimal thinking; fast responses | Simple, mechanical tasks |
 | `medium` | Balanced thinking | Standard code tasks |
 | `high` | Deep thinking | Complex problems |
-| `max` | No constraint on thinking tokens (Opus 4.6 only) | Hardest problems |
+| `max` | No constraint on thinking tokens ~~(Opus 4.6 only)~~ | Hardest problems |
+
+> *[rev. 2026-10-11]* An `xhigh` level now sits between `high` and `max`; both are available on Fable 5.x, Opus 4.7–5.5, Sonnet 5/5.5 and Haiku 5.5. Default effort is `medium` on Opus/Sonnet/Haiku 5.5. [[source](https://code.claude.com/docs/en/model-config)]
 
 ---
 
@@ -456,7 +474,7 @@ From the [official prompting best practices](https://docs.anthropic.com/en/docs/
 Key recommendations:
 1. **Ensure well-defined subagent tools** — Have subagent tools available and described in tool definitions
 2. **Let Claude orchestrate naturally** — Claude will delegate appropriately without explicit instruction
-3. **Watch for overuse** — Claude Opus 4.6 may spawn subagents in situations where a simpler, direct approach would suffice
+3. **Watch for overuse** — Claude Opus 4.6 may spawn subagents in situations where a simpler, direct approach would suffice (*[rev. 2026-10-11]* still documented, and Opus 5 "also delegates to subagents more readily than prior models" [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)])
 4. **Prefer general instructions over prescriptive steps** — "think thoroughly" often produces better reasoning than hand-written step-by-step plans
 5. **Opus 4.6 is more responsive to system prompts** — Dial back aggressive language ("CRITICAL: You MUST...") in favor of normal prompting ("Use this tool when...")
 
@@ -795,7 +813,7 @@ Fix: Move to environment variable
 1. **Overly aggressive delegation prompts**: Claude Opus 4.6 is responsive to system prompts. Replace `"CRITICAL: You MUST use this tool when..."` with `"Use this tool when..."` — the older aggressive style causes overtriggering.
    *Source*: [Anthropic Prompting Best Practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-prompting-best-practices)
 
-2. **Too many skills/agents**: Skill descriptions are loaded into context (2% of context window budget). Too many can exceed the character limit. Run `/context` to check for warnings.
+2. **Too many skills/agents**: Skill descriptions are loaded into context (~~2% of context window budget~~ → as of 2026-10: the listing budget scales at 1% of the context window, configurable; each description capped at 1,536 characters [[source](https://code.claude.com/docs/en/skills)]). Too many can exceed the character limit. Run `/context` to check for warnings.
    *Source*: [Anthropic Docs — Skills: Troubleshooting](https://docs.anthropic.com/en/docs/claude-code/skills#troubleshooting)
 
 3. **Using subagents for simple grep operations**: Claude Opus 4.6 may spawn subagents when a direct grep call is faster and sufficient. Add guidance: "Only use subagents for tasks that genuinely require multi-step reasoning or tool access beyond simple search."
@@ -830,7 +848,7 @@ Fix: Move to environment variable
 | **Coordination** | Main agent manages all work | Shared task list with self-coordination |
 | **Best for** | Focused tasks where only results matter | Complex work requiring discussion |
 | **Token cost** | Lower (results summarized) | Higher (each teammate is separate instance) |
-| **Spawning** | Cannot spawn other subagents | Can communicate with any teammate |
+| **Spawning** | ~~Cannot spawn other subagents~~ → can spawn subagents up to the depth limit (default 3) [[source](https://code.claude.com/docs/en/sub-agents)] | Can communicate with any teammate |
 
 ### When to Use Each
 

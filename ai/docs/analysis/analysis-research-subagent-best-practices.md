@@ -1,9 +1,20 @@
 # Analysis: Research on Subagent Best Practices
 
-> **Status**: Current
+> **Status**: ~~Current~~ → Partially superseded — see the Revision 2026-10-11 block below
 > **Source document**: [`docs/subagents/research-subagent-best-practices.md`](../subagents/research-subagent-best-practices.md)
 > **Analysis date**: 2026-03-27
 > **Scope**: Analysis of the research document on subagent best practices, covering delegation patterns, community patterns, anti-patterns, and prompt engineering for agent system prompts
+
+> **Revision 2026-10-11:** Design principles stand; four mechanical claims the checklists depend on are invalidated (anti-nesting, alias→model mapping, effort levels, 2% description cost).
+>
+> - **Invalidated:** "Anti-nesting: Subagents cannot spawn other subagents". Default is now three layers; any architecture note that relies on a flat hierarchy must set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` or omit `Agent` from `tools`. Source: https://code.claude.com/docs/en/sub-agents
+> - **Invalidated:** alias table (Haiku 4.5 / Sonnet 4.6 / Opus 4.6, `[1m]` variants). Now Haiku 5.5 / Sonnet 5.5 / Opus 5.5 (+ `fable`), all natively 1M. Source: https://code.claude.com/docs/en/model-config
+> - **Invalidated:** "`max` … (Opus 4.6 only)"; levels are `low`/`medium`/`high`/`xhigh`/`max`. Source: https://code.claude.com/docs/en/model-config
+> - **Invalidated:** "each skill description consumes ~2% of the context budget". The whole skill *listing* is budgeted at 1% of the context window (configurable), 1,536 characters max per entry. Source: https://code.claude.com/docs/en/skills
+> - **Invalidated:** "Explicit CoT is more effective with Sonnet and Haiku" — on Sonnet 5.5 rely on adaptive thinking; manual CoT is a thinking-off fallback. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Weakened:** "haiku for exploration" as mirroring the built-in — Explore now inherits the main model; choosing `haiku` for cheap read-only agents remains a legitimate cost decision. Source: https://code.claude.com/docs/en/sub-agents
+> - **Still valid:** normal language instead of "CRITICAL: You MUST"; plugin agents cannot use `hooks`/`mcpServers`/`permissionMode`; minimal tool sets; description-driven delegation. Sources: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices , https://code.claude.com/docs/en/sub-agents
+> - **Not re-checked:** the "97k+ stars" community figure; "Opus for architecture, Sonnet for everything else" is a cost heuristic not re-benchmarked on 5.5 models (Anthropic now suggests starting with Opus 5.5 for most workloads: https://platform.claude.com/docs/en/about-claude/models/overview).
 
 ---
 
@@ -114,7 +125,7 @@ Based on analysis of official examples and community patterns:
 | `low` | Minimal thinking, fast responses | Simple, mechanical tasks |
 | `medium` | Balanced thinking | Standard tasks |
 | `high` | Deep thinking | Complex problems |
-| `max` | No thinking token restriction (Opus 4.6 only) | Hardest problems |
+| `max` | No thinking token restriction ~~(Opus 4.6 only)~~ → `xhigh` and `max` exist on all current models [[source](https://code.claude.com/docs/en/model-config)] | Hardest problems |
 
 ### 2.7 Community Patterns (everything-claude-code, 97k+ stars)
 
@@ -159,7 +170,7 @@ This pattern significantly reduces noise and makes agent output actionable.
 | # | Anti-Pattern | Consequence | Mitigation |
 |---|-------------|-------------|------------|
 | 1 | Aggressive delegation prompts ("CRITICAL: You MUST...") | Overtriggering with Opus 4.6 | Use normal language ("Use this tool when...") |
-| 2 | Too many skills/agents | Exceed context budget (2% per skill description) | Monitor via `/context` |
+| 2 | Too many skills/agents | Exceed context budget (~~2% per skill description~~ → listing budget is 1% of the context window in total [[source](https://code.claude.com/docs/en/skills)]) | Monitor via `/context` |
 | 3 | Subagents for simple grep operations | Wasted tokens and latency | Guide toward direct tool use |
 | 4 | Not restricting tools | Unintended modifications, wasted context | Minimum necessary allowlist |
 | 5 | Vague descriptions | Inconsistent or absent delegation | "Use proactively when [trigger]" |
@@ -171,7 +182,7 @@ This pattern significantly reduces noise and makes agent output actionable.
 
 ### 3.2 Tool Description Cost in Context
 
-Skill descriptions occupy ~2% of the context window. With many registered agents and skills, this cost accumulates. Use `/context` to check for excess warnings.
+~~Skill descriptions occupy ~2% of the context window.~~ → as of 2026-10: the skill listing budget scales at 1% of the context window [[source](https://code.claude.com/docs/en/skills)]. With many registered agents and skills, this cost accumulates. Use `/context` to check for excess warnings.
 
 ### 3.3 Claude Opus 4.6 and Excessive Responsiveness
 
@@ -218,7 +229,7 @@ Plugin agents CANNOT use `hooks`, `mcpServers`, or `permissionMode`. Supported f
 
 - **Bidirectional relationship**: Skills can run in subagents (`context: fork`) AND subagents can load skills (`skills` field)
 - **Dynamic injection**: `` !`command` `` enables real-time data in skill content
-- **Descriptions as cost**: Each skill description consumes ~2% of the context budget
+- **Descriptions as cost**: ~~Each skill description consumes ~2% of the context budget~~ → as of 2026-10: the whole skill listing shares a budget of 1% of the context window; each entry is capped at 1,536 characters [[source](https://code.claude.com/docs/en/skills)]
 - **Disable-model-invocation**: `true` keeps descriptions out of context until manual invocation
 - **Plugin skills**: Plugin skills are invocable by subagents with `plugin-name:skill-name` namespace
 
@@ -233,7 +244,7 @@ Plugin agents CANNOT use `hooks`, `mcpServers`, or `permissionMode`. Supported f
 
 ### 5.3 Subagents
 
-- **Anti-nesting**: Subagents cannot spawn other subagents
+- ~~**Anti-nesting**: Subagents cannot spawn other subagents~~ → as of 2026-10: nesting is allowed up to three layers by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`) [[source](https://code.claude.com/docs/en/sub-agents)]
 - **Hub-and-spoke**: Results return only to the caller
 - **Resumption**: SendMessage with agent ID preserves history
 - **Isolation**: worktree for risky operations, automatic cleanup
@@ -275,7 +286,7 @@ When invoked:
 5. Report -- structured output
 ```
 
-**Warning**: With Opus 4.6, "think thoroughly" often outperforms prescriptive CoT steps. Explicit CoT is more effective with Sonnet and Haiku.
+**Warning**: With Opus 4.6, "think thoroughly" often outperforms prescriptive CoT steps. ~~Explicit CoT is more effective with Sonnet and Haiku.~~ → as of 2026-10: on Sonnet 5.5 rely on adaptive thinking; manual CoT is only a fallback when thinking is off [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)].
 
 ### 6.2 ReAct for Subagents with Tool Access
 

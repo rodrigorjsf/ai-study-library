@@ -1,9 +1,18 @@
 # Analysis: A Complete Guide To AGENTS.md
 
-> **Status**: Current
+> **Status**: ~~Current~~ → Partially superseded — see the Revision 2026-10-11 block below
 > **Source document**: [A Complete Guide To AGENTS.md](https://www.octomind.dev/blog/a-complete-guide-to-agents-md)
 > **Analysis date**: 2026-03
 > **Scope**: Minimalist configuration philosophy for AI agent context files in code repositories
+
+> **Revision 2026-10-11:** Recommendations largely stand; the cross-tool section is outdated because Claude Code now reads AGENTS.md directly.
+>
+> - **Invalidated:** §"need for symlinks between AGENTS.md and CLAUDE.md" as evidence of incomplete standardisation — Claude Code v2.1.277+ loads `AGENTS.md` when no `CLAUDE.md` is present, and can load both. Any recommendation to maintain a symlink or duplicate file for Claude Code is now optional. Source: https://code.claude.com/docs/en/memory
+> - **Updated:** AGENTS.md is stewarded by the Agentic AI Foundation under the Linux Foundation; "over 60k" projects. Source: https://agents.md/
+> - **Still valid:** minimal root file, progressive disclosure, path-scoped rules, under-200-lines target. Source: https://code.claude.com/docs/en/memory
+> - **Still valid:** avoid coercive ALL-CAPS language; the quote attributed to Opus 4.5/4.6 remains in Anthropic's current guide. Proactive subagent orchestration now applies to all current models. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Stale model reference:** "Sonnet-4.5" / "Opus 4.6" are legacy; current models are Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5. Source: https://platform.claude.com/docs/en/about-claude/models/overview
+> - **Weakened:** the "think step by step belongs in a skill" remark — on current Claude models explicit step-by-step CoT is redundant anywhere (see `analysis-prompt-engineering-guide.md` revision).
 
 ## 1. Executive Summary
 
@@ -86,7 +95,7 @@ This contradicts the intuition of many developers who believe that uppercase ins
 
 ### 3.2 The Auto-Generation Trap
 
-The guide is emphatic against auto-generation, but the practice is common. Codex, Qwen Code, and Claude Code offer built-in `/init` commands. The fact that the providers themselves recommend auto-generation creates a direct tension with this guide's principle. The "Evaluating AGENTS.md" paper empirically confirms that LLM-generated files **reduce** the success rate by 3% on average.
+The guide is emphatic against auto-generation, but the practice is common. Codex, Qwen Code, and Claude Code offer built-in `/init` commands. The fact that the providers themselves recommend auto-generation creates a direct tension with this guide's principle. The "Evaluating AGENTS.md" paper (v3) found that LLM-generated files do not significantly change the success rate (−0.5% and −2% on its two benchmarks) while raising cost by 20-23%, and its authors "suggest omitting LLM-generated context files for the time being, contrary to agent developers' recommendations".
 
 ### 3.3 Stable Concepts vs Code Instances
 
@@ -102,7 +111,7 @@ The guide does not explicitly address scenarios where progressive disclosure can
 
 ### 3.5 The Cross-Tool Compatibility Problem
 
-AGENTS.md is described as an "open standard supported by many - though not all - tools." However, each tool interprets the file in a slightly different way. The need for symlinks between AGENTS.md and CLAUDE.md reveals that standardization is still incomplete. Instructions that work well with one tool may not have the same effect on another.
+AGENTS.md is described as an "open standard supported by many - though not all - tools." However, each tool interprets the file in a slightly different way. ~~The need for symlinks between AGENTS.md and CLAUDE.md reveals that standardization is still incomplete.~~ → as of 2026-10: Claude Code reads `AGENTS.md` natively when no `CLAUDE.md` exists [[source](https://code.claude.com/docs/en/memory)]; tool-specific interpretation differences remain. Instructions that work well with one tool may not have the same effect on another.
 
 ---
 
@@ -237,13 +246,13 @@ AGENTS.md is a context engineering artifact — it is not an individual prompt, 
 
 ### 7.1 Evaluating-AGENTS-paper.md
 
-The ETH Zurich paper offers **direct empirical validation** of this guide's principles:
+The ETH Zurich paper (v3, 2026-09-29) bears on this guide's principles as follows. Full analysis: [`analysis-evaluating-agents-paper.md`](analysis-evaluating-agents-paper.md).
 
-- **LLM-generated files reduce performance**: 3% average reduction in success rate + 20% cost increase. This confirms the guide's warning against auto-generation.
-- **Human-written files have marginal gains**: only +4% on average. This reinforces that even well-written files have limited impact, justifying extreme minimalism.
-- **Instructions are followed but make the task harder**: the paper shows that agents follow AGENTS.md instructions (e.g., use of `uv` when mentioned), but this increases steps and cost. The guide is correct in stating that "unnecessary requirements from context files make tasks harder."
+- **LLM-generated files add cost without benefit**: no significant change in success rate (−0.5% and −2%), and a significant 20-23% cost increase (§4.2). This supports the guide's warning against auto-generation on cost grounds, not because the files measurably hurt.
+- **Human-written files have marginal, non-significant gains**: +2.4% on average (p = 21%), while raising cost by up to 19%. They do significantly outperform generated files (§4.2). Even well-written files have limited measured impact on task success.
+- **Instructions are followed, at a cost**: agents follow AGENTS.md instructions (e.g., use of `uv` when mentioned), which increases steps, cost and reasoning tokens. The authors hypothesize that the additional instructions "make the task harder" (§4.3).
 - **Codebase overviews are not effective**: 100% of files generated by Sonnet-4.5 include overviews, but they do not reduce the time to find relevant files. This validates the guide's recommendation to describe capabilities, not structure.
-- **Redundancy with existing documentation**: when all documentation is removed, LLM-generated context files improve performance by 2.7%. This suggests that AGENTS.md is more useful in projects with sparse documentation.
+- **Redundancy with existing documentation**: when all documentation is removed, LLM-generated context files improve performance by 2.7% and outperform developer-written ones (Appendix B). AGENTS.md is more useful in projects with sparse documentation.
 
 ### 7.2 research-context-engineering-comprehensive.md
 

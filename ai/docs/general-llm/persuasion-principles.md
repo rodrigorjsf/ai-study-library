@@ -1,5 +1,12 @@
 # Persuasion Principles for Agent Skill Engineering
 
+> **Revision 2026-10-11:** Analysis of the 2025 preprint, left untouched. The study was since expanded and published; the central claim (LLMs are susceptible to human persuasion principles) was confirmed on newer reasoning models with a smaller effect.
+>
+> - **Published follow-up:** Meincke, Shapiro, Duckworth, Mollick, Mollick, Van den Bulte & Cialdini, "Persuading Large Language Models to Comply with Objectionable Requests", PNAS, 19 May 2026 — 126,000 conversations on Claude Haiku 4.5, GPT-5 mini and Gemini 3 Flash with reasoning enabled; "persuasion principles raised compliance with regulated drug synthesis requests from 35.3% to 51.3%". Sources: https://gail.wharton.upenn.edu/research-and-insights/persuading-llms-objectionable-requests/ , https://www.pnas.org/doi/10.1073/pnas.2535868123 (DOI taken from the Wharton page; PNAS page itself not opened)
+> - **Implication for this doc:** the effect sizes below (33.3% → 72.0% on GPT-4o mini) are an upper bound from a small non-reasoning model and an easy request; the authors now describe reasoning models as "more resistant, but not truly or consistently resistant". Per-principle rankings on the newer models were not checked.
+> - **Discrepancy, not corrected:** the Wharton page reports the preliminary GPT-4o-mini study as 33.4% vs 72.1%; this document's 33.3% / 72.0% come from the preprint and were left as written.
+> - **Caution when applying to skill/prompt authoring:** Anthropic's current guidance is to *reduce* pressure language ("CRITICAL: You MUST…") because recent Claude models over-trigger on it; authority/commitment framing in SKILL.md should be tested, not assumed. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+
 Deep analysis of **"Call Me A Jerk: Persuading AI to Comply with Objectionable Requests"** (Meincke, Shapiro, Duckworth, Mollick, Mollick, & Cialdini, 2025) — designed as an actionable reference for a Meta-Skill that generates new SKILL.md files following the [Agent Skills standard](https://agentskills.io).
 
 **Source**: Generative AI Labs, The Wharton School, University of Pennsylvania; WHU – Otto Beisheim School of Management; Arizona State University.

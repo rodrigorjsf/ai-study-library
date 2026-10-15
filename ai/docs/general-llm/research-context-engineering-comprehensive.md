@@ -1,5 +1,14 @@
 # LLM Context Engineering: Comprehensive Research Synthesis
 
+> **Revision 2026-10-11:** Hub conclusions hold (context rot is real, curate rather than fill, structure over prose). Two recommendations are softened: "reference data in the middle" and the size of the English advantage for Claude.
+>
+> - **Still valid:** context rot — Anthropic's own docs now state "As token count grows, accuracy and recall degrade, a phenomenon known as *context rot*" even with 1M-token windows as the default on all current models. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Corrected:** "reference data in middle". Anthropic's guidance is long documents at the **top**, query/instructions at the **end** ("up to 30 percent"); nothing recommends the middle. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Softened:** "English dominates by a wide margin" / "English only for instructions". Anthropic's published table puts Portuguese (Brazil) at 97.8% (Sonnet 4.5) and 96.1% (Haiku 4.5) of English on translated MMLU; no data is published for the 5.x models. The tokenization overhead is a separate, still-real cost. Source: https://platform.claude.com/docs/en/build-with-claude/multilingual-support
+> - **Changed:** Claude's tokenizer changed with Opus 4.7 (1M tokens ≈ 555k words vs ≈ 750k before), so GPT-tokenizer token counts in this synthesis do not transfer to Claude; Portuguese overhead on the new tokenizer was not measured. Source: https://platform.claude.com/docs/en/about-claude/models/overview
+> - **Still valid:** the ~200-line guidance — Claude Code docs still say "target under 200 lines per CLAUDE.md file". Source: https://code.claude.com/docs/en/memory
+> - **Could not verify:** a rerun of the Chroma context-rot study on 2026 models; open questions 1–7 were not re-surveyed.
+
 **Date**: April 2026
 **Scope**: Context rot, context poisoning, attention budget, whitespace & formatting, multilingual performance (English vs Portuguese), prompt compression, RAG quality — synthesized from 50+ academic papers and official documentation (2022–2026).
 
@@ -58,7 +67,7 @@ This synthesis is split into focused files for efficient context loading:
 2. **English only for instructions.** Non-English tokens reserved for user-facing localization
 3. **Every token must earn its place.** Apply: "Would removing this cause the agent to make mistakes?" If not, cut it
 4. **Blank lines and indentation are free.** Don't sacrifice readability to save 5 tokens
-5. **Position matters.** Critical instructions at beginning/end; reference data in middle; queries last
+5. **Position matters.** Critical instructions at beginning/end; ~~reference data in middle~~ → correction (rev. 2026-10-11): for prompts with long documents, Anthropic puts the documents first and the instructions and query after them [[source](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)]; queries last
 
 ### Formatting Recommendations
 

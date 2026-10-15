@@ -1,9 +1,19 @@
 # Analysis: Research LLM Context Optimization for AI Coding Agents
 
-> **Status**: Current
+> **Status**: ~~Current~~ → Partially superseded — see the Revision 2026-10-11 block below
 > **Source document**: [`docs/general-llm/research-context-engineering-comprehensive.md`](../general-llm/research-context-engineering-comprehensive.md)
 > **Analysis date**: 2026-03-27
 > **Scope**: Comprehensive analysis of research on LLM context optimization strategies for AI coding agents, covering context rot, attention budgets, progressive disclosure, and just-in-time documentation
+
+> **Revision 2026-10-11:** Core recommendations stand and several are now stated outright in Anthropic's docs; the context-awareness claim and the model names are outdated.
+>
+> - **Invalidated:** "Claude Sonnet 4.5+ has built-in context awareness" as a general property. Budget tags are injected only on Sonnet 5, Sonnet 4.6, Sonnet 4.5 and Haiku 4.5; Opus 4.7+, Sonnet 5.5, Haiku 5.5 and Fable models do not receive them (task budgets, beta, are the replacement). Do not design prompts that assume the model knows its remaining budget. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Strengthened:** "do not instruct explicit CoT" — now applies to every current Claude model, not just Opus 4.6; reasoning-in-tags prompts may be declined. Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Still valid:** prefer a fresh context over compaction when state is on disk ("Claude's latest models are extremely effective at discovering state from the local filesystem"). Source: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+> - **Still valid:** context rot despite 1M-token default windows; server-side compaction and context editing are now first-party tools for it. Source: https://platform.claude.com/docs/en/build-with-claude/context-windows
+> - **Still valid:** subagent-overuse warning (Opus 4.6, and Opus 5), overengineering warning, under-200-lines CLAUDE.md. Sources: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices , https://code.claude.com/docs/en/memory
+> - **Outdated premise:** subagent isolation advice assumed no nesting; subagents can now spawn subagents (default depth 3), which multiplies token cost if unchecked. Source: https://code.claude.com/docs/en/sub-agents
+> - **Could not verify:** the 200k-window-era thresholds or percentages quoted from secondary sources against 1M-window behaviour.
 
 ---
 
@@ -47,7 +57,7 @@ The LongICLBench benchmark (arXiv:2404.02060) confirmed a **bias toward labels p
 
 #### Context Awareness (Claude 4.5+)
 
-Claude Sonnet 4.5+ has **built-in context awareness** — the model tracks its remaining token budget during conversation. Anthropic's analogy: *"For a model, lacking context awareness is like competing in a cooking show without a clock."*
+~~Claude Sonnet 4.5+ has **built-in context awareness** — the model tracks its remaining token budget during conversation.~~ → as of 2026-10: true only for Sonnet 5, Sonnet 4.6, Sonnet 4.5 and Haiku 4.5; Opus 4.7+, Sonnet 5.5, Haiku 5.5 and Fable models get no injected budget tags [[source](https://platform.claude.com/docs/en/build-with-claude/context-windows)]. Anthropic's analogy: *"For a model, lacking context awareness is like competing in a cooking show without a clock."*
 
 ### 2.2 Instruction Budgeting (Area 2)
 
@@ -363,7 +373,7 @@ This is the most direct use case:
 
 - **Model training or fine-tuning**: The document deals exclusively with inference-time optimization
 - **Advanced reasoning models** (o1, R1): The prompt engineering guide shows that these models often perform worse with classic techniques; the research document does not address this distinction
-- **Languages underrepresented in training data**: The document acknowledges the gap, and the Evaluating-AGENTS paper confirms that Python (well-represented) may make context files less necessary
+- **Languages underrepresented in training data**: The document acknowledges the gap, and the Evaluating-AGENTS paper (v3, §5) names this as a limitation: its evaluation is Python-only, and Python tooling may already be in the models' parametric knowledge
 - **Rigorous quantitative evaluation**: The document synthesizes recommendations but does not conduct controlled experiments
 
 ---
@@ -554,17 +564,17 @@ The ETH Zurich paper provides **empirical validation** of the research document'
 
 **Validations:**
 
-- The finding that LLM-generated context files **reduce** performance by 3% on average directly confirms the warning about context poisoning and unnecessary documentation: *"unnecessary requirements from context files make tasks harder."*
-- The **20%+** cost increase with context files confirms that additional tokens consume attention budget without proportional return.
-- The finding that instructions are **generally followed** (e.g., `uv` used 1.6x/instance when mentioned vs. 0.01x when not) validates that the attention budget works — instructions are processed, but the question is whether they **help**.
+- LLM-generated context files changed success by −0.5% (SWE-bench Lite) and −2% (CTXbench), neither statistically significant (v3, §4.2). The paper explains the lack of benefit by redundancy: generated files restate existing documentation, and help (+2.7%) only when that documentation is removed (v3, Appendix B). This supports the warning about unnecessary documentation; it does not show that such files poison the context.
+- The significant cost increase with context files (20% and 23% for generated files, up to 19% for developer-written ones) comes from the extra steps agents take to follow them, not from the file's length: the paper found no relation between length and cost (v3, §4.2, Appendix B).
+- The finding that instructions are **generally followed** (e.g., `uv` used 1.6x/instance when mentioned vs. 0.01x when not) shows the instructions are processed and obeyed; the open question is whether obeying them **helps** (v3, §4.3).
 
 **Challenges and nuances:**
 
-- **Human developer** context files had a marginal gain of ~4%, while the research document suggests that well-crafted configuration should have significant impact. This suggests the gap between theory and practice is larger than the document admits.
+- **Developer-written** context files gained 2.4% on average, which is not statistically significant (p = 21%), though they significantly outperform generated ones (p = 3.8%) (v3, §4.2). The research document suggests well-crafted configuration should have a clear impact on task success; this paper did not find one.
 - The paper's conclusion that "context files do not provide effective overviews" contradicts the document's recommendation to include project descriptions. However, the paper tests long overviews (average 641 words, up to 29 sections), not the "one-liner" recommended by the a-guide-to-agents.
 - The finding that context files **increase exploration and testing** even without improving resolution rate suggests that the document's context engineering principles may need an additional dimension: **cost-effectiveness of induced exploration**.
 
-**Practical implication**: The research document and the evaluation paper converge on the recommendation of **minimalism** — only human-authored, minimal context files focused on specific requirements (tooling, non-obvious commands) show net benefit.
+**Practical implication**: The research document and the evaluation paper converge on **minimalism**. The paper's conclusion is that context files "should only contain specific additional instructions beyond what is already available in the codebase" (v3, §6). It does not show a net benefit on task success for any kind of file; the case for a minimal file rests on making agents use non-standard tools and conventions, which they do when told. Full analysis: [`analysis-evaluating-agents-paper.md`](analysis-evaluating-agents-paper.md).
 
 ### 7.2 a-guide-to-agents.md
 
@@ -656,7 +666,7 @@ This Anthropic document is the **primary source** for several research document 
 
 5. **Publication date and temporal context**. As a synthesis of 2024-2026 research, some recommendations may become obsolete with new models. The document does not address how to handle model evolution (e.g., Claude 4.6 with adaptive thinking makes explicit CoT counterproductive).
 
-6. **Focus on Python and open-source projects**. The Evaluating-AGENTS paper confirmed that results in Python (well-represented in training) may not generalize to less common languages. The research document does not address this limitation.
+6. **Focus on Python and open-source projects**. The Evaluating-AGENTS paper lists as a limitation that its Python-only results may not generalize to less common languages (v3, §5). The research document does not address this limitation.
 
 7. **Absence of comparative study of configuration approaches**. The document cites as a gap the lack of systematic comparison between flat vs. hierarchical vs. path-scoped configuration, but also offers no evidence for preferring one over another beyond logical reasoning.
 
@@ -678,7 +688,7 @@ This Anthropic document is the **primary source** for several research document 
 | 6 | **Review and prune regularly**: treat configuration as code | Outdated documentation poisons context |
 | 7 | **Use hierarchy**: root for universal rules, subdirectories for area rules, `.claude/rules/` for specific topics | Five-level hierarchy + progressive disclosure |
 | 8 | **Describe capabilities, not file structure** | Paths change constantly; capabilities are stable |
-| 9 | **Never auto-generate CLAUDE.md/AGENTS.md** | ETH Zurich paper: LLM-generated files reduce performance by 3% |
+| 9 | **Do not auto-generate CLAUDE.md/AGENTS.md for a documented repository** | ETH Zurich paper (v3): generated files add 20-23% cost with no significant change in success, and are outperformed by developer-written ones |
 | 10 | **Detect and resolve contradictions** periodically across CLAUDE.md, subdirectories, and rules | Contradictions cause arbitrary behavior |
 
 ### 9.2 For Agentic Systems Architects
