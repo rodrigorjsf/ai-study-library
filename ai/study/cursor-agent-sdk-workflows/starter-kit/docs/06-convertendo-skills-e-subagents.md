@@ -28,7 +28,7 @@ onde cada harness procura: as etapas são código, e as instruções compartilha
 | Você quer usar modelos baratos na maior parte das etapas | O fluxo precisa de conversa com o humano no meio |
 | O custo precisa de teto previsível | — |
 
-## As cinco etapas da conversão
+## As seis etapas da conversão
 
 1. **Inventário.** Tabela com cada skill e subagent: gatilho atual, entradas, saídas, tools, modelo e efeitos
    externos.
@@ -36,8 +36,11 @@ onde cada harness procura: as etapas são código, e as instruções compartilha
    "verifique se passou"). Cada uma vira uma regra em código ou um classificador barato com schema.
 3. **Mapeamento** para `ctx.agent`, `ctx.parallel`, `ctx.pipeline`, `execFileSync` e laços com teto. A tabela
    completa está na skill.
-4. **Geração** de `workflows/<nome>.ts` e `test/<nome>.test.ts`, seguida de `npm run typecheck && npm test`.
-5. **Relatório**: o que foi convertido, o que não foi e por quê, a paridade Cursor/Claude Code e o comando do
+4. **Otimização de custo** (obrigatória): checklist de [08](08-custos-e-cache.md#6-checklist-de-custo) etapa por
+   etapa (tier, `tools`, `settingSources`, `memo`, prompt com parte fixa primeiro, schema mínimo, limites) e
+   estimativa de custo por caminho.
+5. **Geração** de `workflows/<nome>.ts` e `test/<nome>.test.ts`, seguida de `npm run typecheck && npm test`.
+6. **Relatório**: o que foi convertido, o que não foi e por quê, a paridade Cursor/Claude Code e o comando do
    primeiro run real.
 
 ## Exemplo resumido
@@ -75,6 +78,16 @@ Revise o diff procurando bugs e problemas de segurança...
 | (review que falha "passa" sem ninguém notar) | Review exigido que não roda encerra o run com `review-failed`; depois de corrigir achados, testes e review rodam de novo |
 | `model: inherit` (reviewer) | `MODELS.REVIEW` explícito; `readonly: true` → `tools: ["read","grep","glob","ls","shell"]` (o shell é para `git diff`) |
 | "abra o PR" | `gh pr create` no código, só com testes verdes e sem achado bloqueante |
+
+**Otimização de custo aplicada** (passo 4):
+
+| Etapa | Antes | Depois |
+|---|---|---|
+| Classificar | Inexistente: o modelo do chat decidia "se for complexa" no meio da conversa | Só quando falta label; modelo `auto-low`; `tools: []`; `settingSources: ["team","mdm"]`; `memo` |
+| Planejar | Modelo do chat, sempre | Só MED/HIGH; tools de leitura; `memo` (relançar no mesmo commit não paga de novo) |
+| Testes | O agente rodava e interpretava | Rodados pelo código: zero tokens. Só a falha (truncada) volta para um agente |
+| Review | Subagent `reviewer` com `inherit`, chamado "se a mudança for grande" | Só HIGH ou diff > 300 linhas; modelo explícito; sem `task` |
+| Prompts | Corpo da skill + contexto da conversa | Constantes de instruções no topo + dados no fim |
 
 **Depois:** o resultado é praticamente o [`workflows/implement-issue.ts`](../workflows/implement-issue.ts).
 

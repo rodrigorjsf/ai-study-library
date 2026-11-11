@@ -4,7 +4,7 @@
 //
 // STATUS: código de referência. Typecheck feito contra @cursor/sdk@1.3.1; não executado contra a API real.
 
-import type { AgentDefinition, McpServerConfig, ModelSelection, ToolName } from "@cursor/sdk";
+import type { AgentDefinition, McpServerConfig, ModelSelection, SettingSource, ToolName } from "@cursor/sdk";
 
 /** JSON Schema (subconjunto aceito pelo Ajv). */
 export type JsonSchema = Record<string, unknown>;
@@ -62,6 +62,29 @@ export interface AgentCallOptions {
    * podem falhar com ele ligado.
    */
   sandbox?: boolean;
+  /**
+   * Camadas de configuração que esta etapa carrega (sobrescreve o default do run).
+   * Cada camada aumenta o contexto fixo de TODA chamada: regras, descrições de skills e de subagents
+   * (injetadas na descrição da tool Task) e tools dos MCP servers do projeto. Etapas que não precisam
+   * do contexto do repositório (classificar, resumir) ficam mais baratas com ["team","mdm"] (mantém
+   * governança) ou [] (nada).
+   */
+  settingSources?: SettingSource[];
+  /**
+   * Cache de resultado entre runs: se a mesma etapa (prompt + modelo + schema + tools + contexto) já
+   * rodou com o repositório no mesmo estado (HEAD + mudanças locais), devolve o resultado salvo sem
+   * chamar a API. Só para etapas sem efeitos: exige `tools` com apenas tools de leitura.
+   */
+  memo?: boolean;
+}
+
+/** Uso de tokens somado (por etapa ou por run). `cacheRead`/`cacheWrite` vêm do provedor via Cursor. */
+export interface UsageTotals {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  totalTokens: number;
 }
 
 export interface Budget {
@@ -72,6 +95,8 @@ export interface Budget {
   spentCents(): number;
   spentTokens(): number;
   remainingCents(): number;
+  /** Tokens somados por tipo, para medir aproveitamento de cache. */
+  usage(): UsageTotals;
 }
 
 export interface WorkflowContext<A = unknown> {

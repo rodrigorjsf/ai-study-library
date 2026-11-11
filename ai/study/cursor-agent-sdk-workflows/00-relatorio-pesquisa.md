@@ -186,6 +186,7 @@ Ainda segundo o pacote [PKG]:
 | Isolamento de escrita | `isolation: 'worktree'` | Não (a CLI tem `-w`) | O workflow cria `git worktree` e passa em `cwd` |
 | Teto de custo | `budget` (tokens do turno) + aviso "Large workflow" | `getUsage()` em centavos; `RateLimitError` no teto da conta | `--max-cents` / `--max-tokens`; aborta o run |
 | Concorrência | 16 por padrão, 1.000 agentes por run | Não documentada | Semáforo (default 4) |
+| Cache de prompt | Irmãos com mesmo modelo, tools, schema e cwd compartilham o prefixo; o runtime os escalona para ler o cache (`CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS`); TTL 5 min ou 1 h | Automático e sem controle no SDK; só medido (`cacheReadTokens`/`cacheWriteTokens`) [PKG]. Relato de que irmãos não compartilham prefixo [S] | Mede `cacheHitRatio`; prefixo estável; contexto mínimo por etapa; **memo** entre runs para etapas de leitura |
 | Aprovação | Prompt por run conforme o modo; regras `Workflow(<nome>)` | Local roda tools **sem aprovação** por padrão; sandbox, autoReview e hooks são opcionais | Allowlist de tools por etapa + hooks do projeto (`settingSources`) |
 | Contexto do projeto | CLAUDE.md injetado nos agentes | Opt-in via `settingSources` | O engine liga `["project","team","mdm"]`; instruções em `AGENTS.md` |
 | Progresso | `/workflows` (TUI) | Stream de eventos | Arquivo de job + `wait_workflow` / `wf wait` |
@@ -266,6 +267,27 @@ com timeout maior).
 - Políticas do admin para MCP, rede e tools: um comentário interno do SDK sugere que valem nas runs locais, mas
   não há doc pública. [I]
 - Pools self-hosted mantêm checkout e execução na sua infraestrutura, mas a **inferência continua na Cursor**. [GH]
+
+### 5.1 Custos e cache: o que dá para controlar
+
+O detalhamento, com checklist, está em
+[`starter-kit/docs/08-custos-e-cache.md`](starter-kit/docs/08-custos-e-cache.md). Em resumo:
+
+- **O cache de prompt do Cursor não é configurável pelo SDK** [PKG]. Ele é automático, e cache read custa cerca de
+  5× menos que input no modo Auto [S]. O que está ao alcance do workflow é favorecê-lo:
+  - instruções fixas no começo do prompt, dados no fim;
+  - um agente por etapa (conversa curta);
+  - re-prompts na mesma conversa.
+- **A maior economia é não chamar o modelo:** decisões objetivas em código, etapas condicionais, journal no resume
+  e **memo** (`memo: true`), que reaproveita o resultado de etapas de leitura entre runs enquanto o repositório não
+  muda.
+- **O contexto fixo é pago em toda chamada.** A camada `project` carrega descrições de skills, regras e tools do MCP
+  do projeto. A camada `user` traz os subagents e skills pessoais, com relatos de cerca de 10 mil tokens a mais
+  por conversa [S]. A tool `task` lista todos os subagents [S]. O kit permite `settingSources` e `tools` por etapa
+  para cortar isso.
+- **Skills e subagents no IDE custam contexto fixo repetido.** A cada delegação, o subagent paga o contexto fixo
+  de novo e roda no modelo herdado. Convertidos em workflow, viram etapas com modelo, tools e contexto mínimos. Por
+  isso a `/skill-to-workflow` tem uma etapa **obrigatória** de otimização de custo, com estimativa por caminho.
 
 ---
 

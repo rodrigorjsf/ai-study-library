@@ -15,8 +15,8 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 
 > **Status:** blueprint.
 > - O código passa no typecheck contra `@cursor/sdk@1.3.1`.
-> - O controle de fluxo está coberto por 8 testes offline com um SDK falso: schema, validação de args, retries,
->   timeout, concorrência, teto de custo e resume.
+> - O controle de fluxo está coberto por 12 testes offline com um SDK falso: schema, validação de args, retries,
+>   timeout, concorrência, teto de custo, resume, uso por tipo de token, `settingSources` por etapa e memo.
 > - O MCP server foi exercitado pelo protocolo stdio. O CLI (`start`/`wait`, jobs órfãos, guarda de recursão,
 >   workflows em `.agents/workflows/`) foi testado num repositório temporário.
 > - Um revisor independente auditou código e afirmações contra os `.d.ts` do SDK; as correções foram aplicadas.
@@ -82,6 +82,7 @@ No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings 
 | [05 · Escrevendo workflows](docs/05-escrevendo-workflows.md) | API, padrões, regras, testes |
 | [06 · Convertendo skills e subagents](docs/06-convertendo-skills-e-subagents.md) | O processo da skill `/skill-to-workflow`, com um exemplo |
 | [07 · Governança e custos (Enterprise)](docs/07-governanca-e-custos.md) | Orçamento por usuário, políticas de admin, auditoria, riscos |
+| [08 · Custos, cache e boas práticas](docs/08-custos-e-cache.md) | De onde vem o custo, que caches existem (e quem controla), memo, contexto mínimo, prefixo estável, checklist |
 
 ## Transparência: o que este kit faz por baixo
 

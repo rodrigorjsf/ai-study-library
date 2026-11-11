@@ -15,8 +15,10 @@ import { join } from "node:path";
 import { Agent, AgentBusyError, RateLimitError, type Run, type RunResult, type SDKAgent, type SettingSource } from "@cursor/sdk";
 import { Ajv } from "ajv";
 import { Journal } from "./journal.js";
+import { MemoStore, isReadOnly, repoState } from "./memo.js";
+import { stateDir as runtimeStateDir } from "./state.js";
 import { type Capture, SUBMIT_TOOL, repromptMessage, schemaInstruction, submitResultTool } from "./structured.js";
-import type { AgentCallOptions, Budget, WorkflowContext, WorkflowDefinition } from "./workflow.js";
+import type { AgentCallOptions, Budget, UsageTotals, WorkflowContext, WorkflowDefinition } from "./workflow.js";
 
 export class BudgetExceededError extends Error {}
 export class StepFailedError extends Error {}
@@ -50,7 +52,16 @@ export type WorkflowEvent =
   | { type: "log"; message: string }
   | { type: "phase"; title: string }
   | { type: "step-start"; label: string; phase?: string; model?: string; attempt: number }
-  | { type: "step-end"; label: string; ok: boolean; cached: boolean; chargedCents: number; model?: string }
+  | {
+      type: "step-end";
+      label: string;
+      ok: boolean;
+      /** De onde veio o resultado sem chamar a API: journal do run (resume) ou memo entre runs. */
+      cached: false | "journal" | "memo";
+      chargedCents: number;
+      model?: string;
+      usage?: UsageTotals;
+    }
   | { type: "warning"; message: string };
 
 export interface RunOutcome<R> {
@@ -60,10 +71,28 @@ export interface RunOutcome<R> {
   error?: string;
   spentCents: number;
   spentTokens: number;
+  /** Tokens por tipo. cacheHitRatio = cacheRead / (input + cacheRead + cacheWrite) [aproximação; ver docs/08]. */
+  usage: UsageTotals & { cacheHitRatio: number | null };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const ajv = new Ajv({ allErrors: true, strict: false });
+
+const emptyUsage = (): UsageTotals => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 0 });
+
+function addUsage(acc: UsageTotals, u: Partial<UsageTotals> | undefined): void {
+  if (!u) return;
+  acc.inputTokens += u.inputTokens ?? 0;
+  acc.outputTokens += u.outputTokens ?? 0;
+  acc.cacheReadTokens += u.cacheReadTokens ?? 0;
+  acc.cacheWriteTokens += u.cacheWriteTokens ?? 0;
+  acc.totalTokens += u.totalTokens ?? 0;
+}
+
+function withRatio(u: UsageTotals): UsageTotals & { cacheHitRatio: number | null } {
+  const prompt = u.inputTokens + u.cacheReadTokens + u.cacheWriteTokens;
+  return { ...u, cacheHitRatio: prompt > 0 ? Math.round((u.cacheReadTokens / prompt) * 1000) / 1000 : null };
+}
 
 export function newRunId(workflow: string): string {
   return `${workflow}-${randomUUID().slice(0, 8)}`;
@@ -96,17 +125,27 @@ export async function runWorkflow<A, R>(
   const runId = opts.runId ?? newRunId(def.meta.name);
   let spentCents = 0;
   let spentTokens = 0;
+  const totals = emptyUsage();
+  const outcome = (status: "finished" | "failed", extra: { result?: R; error?: string }): RunOutcome<R> => ({
+    runId,
+    status,
+    ...extra,
+    spentCents,
+    spentTokens,
+    usage: withRatio(totals),
+  });
 
   if (def.meta.argsSchema) {
     const validate = ajv.compile(def.meta.argsSchema);
     if (!validate(args)) {
-      return { runId, status: "failed", error: `args inválidos: ${ajv.errorsText(validate.errors)}`, spentCents, spentTokens };
+      return outcome("failed", { error: `args inválidos: ${ajv.errorsText(validate.errors)}` });
     }
   }
 
   process.env[INSIDE_WORKFLOW_ENV] = "1";
-  const stateDir = opts.stateDir ?? join(opts.cwd, ".workflows", "runs");
-  const journal = new Journal(join(stateDir, runId, "journal.jsonl"));
+  const runsDir = opts.stateDir ?? runtimeStateDir(opts.cwd, "runs");
+  const journal = new Journal(join(runsDir, runId, "journal.jsonl"));
+  const memo = new MemoStore(opts.cwd);
   const sem = new Semaphore(opts.concurrency ?? 4);
   const emit = opts.onEvent ?? (() => {});
   const settingSources = opts.settingSources ?? ["project", "team", "mdm"];
@@ -118,6 +157,7 @@ export async function runWorkflow<A, R>(
     spentCents: () => spentCents,
     spentTokens: () => spentTokens,
     remainingCents: () => (opts.maxCents == null ? Infinity : Math.max(0, opts.maxCents - spentCents)),
+    usage: () => ({ ...totals }),
   };
 
   function assertBudget(): void {
@@ -129,19 +169,22 @@ export async function runWorkflow<A, R>(
     }
   }
 
-  /** Lê custo do agente. O custo "pode atrasar um pouco depois do fim da run": tenta de novo se vier vazio. */
-  async function chargeUsage(agent: SDKAgent): Promise<number> {
+  /** Lê custo e tokens do agente. O custo "pode atrasar um pouco depois do fim da run": tenta de novo se vier vazio. */
+  async function chargeUsage(agent: SDKAgent): Promise<{ charged: number; usage: UsageTotals }> {
     for (let i = 0; i < 3; i++) {
-      const usage = await agent.getUsage().catch(() => undefined);
-      if (usage?.cost || i === 2) {
-        const charged = usage?.cost?.chargedCents ?? 0;
+      const u = await agent.getUsage().catch(() => undefined);
+      if (u?.cost || i === 2) {
+        const charged = u?.cost?.chargedCents ?? 0;
+        const usage = emptyUsage();
+        addUsage(usage, u?.usage);
         spentCents += charged;
-        spentTokens += usage?.usage.totalTokens ?? 0;
-        return charged;
+        spentTokens += usage.totalTokens;
+        addUsage(totals, usage);
+        return { charged, usage };
       }
       await sleep(1000);
     }
-    return 0;
+    return { charged: 0, usage: emptyUsage() };
   }
 
   /** send() com tolerância a AgentBusyError (a run anterior ainda fechando). */
@@ -180,19 +223,40 @@ export async function runWorkflow<A, R>(
   async function agentCall<T>(prompt: string, callOpts: AgentCallOptions = {}): Promise<T> {
     const o: AgentCallOptions = { ...def.defaults, ...callOpts };
     const label = o.label ?? prompt.slice(0, 48);
-    // Chave calculada de forma síncrona, antes de qualquer await.
-    const key = journal.keyFor(prompt, {
+    const sources = o.settingSources ?? settingSources;
+    const fingerprint = {
       model: o.model,
       schema: o.schema,
       cwd: o.cwd,
       tools: o.tools,
       disallowedTools: o.disallowedTools,
       agents: o.agents,
-    });
+      settingSources: sources,
+    };
+    // Chave calculada de forma síncrona, antes de qualquer await.
+    const key = journal.keyFor(prompt, fingerprint);
     const cached = journal.get(key);
     if (cached) {
-      emit({ type: "step-end", label, ok: true, cached: true, chargedCents: 0, model: cached.model });
+      emit({ type: "step-end", label, ok: true, cached: "journal", chargedCents: 0, model: cached.model });
       return cached.result as T;
+    }
+    let memoKey: string | undefined;
+    if (o.memo) {
+      if (!isReadOnly(o.tools)) {
+        throw new StepFailedError(`etapa "${label}": memo exige \`tools\` só com tools de leitura (read, grep, glob, ls, semSearch...)`);
+      }
+      const state = repoState(o.cwd ?? opts.cwd);
+      if (state) {
+        memoKey = memo.key({ prompt, ...fingerprint, cwd: undefined }, state);
+        const hit = memo.get(memoKey);
+        if (hit !== undefined) {
+          journal.record({ key, label, model: o.model?.id, result: hit, chargedCents: 0, totalTokens: 0 });
+          emit({ type: "step-end", label, ok: true, cached: "memo", chargedCents: 0, model: o.model?.id });
+          return hit as T;
+        }
+      } else {
+        emit({ type: "warning", message: `etapa "${label}": memo ignorado (cwd não é um repositório git com commit)` });
+      }
     }
     if (!o.model) throw new StepFailedError(`etapa "${label}" sem modelo: defina opts.model ou defaults.model`);
     if (o.schema && o.schema.type !== "object") {
@@ -209,6 +273,7 @@ export async function runWorkflow<A, R>(
         const capture: Capture = { value: undefined, submitted: false };
         let agent: SDKAgent | undefined;
         let charged = 0;
+        let usage: UsageTotals | undefined;
         try {
           agent = await Agent.create({
             apiKey: opts.apiKey,
@@ -222,7 +287,7 @@ export async function runWorkflow<A, R>(
             mcpServers: o.mcpServers,
             local: {
               cwd: o.cwd ?? opts.cwd,
-              settingSources,
+              settingSources: sources,
               sandboxOptions: o.sandbox ? { enabled: true } : undefined,
               customTools: o.schema ? { [SUBMIT_TOOL]: submitResultTool(o.schema, capture) } : undefined,
             },
@@ -233,7 +298,7 @@ export async function runWorkflow<A, R>(
           while (o.schema && result.status === "finished" && !capture.submitted && schemaTries-- > 0) {
             result = await waitWithTimeout(await send(agent, repromptMessage(capture)), o.timeoutMs ?? 20 * 60_000);
           }
-          charged = await chargeUsage(agent);
+          ({ charged, usage } = await chargeUsage(agent));
 
           if (result.status !== "finished") {
             lastError = `run ${result.status}: ${result.error?.message ?? "sem detalhe"}`;
@@ -241,12 +306,13 @@ export async function runWorkflow<A, R>(
             lastError = `agente não entregou ${SUBMIT_TOOL} válido (${capture.lastError ?? "nenhuma chamada"})`;
           } else {
             const value = o.schema ? capture.value : (result.result ?? "");
-            journal.record({ key, label, model: o.model.id, result: value, chargedCents: charged, totalTokens: 0 });
-            emit({ type: "step-end", label, ok: true, cached: false, chargedCents: charged, model: o.model.id });
+            journal.record({ key, label, model: o.model.id, result: value, chargedCents: charged, totalTokens: usage.totalTokens });
+            if (memoKey) memo.set(memoKey, value);
+            emit({ type: "step-end", label, ok: true, cached: false, chargedCents: charged, model: o.model.id, usage });
             return value as T;
           }
         } catch (err) {
-          if (agent && charged === 0) charged = await chargeUsage(agent); // timeout/erro também custam
+          if (agent && !usage) ({ charged, usage } = await chargeUsage(agent)); // timeout/erro também custam
           if (err instanceof RateLimitError) {
             // Não retentável = teto de uso da conta/time: não adianta tentar de novo.
             if (!err.isRetryable) throw new BudgetExceededError(`Limite de uso do Cursor atingido: ${err.message}`);
@@ -256,7 +322,7 @@ export async function runWorkflow<A, R>(
         } finally {
           if (agent) await agent[Symbol.asyncDispose]().catch(() => {});
         }
-        emit({ type: "step-end", label, ok: false, cached: false, chargedCents: charged, model: o.model.id });
+        emit({ type: "step-end", label, ok: false, cached: false, chargedCents: charged, model: o.model.id, usage });
       }
       throw new StepFailedError(`etapa "${label}" falhou após ${attempts} tentativa(s): ${lastError}`);
     } finally {
@@ -306,9 +372,8 @@ export async function runWorkflow<A, R>(
   };
 
   try {
-    const result = await def.run(ctx);
-    return { runId, status: "finished", result, spentCents, spentTokens };
+    return outcome("finished", { result: await def.run(ctx) });
   } catch (err) {
-    return { runId, status: "failed", error: err instanceof Error ? err.message : String(err), spentCents, spentTokens };
+    return outcome("failed", { error: err instanceof Error ? err.message : String(err) });
   }
 }

@@ -13,7 +13,8 @@ existirem, instruções (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`), comandos o
 **Saída:** `workflows/<nome>.ts` (dentro do kit) ou `.agents/workflows/<nome>.ts` (num repositório que usa o kit
 instalado fora), `test/<nome>.test.ts` e um relatório de conversão no chat.
 
-Antes de começar, carregue a skill `workflow-authoring`: ela tem a API do runtime e as regras.
+Antes de começar, carregue a skill `workflow-authoring` (a API do runtime e as regras) e leia
+`docs/08-custos-e-cache.md` (práticas de custo e cache, usadas no passo 4).
 
 ## Passo 1: inventário (só leitura)
 
@@ -77,20 +78,51 @@ barato), e o **código** age sobre a resposta.
 **Modelos:** troque `inherit` por um tier explícito. Use um modelo barato para etapas mecânicas e de leitura e reserve
 o modelo de fronteira para planejamento difícil e revisão. Confirme os IDs com `npm run models`.
 
-## Passo 4: gerar
+## Passo 4: otimizar custo (obrigatório)
+
+Antes de gerar, aplique a cada etapa o checklist de custo de `docs/08-custos-e-cache.md` §6. Registre a decisão
+de cada item numa tabela:
+
+| Etapa | Modelo (tier) | `tools` | `settingSources` | `memo` | Prompt fixo → dados | Schema mínimo | Laço/timeout |
+|---|---|---|---|---|---|---|---|
+
+Regras que valem sempre:
+
+- **Decisão objetiva vira código**, não etapa de agente. É a maior economia.
+- **Etapa só de leitura:** `tools` só de leitura + `memo: true`.
+- **Etapa que não precisa do repositório** (classificar, resumir, revisar texto): `settingSources: ["team","mdm"]`.
+  A camada `project` carrega descrições de todas as skills, regras e tools do MCP do projeto em toda chamada.
+- **Sem `"task"` na allowlist**, salvo se a etapa precisa delegar. A descrição da Task lista todos os subagents.
+- **Instruções da skill original viram constantes** no topo do módulo, e o prompt é `INSTRUÇÕES + dados`. O
+  prefixo estável ajuda o cache do provedor e mantém journal e memo estáveis.
+- **O corpo de um subagent vira instruções da etapa.** O que era `model: inherit` ganha tier explícito, e o modelo
+  de fronteira fica só onde se justifica.
+- **Logs e diffs são truncados** antes de entrar no prompt. O output pedido é só o que o código lê.
+- **Fan-out só de itens independentes;** itens pequenos são agrupados.
+
+Depois, **estime o custo por caminho**: para cada combinação de ramos (ex.: LOW sem review; HIGH com review e uma
+correção), conte as etapas de agente e o modelo de cada uma. Compare com o fluxo original, em que tudo rodava no
+modelo do chat, com delegações que repetem o contexto fixo.
+
+## Passo 5: gerar
 
 1. Escreva o workflow seguindo `workflow-authoring`, com `meta.whenToUse` copiado e adaptado da
    `description` da skill original.
 2. Escreva `test/<nome>.test.ts` com o fake SDK, cobrindo cada ramo criado no passo 2.
-3. Rode `npm run typecheck` e `npm test` e corrija até passar.
-4. **Não apague** as skills e os subagents originais. Sugira ao usuário marcar a skill antiga com
+3. No topo do workflow, comente a estimativa de custo por caminho do passo 4.
+4. Rode `npm run typecheck` e `npm test` e corrija até passar.
+5. **Não apague** as skills e os subagents originais. Sugira ao usuário marcar a skill antiga com
    `disable-model-invocation: true`, ou trocar o corpo dela por "use /run-workflow <nome>".
 
-## Passo 5: relatório no chat
+## Passo 6: relatório no chat
 
 - Tabela do passo 1 e lista de decisões implícitas, com a regra adotada para cada uma.
+- **Custo:** a tabela do passo 4, a estimativa por caminho e o que mudou em relação ao original (etapas
+  eliminadas por código, modelos rebaixados, etapas com memo, contexto reduzido).
 - O que **não** foi convertido e por quê: por exemplo, uma interação com o humano no meio do fluxo. O runtime não
   pausa para perguntar; divida em dois workflows ou receba a resposta por `args`.
 - Paridade: se o fluxo original era do Claude Code, aponte o que muda no Cursor (formato dos hooks, `loop_limit`,
   subagents lidos de `.claude/agents/`, MCP do time em cloud).
 - O comando para o primeiro teste real com teto baixo: `npm run wf -- run <nome> --args '{...}' --max-cents 100`.
+  Depois desse run, compare o `usage` por etapa com a estimativa e ajuste os tiers. As duas etapas mais caras são
+  as primeiras candidatas.

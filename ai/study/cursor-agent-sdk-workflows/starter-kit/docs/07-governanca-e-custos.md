@@ -17,6 +17,9 @@ gasto aparece no membro, com a tag SDK, e se o limite por membro é respeitado.
 
 ## Controles de custo no kit
 
+Para as práticas de implementação (cache, contexto, prompts, memo), veja
+[08 · Custos, cache e boas práticas](08-custos-e-cache.md). Os controles abaixo são os de governança.
+
 1. **Teto por run:** `--max-cents`, `--max-tokens`, `WF_MAX_CENTS` ou `WF_MAX_TOKENS`. É checado antes de cada
    tentativa, e a ultrapassagem pode chegar a concorrência × custo de uma etapa (ver
    [02 §3](02-configuracao-inicial.md#3-teto-de-custo)).
@@ -26,7 +29,9 @@ gasto aparece no membro, com a tag SDK, e se o limite por membro é respeitado.
 4. **Laços com teto:** nenhum "repita até passar" sem limite.
 5. **Concorrência baixa** (default 4): N agentes em paralelo custam ~N vezes os tokens.
 6. **Resume:** relançar não paga de novo as etapas já concluídas.
-7. **Visibilidade:** `spentCents` no resultado e `chargedCents` por etapa nos eventos.
+7. **Visibilidade:** `spentCents` e `usage` (tokens por tipo e `cacheHitRatio`) no resultado; `chargedCents` e
+   `usage` por etapa nos eventos.
+8. **Memo entre runs:** etapas de leitura repetidas sobre o mesmo estado do repositório não custam nada.
 
 > Uso incluído no plano reporta `chargedCents = 0`. Nesse caso, o teto em centavos não protege a franquia: use
 > também `--max-tokens`.

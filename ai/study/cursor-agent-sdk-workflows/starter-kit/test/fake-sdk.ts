@@ -24,7 +24,11 @@ export const Agent = {
       },
       async getUsage() {
         stats.usageReads++;
-        return { usage: { totalTokens: 100 }, cost: { chargedCents: 7, rawCostCents: 7 }, runs: [] };
+        return {
+          usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 60, cacheWriteTokens: 20, totalTokens: 110 },
+          cost: { chargedCents: 7, rawCostCents: 7 },
+          runs: [],
+        };
       },
       async [Symbol.asyncDispose]() {
         stats.active--;

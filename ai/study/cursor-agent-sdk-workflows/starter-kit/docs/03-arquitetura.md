@@ -25,8 +25,11 @@ flowchart TB
 
 0. **Antes do run:** `args` são validados contra `meta.argsSchema` (Ajv), e o ambiente recebe
    `WF_INSIDE_WORKFLOW=1`, para que MCP servers e shells iniciados pelas etapas não disparem outro workflow.
-1. **Chave do journal:** `sha256(prompt + {model, schema, cwd, tools, agents})` mais o número da ocorrência.
+1. **Chave do journal:** `sha256(prompt + {model, schema, cwd, tools, agents, settingSources})` mais o número da
+   ocorrência.
    - Se a chave já estiver no journal, devolve o resultado salvo sem chamar a API.
+   - Com `memo: true` (só etapas de leitura), consulta também `.workflows/memo/`, com chave na etapa e no estado do
+     repositório (HEAD + mudanças locais + arquivos novos). Um acerto vale entre runs diferentes.
 2. **Validação local:** etapa sem modelo, ou com `schema` cuja raiz não é `type: "object"`, falha antes de criar
    o agente.
 3. **Teto** (antes de cada tentativa): se `spentCents ≥ maxCents` ou `spentTokens ≥ maxTokens`, lança
@@ -42,8 +45,9 @@ flowchart TB
 6. **Schema:** se a run terminou e o agente não chamou `submit_result` com JSON válido, o engine reenvia o
    pedido na mesma conversa (`schemaRetries`, default 2). O Ajv valida dentro do `execute()`, e o erro volta para
    o modelo corrigir.
-7. **Custo:** `agent.getUsage()` soma `chargedCents` e `totalTokens`, também quando a tentativa falha ou estoura
-   o tempo, e tenta de novo se o custo ainda não chegou.
+7. **Custo:** `agent.getUsage()` soma `chargedCents` e os tokens por tipo (input, output, cache read, cache
+   write), também quando a tentativa falha ou estoura o tempo, e tenta de novo se o custo ainda não chegou. O
+   resultado do run traz `usage.cacheHitRatio`.
 8. **Sucesso:** grava no journal e devolve o valor.
 9. **Falha** (status `error`/`cancelled`, timeout, schema não entregue): repete até `retries` (default 1) com
    um agente novo e então lança `StepFailedError`. `RateLimitError` retentável espera com backoff exponencial;

@@ -16,6 +16,17 @@ explica o *porquê* das regras e traz receitas.
 | Se passou | Exit code de teste, lint, typecheck | Review como *segunda* camada, nunca a única |
 | Efeitos externos (commit, PR) | Sempre | Nunca |
 
+## Custo
+
+Toda receita abaixo deve passar pelo [checklist de custo](08-custos-e-cache.md#6-checklist-de-custo). As
+práticas que mais pesam:
+
+- decidir por código em vez de chamar o modelo;
+- `memo: true` em etapas de leitura;
+- `settingSources` mínimo por etapa;
+- prompt com parte fixa primeiro;
+- modelo certo por etapa.
+
 ## Receitas
 
 ### Roteamento por label → modelo
@@ -63,6 +74,21 @@ await ctx.pipeline(files, async (file: string, _item, i) => {
 const votes = await ctx.parallel([0, 1, 2].map((v) => () =>
   ctx.agent(`Tente REFUTAR: ${claim}. Na dúvida, refuted=true.`, { label: `v${v}`, schema: VERDICT })));
 const survives = votes.filter(Boolean).filter((x) => !x!.refuted).length >= 2;
+```
+
+### Etapa de leitura barata e reaproveitável
+
+```ts
+const PLAN_INSTRUCTIONS = "Leia o código e escreva um plano... Não edite arquivos."; // constante: prefixo estável
+const plan = await ctx.agent(`${PLAN_INSTRUCTIONS}\n\n${issueBlock(issue)}`, {
+  model: MODELS.MED,
+  tools: ["read", "grep", "glob", "ls", "semSearch"], // só leitura, sem "task"
+  schema: PLAN_SCHEMA,
+  memo: true,                                         // mesmo estado do repo → custo zero no próximo run
+});
+await ctx.agent(`${CLASSIFY_INSTRUCTIONS}\n\n${text}`, {
+  model: MODELS.CLASSIFY, tools: [], settingSources: ["team", "mdm"], schema: TIER_SCHEMA, memo: true,
+});
 ```
 
 ### Escalonar o modelo por orçamento

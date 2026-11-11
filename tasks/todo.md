@@ -175,6 +175,8 @@ Handoff files on disk are the only memory between stages → their schemas must 
 - [x] Revisão independente (advisor) e correções
 - [x] Reestruturar para `.agents/` (skills, workflows do repo, AGENTS.md, link para Claude Code)
 - [x] Commit + push em `claude/keen-faraday-yoqwhs`
+- [x] Custos e cache: doc 08, memo entre runs, `settingSources` por etapa, uso por tipo de token, etapa de
+      otimização de custo obrigatória na `/skill-to-workflow`, práticas na `workflow-authoring`
 
 ## Review
 
@@ -186,3 +188,7 @@ Handoff files on disk are the only memory between stages → their schemas must 
   que falha encerra o run; guarda contra workflow recursivo; handlers de crash e jobs órfãos; runId gravado no
   início + resume pelo MCP; custo lido também em falha/timeout; worktree/commit/PR idempotentes; `wf login` não
   imprime a chave; MDM carregado; doc de segurança alinhada ao código; afirmações rebaixadas para [S]/[I].
+- Custos/cache (pedido posterior): o SDK não expõe controle de prompt caching (só mede cache read/write); o kit
+  favorece o cache (prefixo estável, conversas curtas), mede `cacheHitRatio` e economiza onde controla (código em
+  vez de modelo, memo entre runs, contexto mínimo por etapa). 12 testes offline passam. Preços e relatos de
+  fórum marcados [S]: cursor.com/forum/arxiv inacessíveis nesta sessão.

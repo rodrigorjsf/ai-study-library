@@ -49,7 +49,8 @@ export default defineWorkflow<{ target: string }>({
 
 Opções de `agent()`: `model`, `schema`, `tools` (allowlist: `["read","grep","glob","ls"]` para etapas só de leitura),
 `disallowedTools`, `cwd` (por exemplo um worktree), `agents` (subagents inline), `mcpServers`, `timeoutMs`, `retries`,
-`schemaRetries`, `sandbox`, `label` e `phase`. O `schema` precisa ter `type: "object"` na raiz.
+`schemaRetries`, `sandbox`, `settingSources` (contexto carregado pela etapa), `memo` (cache de resultado entre
+runs, só para etapas de leitura), `label` e `phase`. O `schema` precisa ter `type: "object"` na raiz.
 
 ## Regras
 
@@ -75,6 +76,18 @@ Opções de `agent()`: `model`, `schema`, `tools` (allowlist: `["read","grep","g
 10. **Não dispare workflows de dentro de etapas.** O runtime bloqueia (`WF_INSIDE_WORKFLOW`). Para compor, chame
     funções TypeScript compartilhadas.
 
+## Custo (detalhes em `docs/08-custos-e-cache.md`)
+
+- **Meça.** O resultado do run traz `usage` (tokens por tipo e `cacheHitRatio`), e cada `step-end` traz o uso da
+  etapa.
+- **Não chame o modelo** quando código decide, e use `memo: true` em etapas só de leitura.
+- **Contexto fixo mínimo.** `settingSources: ["team","mdm"]` em etapas que não precisam do repositório. Allowlist
+  de `tools` sem `"task"`. `mcpServers` só onde usa.
+- **Prefixo estável.** Instruções como constantes no topo do módulo, e prompt = `INSTRUÇÕES + "\n\n" + dados`.
+  Nada volátil antes das instruções.
+- **Conversas curtas.** Um agente por etapa, e resumos estruturados entre etapas, não saídas inteiras.
+- **Saída mínima.** Schema só com o que o código lê.
+
 ## Padrões úteis
 
 - **Roteamento por label/complexidade**: veja `workflows/implement-issue.ts`.
@@ -85,6 +98,8 @@ Opções de `agent()`: `model`, `schema`, `tools` (allowlist: `["read","grep","g
 
 ## Antes de entregar
 
+- Passe pelo checklist de custo (`docs/08-custos-e-cache.md` §6) e registre no topo do workflow a estimativa de
+  custo por caminho.
 - `npm run typecheck`
 - Escreva um teste em `test/` com o fake SDK (`test/fake-sdk.ts`) cobrindo os ramos principais (tier, review
   condicional, falha de teste) e rode `npm test`.

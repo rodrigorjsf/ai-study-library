@@ -4,9 +4,10 @@
 // pode ser consultado pelo outro.
 
 import { randomUUID } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type RunOptions, type WorkflowEvent, newRunId, runWorkflow } from "./engine.js";
+import { stateDir } from "./state.js";
+import { type RunOptions, type RunOutcome, type WorkflowEvent, newRunId, runWorkflow } from "./engine.js";
 import type { WorkflowDefinition } from "./workflow.js";
 
 export interface JobState {
@@ -26,21 +27,11 @@ export interface JobState {
   error?: string;
   spentCents?: number;
   spentTokens?: number;
-}
-
-/** Garante `.workflows/` fora do git no repositório alvo (via .git/info/exclude, sem tocar no .gitignore). */
-function ensureIgnored(cwd: string): void {
-  const exclude = join(cwd, ".git", "info", "exclude");
-  if (!existsSync(join(cwd, ".git", "info"))) return;
-  const current = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
-  if (!current.split("\n").includes(".workflows/")) appendFileSync(exclude, `${current.endsWith("\n") || !current ? "" : "\n"}.workflows/\n`);
+  usage?: RunOutcome<unknown>["usage"];
 }
 
 export function jobsDir(cwd: string): string {
-  const dir = join(cwd, ".workflows", "jobs");
-  mkdirSync(dir, { recursive: true });
-  ensureIgnored(cwd);
-  return dir;
+  return stateDir(cwd, "jobs");
 }
 
 export function jobLogPath(cwd: string, jobId: string): string {
@@ -104,8 +95,10 @@ function describe(e: WorkflowEvent): string {
       return `== ${e.title}`;
     case "step-start":
       return `▶ ${e.label} [${e.model ?? "?"}]${e.attempt > 1 ? ` tentativa ${e.attempt}` : ""}`;
-    case "step-end":
-      return `${e.ok ? "✓" : "✗"} ${e.label}${e.cached ? " (cache)" : ""}${e.chargedCents ? ` ${e.chargedCents}¢` : ""}`;
+    case "step-end": {
+      const cache = e.usage && e.usage.cacheReadTokens > 0 ? ` cache-read ${e.usage.cacheReadTokens}` : "";
+      return `${e.ok ? "✓" : "✗"} ${e.label}${e.cached ? ` (${e.cached})` : ""}${e.chargedCents ? ` ${e.chargedCents}¢` : ""}${cache}`;
+    }
     case "warning":
       return `⚠ ${e.message}`;
   }
@@ -159,6 +152,7 @@ export function startJob<A>(
       error: outcome.error,
       spentCents: outcome.spentCents,
       spentTokens: outcome.spentTokens,
+      usage: outcome.usage,
       finishedAt: new Date().toISOString(),
     });
     writeJob(opts.cwd, job);

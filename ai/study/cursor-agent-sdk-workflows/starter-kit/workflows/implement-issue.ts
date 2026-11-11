@@ -9,6 +9,13 @@
 //   - depois de corrigir achados bloqueantes, os testes e o review rodam de novo (1 rodada extra);
 //   - commit e PR só acontecem com testes verdes e review limpo, e são idempotentes no resume.
 //
+// Custo por caminho (etapas de agente; preencha as faixas em ¢ após o primeiro run com --max-cents baixo):
+//   LOW com label   : implementar (+ até 2 correções em MED)                   → 1–3 agentes
+//   MED com label   : planejar[memo] + implementar (+ até 2 correções em HIGH)  → 2–4 agentes
+//   HIGH            : planejar[memo] + implementar + 2 reviews (+ correção + 2 re-reviews) (+ correções) → 4–9 agentes
+//   sem label       : + classificar (auto-low, só texto, sem contexto do projeto, memo)
+// Fora de agentes (zero tokens): leitura da issue, roteamento por label, testes, diff, commit e PR.
+//
 // IDs de modelo: confirme os seus com `Cursor.models.list()` — a lista depende do plano e das
 // restrições do admin. Os IDs abaixo vêm dos exemplos oficiais do cookbook (dag-task-runner).
 //
@@ -40,6 +47,25 @@ const LABEL_TIERS: Record<string, Tier> = {
 };
 
 const REVIEW_DIFF_LINES = 300;
+
+// ── Prompts: parte fixa primeiro, dados variáveis no fim (ver docs/08) ────────────────────
+// O cache de prompt do provedor funciona por prefixo idêntico. Instruções fixas no começo e dados
+// (issue, plano, saída de teste) no fim mantêm o maior prefixo possível igual entre runs e retries.
+const CLASSIFY_INSTRUCTIONS =
+  "Classifique a complexidade de implementação da issue em LOW (mecânica, 1 arquivo), MED (típica) ou HIGH " +
+  "(arquitetural, segurança, vários módulos). Responda só pela tool submit_result.";
+const PLAN_INSTRUCTIONS =
+  "Leia o código e escreva um plano de implementação para a issue. Não edite arquivos. Seja específico: " +
+  "arquivos, funções e o comando de teste do projeto.";
+const IMPL_INSTRUCTIONS =
+  "Implemente a issue abaixo no repositório atual. Escreva ou atualize testes. Não faça commit. " +
+  "Ao terminar, resuma o que mudou e liste os arquivos alterados.";
+const FIX_INSTRUCTIONS = "Os testes falharam. Corrija o código (não os testes, salvo se estiverem errados).";
+const REVIEW_INSTRUCTIONS =
+  "Revise as mudanças staged (`git diff --cached`). Marque como blocking só o que quebraria produção ou a issue. " +
+  "Não edite arquivos.";
+
+const issueBlock = (i: { number: number; title: string; body: string }) => `## Issue #${i.number}: ${i.title}\n\n${i.body}`;
 const MAX_FIX_ROUNDS = 2;
 const MAX_REVIEW_FIX_ROUNDS = 1;
 
@@ -143,15 +169,14 @@ export default defineWorkflow<Args>({
     const issue = JSON.parse(sh("gh", ["issue", "view", String(number), ...repoFlag, "--json", "number,title,body,labels"], ctx.cwd)) as Issue;
     let tier = issue.labels.map((l) => LABEL_TIERS[l.name.toLowerCase()]).find(Boolean);
     if (!tier) {
-      const c = await ctx.agent<{ tier: Tier; reason: string }>(
-        `Classifique a complexidade de implementação desta issue em LOW, MED ou HIGH.\n\n# ${issue.title}\n\n${issue.body}`,
-        {
+      const c = await ctx.agent<{ tier: Tier; reason: string }>(`${CLASSIFY_INSTRUCTIONS}\n\n${issueBlock(issue)}`, {
           label: "classificar",
           model: MODELS.CLASSIFY,
-          tools: ["read", "grep", "glob", "ls"],
+          tools: [], // só texto: classificar não precisa ler o repositório
+          settingSources: ["team", "mdm"], // sem regras/skills/MCP do projeto: contexto fixo mínimo, governança mantida
+          memo: true, // mesma issue + mesmo estado do repo → reaproveita entre runs
           schema: { type: "object", required: ["tier", "reason"], properties: { tier: { enum: ["LOW", "MED", "HIGH"] }, reason: { type: "string" } } },
-        },
-      );
+      });
       tier = c.tier;
     }
     ctx.log(`Issue #${issue.number} → tier ${tier} (modelo ${MODELS[tier].id})`);
@@ -160,10 +185,13 @@ export default defineWorkflow<Args>({
     let plan: { steps: string[]; files: string[]; testCommand: string; risks?: string[] } | undefined;
     if (tier !== "LOW") {
       ctx.phase("Plano");
-      plan = await ctx.agent(
-        `Leia o código e escreva um plano de implementação para a issue abaixo. Não edite arquivos.\n\n# ${issue.title}\n\n${issue.body}`,
-        { label: "planejar", model: MODELS[tier], tools: ["read", "grep", "glob", "ls", "semSearch"], schema: PLAN_SCHEMA },
-      );
+      plan = await ctx.agent(`${PLAN_INSTRUCTIONS}\n\n${issueBlock(issue)}`, {
+        label: "planejar",
+        model: MODELS[tier],
+        tools: ["read", "grep", "glob", "ls", "semSearch"],
+        schema: PLAN_SCHEMA,
+        memo: true, // só leitura: relançar no mesmo commit não paga o plano de novo
+      });
     }
     const testCommand = ctx.args.testCommand ?? plan?.testCommand ?? "npm test";
 
@@ -178,9 +206,9 @@ export default defineWorkflow<Args>({
       sh("git", ["worktree", "add", "-B", branch, worktree], ctx.cwd);
     }
     const task =
-      `Implemente a issue #${issue.number}: ${issue.title}\n\n${issue.body}\n\n` +
-      (plan ? `Siga este plano:\n${plan.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\n` : "") +
-      `Escreva/atualize testes. O comando de teste é \`${testCommand}\`. Não faça commit.`;
+      `${IMPL_INSTRUCTIONS}\n\n${issueBlock(issue)}\n\n` +
+      (plan ? `## Plano\n${plan.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\n` : "") +
+      `## Comando de teste\n\`${testCommand}\``;
     let impl = await ctx.agent<{ summary: string; filesChanged: string[] }>(task, {
       label: "implementar",
       model: MODELS[tier],
@@ -193,7 +221,7 @@ export default defineWorkflow<Args>({
     let tests = runTests(testCommand, worktree);
     for (let round = 1; !tests.ok && round <= MAX_FIX_ROUNDS; round++) {
       ctx.log(`testes falharam; rodada de correção ${round}/${MAX_FIX_ROUNDS}`);
-      impl = await ctx.agent(`Os testes falharam. Corrija o código (não os testes, salvo se estiverem errados).\n\nSaída:\n${tests.output}`, {
+      impl = await ctx.agent(`${FIX_INSTRUCTIONS}\n\n## Saída dos testes\n${tests.output}`, {
         label: `corrigir-${round}`,
         model: MODELS[tier === "LOW" ? "MED" : "HIGH"], // escala o modelo na correção
         cwd: worktree,
@@ -219,8 +247,7 @@ export default defineWorkflow<Args>({
         const reviews = await ctx.parallel(
           lenses.map((lens) => () =>
             ctx.agent<{ findings: Array<{ file: string; severity: string; issue: string }> }>(
-              `Revise as mudanças staged (\`git diff --cached\`) para a issue #${issue.number} com foco em ${lens} ` +
-                `(rodada ${round + 1}). Marque como blocking só o que quebraria produção ou a issue. Não edite arquivos.`,
+              `${REVIEW_INSTRUCTIONS}\n\n## Foco\n${lens}\n\n${issueBlock(issue)}\n\n(rodada ${round + 1})`,
               { label: `review:${lens}:${round + 1}`, phase: "Review", model: MODELS.REVIEW, cwd: worktree, tools: ["read", "grep", "glob", "ls", "shell"], schema: REVIEW_SCHEMA },
             ),
           ),

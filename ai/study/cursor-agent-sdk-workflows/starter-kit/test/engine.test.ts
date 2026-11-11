@@ -115,3 +115,49 @@ test("teto de custo aborta, inclusive dentro de parallel", async () => {
   assert.equal(r.status, "failed");
   assert.match(r.error!, /Teto de custo/);
 });
+
+test("uso por tipo de token é somado e a taxa de cache calculada", async () => {
+  const wf = defineWorkflow({ meta: { name: "u", description: "u" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.parallel([() => ctx.agent("a"), () => ctx.agent("b")]) });
+  const r = await runWorkflow(wf, {}, { cwd });
+  assert.equal(r.usage.cacheReadTokens, 120);
+  assert.equal(r.usage.totalTokens, 220);
+  assert.equal(r.usage.cacheHitRatio, 0.6); // 60 / (20 + 60 + 20) por etapa
+});
+
+test("settingSources por etapa sobrescreve o default do run", async () => {
+  const wf = defineWorkflow({ meta: { name: "ss", description: "ss" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.agent("x", { settingSources: ["team", "mdm"] }) });
+  await runWorkflow(wf, {}, { cwd });
+  assert.deepEqual(calls[0].local.settingSources, ["team", "mdm"]);
+});
+
+test("memo: reaproveita entre runs no mesmo estado do repo e invalida quando o repo muda", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { mkdirSync, writeFileSync } = await import("node:fs");
+  mkdirSync(cwd, { recursive: true });
+  const git = (...a: string[]) => execFileSync("git", a, { cwd, stdio: "ignore" });
+  git("init", "-q");
+  writeFileSync(join(cwd, "a.txt"), "1");
+  git("add", ".");
+  git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init");
+  const wf = defineWorkflow({ meta: { name: "m", description: "m" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.agent("plan", { tools: ["read", "grep"], memo: true }) });
+
+  await runWorkflow(wf, {}, { cwd }); // runId novo a cada chamada
+  await runWorkflow(wf, {}, { cwd });
+  assert.equal(calls.length, 1, "segundo run deveria vir do memo");
+
+  writeFileSync(join(cwd, "a.txt"), "2"); // mudança local muda a chave
+  await runWorkflow(wf, {}, { cwd });
+  assert.equal(calls.length, 2);
+
+  writeFileSync(join(cwd, "novo.txt"), "x"); // arquivo novo não rastreado também
+  await runWorkflow(wf, {}, { cwd });
+  assert.equal(calls.length, 3);
+});
+
+test("memo é recusado em etapa que pode escrever", async () => {
+  const wf = defineWorkflow({ meta: { name: "mw", description: "mw" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.agent("x", { tools: ["read", "edit"], memo: true }) });
+  const r = await runWorkflow(wf, {}, { cwd });
+  assert.equal(r.status, "failed");
+  assert.match(r.error!, /memo exige/);
+  assert.equal(calls.length, 0);
+});
