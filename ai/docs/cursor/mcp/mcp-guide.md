@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP)
 
-> Source: https://cursor.com/docs/mcp — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/mcp — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 ## What is MCP?
 
@@ -144,6 +144,8 @@ http://localhost:8787/callback
 
 When configuring the MCP provider's OAuth app, register both URLs as allowed redirect URIs if users authenticate from both web and desktop. The server is identified via the OAuth `state` parameter, so these redirect URLs work for all MCP servers.
 
+With dynamic client registration, the desktop app registers both URLs and can send the provider the web callback. That page then hands the sign-in back to the desktop app. To keep an OAuth app that allows only the desktop app's redirect URL, set a static `CLIENT_ID` in `auth`. The desktop app then sends the provider only that URL.
+
 #### Combining with config interpolation
 
 `auth` values support the same interpolation as other fields:
@@ -242,7 +244,9 @@ Examples
 
 MCP servers use environment variables for authentication. Pass API keys and tokens through the config.
 
-Cursor supports OAuth for servers that require it.
+Cursor supports OAuth for servers that require it. Sign-in uses the authorization code flow with PKCE. Cursor reads the server's protected resource metadata (RFC 9728) to find its authorization server and resource indicator (RFC 8707). With dynamic client registration, Cursor registers as a public client with no client secret.
+
+Cursor renews an expired access token with the refresh token the server issued. If the server returns an access token with an expiry (`expires_in`) and no refresh token, you sign in again when the token expires. If your provider issues refresh tokens only for a scope such as `offline_access`, add that scope to [`auth.scopes`](https://cursor.com/docs/mcp.md#static-oauth-for-remote-servers).
 
 ## Enterprise admin controls
 
@@ -251,6 +255,8 @@ MCP distribution and MCP policy are configured separately. Team admins can distr
 ### Team MCP distribution
 
 Configure shared Team MCP servers under **Dashboard > Plugins & MCPs**. These servers are available to Cloud Agents.
+
+A Team MCP server's config and a team plugin's variables are shared by the whole team. Editing them from any surface, including an automation's MCP settings, changes the value for every teammate and automation that uses them. Only team admins can edit a Team MCP server or replace credentials a team plugin already has. Org admins have the same access on every team linked to their [Organization](https://cursor.com/docs/enterprise/organizations.md), even without a team admin role.
 
 To make an existing standalone Team MCP server available in the Agent Window, IDE, and CLI, select **Add to Team Marketplace** under **Team MCP Servers**. Cursor links the server to the Default team marketplace without interrupting Cloud Agent access. Teammates can then install and configure it from Customize.
 
@@ -358,6 +364,13 @@ View MCP logs by:
 3. Check for connection errors, authentication issues, or server crashes
 
 The logs show server initialization, tool calls, and error messages.
+
+### Why is my MCP sign-in different in Cloud Agents?
+
+Cloud Agents keep their own MCP sign-ins on Cursor's servers, separate from
+the sign-ins on your machine. Signing out locally doesn't sign out Cloud
+Agents. To sign out for Cloud Agents, open **Customize** and log out on the
+server's **Cloud** row, labeled **Cursor's servers** for some servers.
 
 ### Can I temporarily disable an MCP server?
 

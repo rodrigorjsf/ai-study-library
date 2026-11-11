@@ -1,6 +1,6 @@
 # Rules
 
-> Source: https://cursor.com/docs/rules — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/rules — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Rules provide system-level instructions to Agent. They bundle prompts, scripts, and more together, making it easy to manage and share workflows across your team.
 
@@ -383,11 +383,6 @@ Yes, you can ask the agent to create a new rule for you.
 ### Do rules impact Cursor Tab or other AI features?
 
 No. Rules do not impact Cursor Tab or other AI features.
-
-### Do User Rules apply to Inline Edit (Cmd/Ctrl+K)?
-
-No. User Rules are not applied to Inline Edit (Cmd/Ctrl+K). They are only
-used by Agent (Chat).
 
 ## Related
 

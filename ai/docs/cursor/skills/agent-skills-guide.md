@@ -1,6 +1,6 @@
 # Agent Skills
 
-> Source: https://cursor.com/docs/skills — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/skills — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Agent Skills is an open standard for extending AI agents with specialized capabilities. Skills package domain-specific knowledge and workflows that agents can use to perform specific tasks.
 
@@ -179,6 +179,8 @@ Detailed instructions for the agent.
 | `color`                    | No       | Badge color when the skill is used as a Custom Mode. One of `default`, `green`, `cyan`, `blue`, `purple`, `magenta`, `orange`, `yellow`, `red`, or `brand`.                        |
 | `metadata`                 | No       | Arbitrary key-value mapping for additional metadata.                                                                                                                               |
 
+In [Cloud Agents](https://cursor.com/docs/cloud-agent.md), a skill whose `SKILL.md` can't be read, has frontmatter that doesn't parse, or has no `description` shows a warning in the run that names the skill. Without a description, the agent is unlikely to pick the skill on its own, but you can still invoke it by name.
+
 ## Scoping a skill to specific files
 
 Use the `paths` field to limit a skill to files that match one or more glob patterns. The skill is then only surfaced to the agent when it is reading or editing matching files. This keeps file-specific guidance out of context for unrelated work.
@@ -281,11 +283,15 @@ Personal skills in `~/.cursor/skills/` run on your local machine. Turn on **Sync
 
 Synced skills stay private to you. They are not shared with your team.
 
+Synced skills load in Cloud Agents you start yourself. [Automation](https://cursor.com/docs/cloud-agent/automations.md) runs don't load them, including automations set to [Run as **Me**](https://cursor.com/docs/cloud-agent/automations.md#run-as). To give an automation a skill, add it to the repository's `.cursor/skills/` folder.
+
 ### Sync your skills
 
 1. Open **Settings → Agents**.
 2. Under **Context and Tools**, turn on **Sync Skills for Cloud Agents**.
-3. Confirm. Cursor copies the contents of `~/.cursor/skills/` so your Cloud Agents can use them.
+3. Confirm. Cursor moves the contents of `~/.cursor/skills/` into synced storage so your Cloud Agents can use them.
+
+After that, Cursor uploads skill changes shortly after you save while Cursor is running. Cloud Agents use the latest synced copy.
 
 You can also start a sync from **Customize → Skills**.
 
@@ -339,6 +345,8 @@ Agent Skills is an open standard. Learn more at [agentskills.io](https://agentsk
 - [Self-Hosted Machines](https://cursor.com/docs/cloud-agent/self-hosted/choose-runtime.md)
 
 ## Agent Skills standard
+
+> Local addition, not part of the upstream page.
 
 The skill format used by Cursor follows the **Agent Skills open standard** defined at [agentskills.io](https://agentskills.io). This standard is also adopted by Claude Code, Codex, and other GenAI agents, making skills portable across compatible implementations.
 

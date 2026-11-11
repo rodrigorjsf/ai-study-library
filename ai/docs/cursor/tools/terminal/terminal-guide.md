@@ -1,8 +1,6 @@
 # Terminal
 
-> Source: https://cursor.com/docs/agent/tools/terminal — mirrored 2026-10-11 (previous capture ~2026-05-01).
->
-> **Mirror note (2026-10-11):** Upstream reduced this page to a stub. The sandbox, auto-run/allowlist, AppArmor, environment-variable, network-allowlist and enterprise-control content that the previous capture held here now lives upstream at <https://cursor.com/docs/agent/security/run-modes> ("Run Modes"), which is not mirrored in this library yet.
+> Source: https://cursor.com/docs/agent/tools/terminal — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Cursor runs shell commands directly in your terminal. Your [Run Mode](https://cursor.com/docs/agent/security/run-modes.md) controls when commands run, when Cursor asks, and when terminal commands enter the sandbox.
 

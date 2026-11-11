@@ -1,6 +1,6 @@
 # Subagents
 
-> Source: https://cursor.com/docs/subagents — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/subagents — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Subagents are specialized AI assistants that Cursor's agent can delegate tasks to. Each subagent operates in its own context window, handles specific types of work, and returns its result to the parent agent. Use subagents to break down complex tasks, do work in parallel, and preserve context in the main conversation.
 
@@ -212,7 +212,7 @@ The model picker, including Auto, applies to the parent agent. A subagent can ru
 - Custom subagents use `inherit` or the `model` field in frontmatter.
 - The parent agent can name a model when it launches a subagent.
 
-Each request bills at the list price of the model that ran. A named third-party model draws from the [Other Models](https://cursor.com/docs/models-and-pricing.md#other-models) pool, including when the parent chat is on Auto, Grok, or Composer. On Teams and Enterprise, third-party requests also incur the [Cursor Token Rate](https://cursor.com/docs/models-and-pricing.md#cursor-token-rate).
+Each request bills at the list price of the model that ran. A named third-party model bills as [third-party usage](https://cursor.com/docs/models-and-pricing.md#third-party-models), from prepaid credit on The X Subscription or from the Other Models pool on legacy Cursor plans, including when the parent chat is on Auto, Grok, or Composer. On Teams and Enterprise, eligible third-party requests also incur the [Cursor Token Rate](https://cursor.com/docs/models-and-pricing.md#cursor-token-rate). Third-party models are exempt when their cache-read price is strictly below $0.10 per million tokens across every pricing tier.
 
 The subagent task card shows which model ran. The [usage dashboard](https://cursor.com/dashboard/usage) lists that model on the matching usage row.
 
@@ -475,9 +475,9 @@ Yes. Subagents inherit all tools from the parent, including MCP tools from confi
 
 Check the subagent's description and prompt. Ensure the instructions are specific and unambiguous. You can also test the subagent by invoking it explicitly with a simple task.
 
-### Can a subagent use Other Models when the parent is on Auto?
+### Can a subagent use a third-party model when the parent is on Auto?
 
-Yes. Auto applies to the parent agent. Subagents can run a named third-party model, and that usage draws from the Other Models pool at that model's list price. The same happens when the parent is on Grok or Composer. See [parent model and usage pools](https://cursor.com/docs/subagents.md#parent-model-and-usage-pools).
+Yes. Auto applies to the parent agent. Subagents can run a named third-party model, and that usage bills as third-party usage at that model's list price, from prepaid credit or, on legacy Cursor plans, the Other Models pool. The same happens when the parent is on Grok or Composer. See [parent model and usage pools](https://cursor.com/docs/subagents.md#parent-model-and-usage-pools).
 
 ### Why is my subagent using a different model?
 

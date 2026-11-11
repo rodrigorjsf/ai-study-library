@@ -1,6 +1,6 @@
 # Browser
 
-> Source: https://cursor.com/docs/agent/tools/browser — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/agent/tools/browser — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Agent can control a web browser to test applications, audit accessibility, convert designs into code, and more. With full access to console logs and network traffic, Agent can debug issues and automate comprehensive testing workflows.
 

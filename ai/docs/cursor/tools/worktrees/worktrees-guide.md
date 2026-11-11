@@ -1,6 +1,6 @@
 # Worktrees
 
-> Source: https://cursor.com/docs/configuration/worktrees — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/configuration/worktrees — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 The UI-native worktrees feature described on this page is only available in the Agents Window. In the IDE, use the Worktree Skills commands below.
 

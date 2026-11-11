@@ -1,6 +1,6 @@
 # Hooks
 
-> Source: https://cursor.com/docs/hooks — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/hooks — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Hooks let you observe, control, and extend the agent loop using custom scripts. Define hooks in `hooks.json` files at the project or user level, or install them through plugins from **Customize**. Hooks are spawned processes that communicate over stdio using JSON in both directions. They run before or after defined stages of the agent loop and can observe, block, or modify behavior.
 
@@ -23,7 +23,7 @@ Cursor supports loading hooks from third-party tools like Claude Code. See [Thir
 
 Hooks fall into three categories based on what triggers them:
 
-**Agent hooks (Cmd+K/Agent Chat)** fire during an agent session:
+**Agent hooks (Agent Chat)** fire during an agent session:
 
 - `sessionStart` / `sessionEnd` - Session lifecycle management
 - `preToolUse` / `postToolUse` / `postToolUseFailure` - Generic tool use hooks (fires for all tools)
@@ -75,6 +75,11 @@ The following hooks run in cloud agents:
 | `afterAgentResponse`   | Yes       |
 | `afterAgentThought`    | Yes       |
 | `stop`                 | Yes       |
+
+HTTP MCP servers run on Cursor's backend instead of the agent's VM. For their tools, `preToolUse` and `postToolUse` fire with `tool_name` set to `MCP:<tool_name>`, with these limits:
+
+- `preToolUse` can deny the call, but Cursor ignores `updated_input`.
+- `postToolUse` receives `{"redacted": true}` (with `isError` when known) as `tool_output` instead of the tool result, and can't replace the result with `updated_mcp_tool_output`.
 
 ### Hooks not available in cloud agents
 
@@ -174,7 +179,7 @@ Hooks support two execution types: command-based (default) and prompt-based (LLM
 
 ### Command-Based Hooks
 
-Command hooks execute shell scripts that receive JSON input via stdin and return JSON output via stdout.
+Command hooks execute shell scripts that receive JSON input via stdin and return JSON output via stdout. On Windows, the desktop app runs hook commands through PowerShell and pipes the JSON into the command, so a PowerShell script reads it from `$input` and other programs read it from stdin.
 
 ```json
 {
@@ -649,12 +654,15 @@ Define hooks in a `hooks.json` file. Configuration can exist at multiple levels.
 
 Priority order (highest to lowest): Enterprise → Team → Project → User
 
+Hooks from installed [plugins](https://cursor.com/docs/plugins.md) come after all of these. Plugin hooks run command hooks only.
+
 The `hooks` object maps hook names to arrays of hook definitions. Each definition currently supports a `command` property that can be a shell string, an absolute path, or a relative path. The working directory depends on the hook source:
 
 - **Project hooks** (`.cursor/hooks.json` in a repository): Run from the **project root**
 - **User hooks** (`~/.cursor/hooks.json`): Run from `~/.cursor/`
 - **Enterprise hooks** (system-wide config): Run from the enterprise config directory
 - **Team hooks** (cloud-distributed): Run from the managed hooks directory
+- **Plugin hooks**: Run from the plugin's install directory, which `CURSOR_PLUGIN_ROOT` points to. `stop` and `subagentStop` plugin hooks run from the workspace root.
 
 For project hooks, use paths like `.cursor/hooks/script.sh` (relative to project root), not `./hooks/script.sh` (which would look for `<project>/hooks/script.sh`).
 
@@ -690,7 +698,7 @@ This example shows a user-level hooks file (`~/.cursor/hooks.json`). For project
 }
 ```
 
-The Agent hooks (`sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`, `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`, `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`) apply to Cmd+K and Agent Chat operations. The Tab hooks (`beforeTabFileRead`, `afterTabFileEdit`) apply specifically to inline Tab completions. The app lifecycle hook (`workspaceOpen`) fires when a workspace opens and on workspace folder changes, independent of any agent session.
+The Agent hooks (`sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`, `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`, `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`) apply to Agent Chat operations. The Tab hooks (`beforeTabFileRead`, `afterTabFileEdit`) apply specifically to inline Tab completions. The app lifecycle hook (`workspaceOpen`) fires when a workspace opens and on workspace folder changes, independent of any agent session.
 
 ### Global Configuration Options
 
@@ -800,6 +808,12 @@ Cloud distribution provides:
 - Automatic synchronization to all team members (every thirty minutes)
 - Operating system targeting for platform-specific hooks
 - Centralized management through the dashboard
+
+Each dashboard hook runs one script or one prompt on one hook step. Dashboard hooks don't take per-hook options such as `failClosed` or `matcher`.
+
+The desktop app writes each command hook to `~/.cursor/managed/team_<team ID>/hooks/` and rewrites the folder on every sync. On Windows, a script name without a `.ps1`, `.bat`, or `.cmd` extension gets `.ps1` added.
+
+By default, the desktop app waits only a short time for hooks to load before it sends a prompt. Turn on **Block until hooks are ready** in the dashboard's hook settings to make it wait with no timeout until enterprise, team, project, and user hooks have loaded, so they run on every prompt, including the first one after a restart.
 
 Enterprise administrators can create, edit, and manage team hooks from the dashboard without requiring access to individual machines.
 
@@ -1040,6 +1054,8 @@ Called when a subagent completes, errors, or is aborted. Can trigger follow-up a
 | `followup_message` | string (optional) | Auto-continue with this message. Only consumed when `status` is `"completed"`. |
 
 The `followup_message` field enables loop-style flows where subagent completion triggers the next iteration. Follow-ups are subject to the same configurable loop limit as the `stop` hook (default 5, configurable via `loop_limit`).
+
+`subagentStop` fires each time the subagent finishes, so a subagent that continues with a follow-up fires it again with `loop_count` increased by one. The subagent is done after a `subagentStop` call returns no `followup_message` or the loop limit is reached.
 
 #### beforeShellExecution / beforeMCPExecution
 
@@ -1459,6 +1475,7 @@ Hook scripts receive environment variables when executed:
 | `CURSOR_USER_EMAIL`      | Authenticated user email                                      | If logged in           |
 | `CURSOR_TRANSCRIPT_PATH` | Path to the conversation transcript file                      | If transcripts enabled |
 | `CURSOR_CODE_REMOTE`     | Set to the string `"true"` when running in a remote workspace | For remote workspaces  |
+| `CURSOR_PLUGIN_ROOT`     | Install directory of the plugin that provides the hook        | For plugin hooks       |
 | `CLAUDE_PROJECT_DIR`     | Alias for project dir (Claude compatibility)                  | Yes                    |
 
 Session-scoped environment variables from `sessionStart` hooks are passed to all subsequent hook executions within that session.

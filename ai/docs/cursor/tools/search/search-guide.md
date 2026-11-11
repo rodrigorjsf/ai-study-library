@@ -1,8 +1,6 @@
 # Search
 
-> Source: https://cursor.com/docs/agent/tools/search — mirrored 2026-10-11 (previous capture ~2026-05-01).
->
-> **Mirror note (2026-10-11):** Upstream retitled this page from "Semantic & Agentic Search" to "Search" and removed the semantic-search, indexing, configuration and tips sections that the previous capture held.
+> Source: https://cursor.com/docs/agent/tools/search — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 ## Instant Grep
 

@@ -1,6 +1,6 @@
 # Plugins reference
 
-> Source: https://cursor.com/docs/reference/plugins — mirrored 2026-10-11 (previous capture ~2026-05-01).
+> Source: https://cursor.com/docs/reference/plugins — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Reference documentation for building, structuring, and submitting Cursor plugins. Plugins package rules, skills, agents, commands, MCP servers, and hooks into distributable bundles that work in the Cursor IDE.
 
@@ -373,6 +373,8 @@ Cursor Plugins discover `mcp.json` automatically. Specify `mcpServers` in
 ```
 
 `${POSTGRES_URL}` is a [plugin variable](https://cursor.com/docs/reference/plugins.md#variables) placeholder (not shell `${env:...}`). Declare the variable name under `variables` in `plugin.json`, put only the placeholder in plugin config, and set the value in the dashboard under **Plugins** → **Configure**. Plugin-managed MCP config is read-only in the dashboard.
+
+Plugin MCP servers appear with a `plugin-` prefix followed by the plugin and server names. For example, the `postgres` server in a plugin named `my-plugin` shows as `plugin-my-plugin-postgres` in approval prompts.
 
 For full documentation, see [MCP](https://cursor.com/docs/mcp.md).
 

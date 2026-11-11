@@ -1,8 +1,6 @@
 # Plugins
 
-> Source: https://cursor.com/docs/plugins — mirrored 2026-10-11 (previous capture ~2026-05-01).
->
-> **Mirror note (2026-10-11):** The upstream "Plugins reference" page linked below is mirrored locally at [`plugin-full-reference.md`](./plugin-full-reference.md).
+> Source: https://cursor.com/docs/plugins — mirrored 2026-11-11 (previous capture 2026-10-11).
 
 Plugins package rules, skills, agents, commands, MCP servers, and hooks into distributable bundles.
 
@@ -59,6 +57,8 @@ marketplace.
 - Teams plan: up to 1 team marketplace
 - Enterprise plan: unlimited team marketplaces
 
+On the Teams plan, the [Default marketplace](https://cursor.com/docs/plugins.md#default-team-marketplace) doesn't count toward the imported marketplace limit, so a team can also import one team marketplace.
+
 [Contact sales](https://cursor.com/contact-sales?source=docs-plugins) for unlimited team marketplaces and Enterprise admin controls.
 
 Open **Dashboard -> Plugins & MCPs** to manage Team Marketplaces.
@@ -69,6 +69,8 @@ On Enterprise plans, only admins can add team marketplaces from **Dashboard
 ### Default team marketplace
 
 The **Default** team marketplace connects shared plugins and MCP servers across Cursor. Admins can add Team MCP servers that are already available to Cloud Agents, then make the same servers available for teammates to install and configure in the Agent Window, IDE, and CLI.
+
+The Default marketplace can't be renamed or deleted. If a legacy Default marketplace has a different name, it still keeps the Default role.
 
 Adding a Team MCP server to the Default marketplace does not install or enable it for every developer. Admins still control marketplace access and plugin installation modes. Each developer may also need to authenticate with the MCP provider.
 
@@ -104,6 +106,18 @@ After setting marketplace access, choose how each plugin is distributed to that 
 - **Default Off**: Developers can find the plugin and choose whether to install it.
 - **Default On**: The plugin is installed by default, but developers can opt out.
 - **Required**: The plugin is always installed and cannot be uninstalled.
+
+### Add a plugin from its Marketplace page
+
+Team admins can add a plugin to a team marketplace from the plugin's page in the [Cursor Marketplace](/marketplace):
+
+1. Open the plugin's page and click **Add to Cursor**.
+2. Select **Add to Team**.
+3. Under **Available Marketplaces**, select the team marketplaces to add it to.
+4. Under **Access Settings**, set **Plugin Installation** to **Default Off**, **Default On**, or **Required**.
+5. Click **Add Plugin**.
+
+**Add to Team** appears only when your team has at least one team marketplace. Members who aren't team admins can add the plugin for themselves only.
 
 ### Allow members to publish
 
@@ -146,6 +160,8 @@ Plugins are indexed when you first import the repository. You can refresh them i
 - **Automatically**: On GitHub imports, turn on **Enable Auto Refresh** to update plugins whenever changes are pushed to the branch the marketplace tracks. This requires the [Cursor GitHub App](https://cursor.com/docs/integrations/github.md) installed on the repository. Cursor re-indexes a marketplace at most once every 10 minutes, batching rapid pushes to the latest commit.
 - **Manually**: Click **Refresh** to update from the repository.
 
+A running Cloud Agent, including each agent in a [Project](https://cursor.com/docs/agent/projects.md), keeps the plugin versions it started with. Start a new agent to pick up an update.
+
 For marketplaces created with "Import from Repo", Auto Refresh re-reads the full manifest on each push, so new plugins added to the repository are picked up automatically.
 
 For marketplaces where plugins were added individually, Auto Refresh only updates existing plugins. Re-import the repository URL to pick up newly added plugins.
@@ -174,7 +190,7 @@ Cursor packs the skill into a plugin, stores a copy in a repository hosted for y
 After you publish:
 
 - **Installs are opt-in.** Teammates find the skill in the team marketplace and install it themselves. Publishing does not install it for anyone else. The author gets it automatically.
-- **Authors stay in control.** Use **Sync changes** to push updates, or **Unpublish** to return the skill to your machine.
+- **Authors stay in control.** Publishing moves the skill out of `~/.cursor/skills/` into the plugin's install folder on your machine. To update it, open the skill from **Customize → Skills**, edit it there, then choose **Sync changes** from the skill's menu or **Sync** from the **Published** menu on the open `SKILL.md`. **Unpublish** returns the skill to your machine.
 - **One skill, one plugin.** The plugin is named after the skill. Publishing does not bundle other skills the published skill references.
 
 Access follows your existing [marketplace access](https://cursor.com/docs/plugins.md#marketplace-access) settings. Admins can turn member publishing off with [Allow Members to Publish](https://cursor.com/docs/plugins.md#allow-members-to-publish).
@@ -311,9 +327,11 @@ Before you publish, put either plugin format in `~/.cursor/plugins/local`:
 After a reload, Cursor discovers plugins in this folder if local plugin
 imports are allowed.
 
-On Teams and Enterprise, admins control this with **Allow Local Plugin
-Imports** under **Dashboard -> Settings -> Security & Identity ->
-Marketplace and Plugins**. The setting is off by default on Enterprise. If a
+On Enterprise, admins control this with **Allow Local Plugin Imports** under
+**Dashboard -> Settings -> Security & Identity -> Marketplace and Plugins**.
+The setting is off by default on Enterprise, and it also controls **Import
+from Disk** in **Customize**. The first-party plugin allowlist lives in the
+same Enterprise-only section. If a
 marketplace plugin with the same name is already installed, that install
 takes precedence over the local copy.
 

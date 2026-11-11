@@ -4,7 +4,7 @@ This directory contains official documentation and blog guidance mirrored from [
 
 AI agents should treat these documents as authoritative references when generating, reviewing, or validating Cursor artifacts (rules, skills, hooks, MCP servers, subagents, and plugins).
 
-> **Mirror status (2026-10-11):** The eleven `cursor.com/docs/*` pages below were re-mirrored verbatim on 2026-10-11 from the raw-markdown endpoints Cursor now serves (append `.md` to any docs URL; index at <https://cursor.com/llms.txt>). Only the trailing site-navigation "Sitemap" footer was removed. Each file carries a `> Source:` line under its H1. `best-practices/` is a project summary of a blog post and carries a currency check instead.
+> **Mirror status (2026-11-11):** The eleven pages first re-mirrored on 2026-10-11 were refreshed verbatim on 2026-11-11, and `sdk/`, `cli/` and `pricing/` were added the same day for the Cursor SDK workflows study. The pages were re-mirrored verbatim from the raw-markdown endpoints Cursor now serves (append `.md` to any docs URL; index at <https://cursor.com/llms.txt>). Only the trailing site-navigation "Sitemap" footer was removed. Each file carries a `> Source:` line under its H1. The only local text is a marked "Local addition" section at the end of `skills/agent-skills-guide.md`. Pricing pages change often: check the live page before quoting a price. `best-practices/` is a project summary of a blog post and carries a currency check instead.
 
 ## Table of Contents
 
@@ -19,6 +19,7 @@ AI agents should treat these documents as authoritative references when generati
   - [skills/](#skills)
   - [subagents/](#subagents)
   - [tools/](#tools)
+  - [sdk/, cli/ and pricing/](#sdk-cli-and-pricing)
   - [Upstream areas not mirrored here](#upstream-areas-not-mirrored-here)
 
 ## Directory Overview
@@ -33,6 +34,9 @@ AI agents should treat these documents as authoritative references when generati
 | [`subagents/`](./subagents/subagents-guide.md) | `subagents-guide.md` | Subagents — specialized assistants the agent can delegate tasks to in isolated context windows |
 | [`best-practices/`](./best-practices/agent-best-practices.md) | `agent-best-practices.md` | Official Cursor blog guide on agent workflows, planning, context management, and best practices |
 | [`tools/`](#tools) | ↓ 4 guides | Built-in agent tools: terminal, browser, search, and worktrees |
+| [`sdk/`](./sdk/typescript.md) | `typescript.md`, `python.md`, `bridge.md`, `release-notes-sdk.md` | Cursor SDK (`@cursor/sdk`, `cursor-sdk`): programmatic local and cloud agents, the SDK bridge, SDK release notes |
+| [`cli/`](./cli/overview.md) | `overview.md`, `headless.md`, `parameters.md`, `authentication.md`, `output-format.md` | Cursor CLI (`agent`): headless runs, flags, auth, stream-json output |
+| [`pricing/`](./pricing/models-and-pricing.md) | 9 pages | Models and pricing, The X Subscription plans, legacy plans, Teams pricing, Cursor Router (Auto), Cursor Token Rate, usage limits, available models, Enterprise service accounts |
 
 ### tools/ sub-directories
 
@@ -113,9 +117,19 @@ Built-in tools available to the Cursor agent. Each subdirectory covers one tool:
 | [`search/`](./tools/search/search-guide.md) | [/docs/agent/tools/search](https://cursor.com/docs/agent/tools/search) | Instant Grep, privacy, Explore subagent |
 | [`worktrees/`](./tools/worktrees/worktrees-guide.md) | [/docs/configuration/worktrees](https://cursor.com/docs/configuration/worktrees) | Agents Window worktrees, setup scripts, cleanup, `/worktree`, `/best-of-n` |
 
+## sdk/, cli/ and pricing/
+
+Added on 2026-11-11 for the study in `ai/study/cursor-agent-sdk-workflows/`. Each file names its upstream page in its `> Source:` line.
+
+| Directory | Pages | Notes |
+|-----------|-------|-------|
+| [`sdk/`](./sdk/typescript.md) | `/docs/sdk/typescript`, `/docs/sdk/python`, `/docs/sdk/bridge`, `/docs/release-notes/sdk` | The SDK release notes stop at 1.0.40 while npm has `@cursor/sdk@1.3.1` (2026-11-03). `/docs/agent-sdk` is a different product, the agents-as-code framework formerly `@cursor/bdk` |
+| [`cli/`](./cli/overview.md) | `/docs/cli/overview`, `/docs/cli/headless`, `/docs/cli/reference/{parameters,authentication,output-format}` | — |
+| [`pricing/`](./pricing/models-and-pricing.md) | `/docs/models-and-pricing`, `/help/account-and-billing/pricing`, `/docs/account/pricing/legacy-cursor-plans`, `/docs/account/teams/pricing`, `/help/models-and-usage/{cursor-router,token-rate,usage-limits,available-models}`, `/docs/account/enterprise/service-accounts` | `/docs/account/pricing` returns 404 since Cursor joined The X Subscription; plans now live in the help center |
+
 ## Upstream areas not mirrored here
 
-As of 2026-10-11 the upstream index (<https://cursor.com/llms.txt>) lists these areas that have no local copy in this directory. The index lists each page as a `.md` URL; raw markdown was confirmed for the pages mirrored here (blog posts under `/blog/*` do not serve it).
+As of 2026-10-11 (SDK and CLI rows removed on 2026-11-11) the upstream index (<https://cursor.com/llms.txt>) lists these areas that have no local copy in this directory. The index lists each page as a `.md` URL; raw markdown was confirmed for the pages mirrored here (blog posts under `/blog/*` do not serve it).
 
 | Upstream area | Entry point | Why it matters to the mirrored docs |
 |---------------|-------------|-------------------------------------|
@@ -123,8 +137,8 @@ As of 2026-10-11 the upstream index (<https://cursor.com/llms.txt>) lists these 
 | Customize page | <https://cursor.com/docs/customize-cursor> | The UI where plugins, MCP servers, rules, skills, subagents, and hooks are installed and managed |
 | Agents Window, Projects, Agent Review, Plan/Debug/Design modes | <https://cursor.com/docs/agent/agents-window> | The worktrees page now leads with the Agents Window workflow |
 | Canvas tool | <https://cursor.com/docs/agent/tools/canvas> | New entry under agent tools, next to terminal, browser, and search |
-| CLI | <https://cursor.com/docs/cli/overview> | Headless mode, ACP, slash commands, permissions, configuration |
-| SDK (TypeScript, Python, bridge) | <https://cursor.com/docs/sdk/typescript> | Programmatic agents |
+| CLI (beyond the five pages in `cli/`) | <https://cursor.com/docs/cli/overview> | ACP, slash commands, permissions, configuration |
+| Agent SDK (agents as code) | <https://cursor.com/docs/agent-sdk> | Deployed bots built with `@grok/agent-sdk`; not the `@cursor/sdk` mirrored in `sdk/` |
 | Cloud Agents (setup, automations, self-hosted, API) | <https://cursor.com/docs/cloud-agent> | Hooks, skills, and subagents each have cloud-agent sections |
 | Bugbot, Security agents, Approval agents | <https://cursor.com/docs/bugbot> | Review agents referenced by the built-in skills |
 | Origin (Git hosting, CLI, API) | <https://cursor.com/docs/origin> | Product area with no local copy |
