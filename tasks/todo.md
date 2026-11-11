@@ -512,7 +512,38 @@ CREDITS.md, verificacoes-locais.md (new runs).
 ## Steps
 
 - [x] Advisor review of this plan
-- [ ] Branch; offline tests first (red), then the workflow (green); typecheck; both Nodes
-- [ ] Docs and credits
-- [ ] Real-API LOW and MED runs on wf-sandbox; evidence
+- [x] Branch; offline tests first (red), then the workflow (green); typecheck; both Nodes
+- [x] Docs and credits
+- [x] Real-API LOW and MED runs on wf-sandbox; evidence
 - [ ] PR (pr template), CI green, user ok to merge, v0.2.0 pre-release, back-port summary to ai-study-library
+  - [x] [PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) opened with the pr template
+  - [x] CI green (Node 22.13.0 and 22.x)
+  - [ ] User ok to merge, v0.2.0 pre-release
+
+## Review
+
+- **Adversarial review before live runs** (24 agents; lenses tdd-loop, resume-idempotency, security-cost): 20 defects
+  confirmed. Each was fixed test-first in `test/implement-issue.hardening.test.ts`, and 17 of its 18 tests fail on
+  `b90a27f` for the reported reason. The worst: green could move or disable the red test, resume could deliver a red
+  suite, and an agent commit carrying a key got past the secret guard.
+- **Skills against `writing-for-agents`:** all three were rewritten and then graded by four independent agents (90
+  defects, all applied). Two of them were real bugs:
+  - the `run-workflow` frontmatter was invalid YAML;
+  - the kit's `workflow-authoring` collided with Claude Code's bundled skill of the same name, and a project skill
+    replaces the bundled one. It is now `cursor-workflow-authoring`.
+- **Invocation (user decision):** `run-workflow` became model-invoked. As user-only it gated nothing, because MCP
+  advertises `start_workflow` with each workflow's `whenToUse`. The real gate differs by harness:
+  - Cursor: `start_workflow` approval under the Run Mode, which applies only when the tool is kept out of the
+    allowlist. Auto-review uses a classifier, and Run Everything never asks.
+  - Claude Code: the permission prompt for `mcp__workflows__start_workflow`. The skill reaches Claude Code only
+    through `scripts/link-claude-skills.sh`.
+- **Live runs:**
+  - LOW #7 first stopped at `tdd-violation`: `composer-2.5` implemented inside the red step twice. The code now
+    discards non-test edits in red. The rerun was `done` (PR #9, 339k tokens).
+  - MED #8 delivered partially: the planner did not know the 3-slice cap. The cap is now in the plan and judge
+    prompts. MED #11 then ran from the final tree and covered the whole issue in 2 slices (PR #12, 769k tokens over
+    two runs).
+  - SDK INFO logs leaked into the CLI's stdout through `console.log`; a shared stderr redirect fixed it.
+  - No writes outside the repository, and mise and `~/.cursor` were included in the check.
+- **Still pending:** the HIGH path, a blocking review and `alreadySatisfied` against the real API. The Cursor IDE run
+  of `/run-workflow` also needs someone at the IDE.

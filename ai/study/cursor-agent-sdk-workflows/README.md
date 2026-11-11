@@ -16,6 +16,17 @@ O kit virou o repositório público **[rodrigorjsf/cursor-workflows-starter](htt
 ([release v0.1.0, pré-release](https://github.com/rodrigorjsf/cursor-workflows-starter/releases/tag/v0.1.0)), que é a versão mantida. A pasta `starter-kit/` e o
 `00-relatorio-pesquisa.md` daqui ficam como retrato do estudo em `a69f2a2` e têm defeitos conhecidos.
 
+**Em andamento (2026-11-11):** o [PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) prepara a 0.2.0.
+
+- O `implement-issue` segue as skills `tdd`, `codebase-design`, `code-review` e `pr` de mattpocock/skills, com três
+  peças novas: TDD conferido pelo código entre as etapas, review em três eixos e checkpoint de seams em dois runs.
+  LOW e MED foram verificados contra a API real (§13 das verificações).
+- As skills do kit foram reescritas pela `writing-for-agents`. A de autoria virou `cursor-workflow-authoring`, porque
+  o Claude Code tem uma skill embutida `workflow-authoring`, e uma skill de projeto com o mesmo nome a substitui.
+- A `run-workflow` passou a ser invocável pelo modelo nos dois harnesses. A trava de um workflow pago é a aprovação
+  de `start_workflow`: no Cursor, pelo Run Mode, com a tool fora da allowlist; no Claude Code, pelo prompt de
+  permissão de `mcp__workflows__start_workflow`.
+
 Ele foi montado com [`PROMPT-publicar-repositorio.md`](PROMPT-publicar-repositorio.md), numa sessão local (WSL2), em
 2026-11-11. A evidência de cada item está em
 [`docs/research/verificacoes-locais.md`](https://github.com/rodrigorjsf/cursor-workflows-starter/blob/main/docs/research/verificacoes-locais.md).
