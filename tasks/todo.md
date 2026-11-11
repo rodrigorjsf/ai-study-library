@@ -192,3 +192,41 @@ Handoff files on disk are the only memory between stages → their schemas must 
   favorece o cache (prefixo estável, conversas curtas), mede `cacheHitRatio` e economiza onde controla (código em
   vez de modelo, memo entre runs, contexto mínimo por etapa). 12 testes offline passam. Preços e relatos de
   fórum marcados [S]: cursor.com/forum/arxiv inacessíveis nesta sessão.
+
+---
+
+# Plan — Observabilidade V1 do starter kit (2026-11-11)
+
+## Decisions (agreed with user)
+
+- SQLite **por usuário**: `~/.cursor-workflows/metrics.db` (todos os repos; coluna `repo`). `WF_METRICS_DB` sobrescreve; `WF_METRICS=off` desliga.
+- Dashboard **localhost sem dependências**: `node:http` + página com SVG gerado no cliente; API JSON.
+- Prompts: **só hash + tamanho** (texto completo só com `WF_METRICS_STORE_PROMPTS=1`, para depuração local).
+- Time: **local + export** CSV/JSON (`--anonymize` opcional); OTel fica para V2.
+- Lib: `node:sqlite` (Node ≥ 22.13, já exigido pelo SDK); zero dependência nova.
+
+## What the SDK gives (verified in @cursor/sdk 1.3.1 .d.ts)
+
+- Por turno: `onDelta` → `turn-ended.usage` {input, output, cacheRead, cacheWrite, reasoning}; prompt do turno = input+cacheRead+cacheWrite (proxy de ocupação da janela).
+- `summary-started/completed` (compactação de contexto), `step-completed.stepDurationMs`, `tool-call-started/completed`.
+- `getUsage()` → total + `runs[]` por turno (local) com `cost.chargedCents/rawCostCents` (0 se incluído no plano; pode atrasar).
+- Não há tamanho de janela nem preço no SDK → tabela `pricing` editável (Haiku 5.5: US$0,10/0,50 até 100k, 0,50/2,50 acima — tarifa da API Anthropic; repasse no Cursor não confirmado).
+
+## Design
+
+1. `src/observability/db.ts`: abre/migra o banco (`schema_version`), WAL, `busy_timeout` (MCP + CLI concorrentes).
+2. Tabelas: `runs`, `steps` (uma linha por tentativa), `turns`, `metrics` (ctx.metric), `pricing`.
+3. Engine emite eventos mais ricos (run-start/run-end, step-start com stepId/params/tools/settingSources, `turn`, `summary`, `tool-call`, step-end com errorKind/turns/peakPrompt/schemaReprompts/rawCents); `ctx.metric(name, value)`; convenção `result.status` → `runs.outcome` ("done" = entregue).
+4. `src/observability/recorder.ts`: assina os eventos e grava; falha de gravação nunca derruba o workflow.
+5. `pricing.ts`: estimativa por turno com faixa de contexto (turno acima do limite usa a tarifa alta); `est_cents` ao lado de `charged_cents`.
+6. Views SQL: custo por workflow/modelo/esforço; custo por entrega; taxa de sucesso/retry/reprompt; economia memo/journal; cache por modelo; **custo e output por faixa de prompt (25k)**; turnos acima da faixa; etapas com muitos turnos e baixa entrega.
+7. CLI: `wf stats`, `wf metrics export`, `wf pricing list|set`; `npm run dash` (porta 4317).
+8. Docs: `docs/09-observabilidade.md`; links em README/08/03; skills (authoring: `ctx.metric` + `status`; converter: definir métricas de entrega); relatório §5.2.
+9. Testes offline: fake SDK emite `turn-ended`; verifica linhas no banco, views, estimativa com faixa, export, falha de gravação não derruba run.
+
+## Steps
+
+- [ ] Advisor review deste plano
+- [ ] Implementar 1–7 com testes
+- [ ] Docs e skills (8)
+- [ ] Verificação (typecheck, testes, dashboard via curl, CLI) + commit/push
