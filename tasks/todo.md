@@ -518,7 +518,8 @@ CREDITS.md, verificacoes-locais.md (new runs).
 - [ ] PR (pr template), CI green, user ok to merge, v0.2.0 pre-release, back-port summary to ai-study-library
   - [x] [PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) opened with the pr template
   - [x] CI green (Node 22.13.0 and 22.x)
-  - [ ] User ok to merge, v0.2.0 pre-release
+  - [x] Merged by the user (`6fee634`); branch removed locally and on origin
+  - [ ] v0.2.0 pre-release (waits for the user's ok)
 
 ## Review
 
