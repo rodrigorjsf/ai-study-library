@@ -16,8 +16,8 @@ O kit virou o repositório público **[rodrigorjsf/cursor-workflows-starter](htt
 ([release v0.1.0, pré-release](https://github.com/rodrigorjsf/cursor-workflows-starter/releases/tag/v0.1.0)), que é a versão mantida. A pasta `starter-kit/` e o
 `00-relatorio-pesquisa.md` daqui ficam como retrato do estudo em `a69f2a2` e têm defeitos conhecidos.
 
-**0.2.0 em `main` (2026-11-11):** o [PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) foi mergeado
-(`6fee634`); a pré-release v0.2.0 ainda não foi publicada.
+**[v0.2.0](https://github.com/rodrigorjsf/cursor-workflows-starter/releases/tag/v0.2.0) (pré-release, 2026-11-11):** o
+[PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) foi mergeado (`6fee634`) e publicado na v0.2.0.
 
 - O `implement-issue` segue as skills `tdd`, `codebase-design`, `code-review` e `pr` de mattpocock/skills, com três
   peças novas: TDD conferido pelo código entre as etapas, review em três eixos e checkpoint de seams em dois runs.

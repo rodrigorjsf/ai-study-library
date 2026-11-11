@@ -515,11 +515,11 @@ CREDITS.md, verificacoes-locais.md (new runs).
 - [x] Branch; offline tests first (red), then the workflow (green); typecheck; both Nodes
 - [x] Docs and credits
 - [x] Real-API LOW and MED runs on wf-sandbox; evidence
-- [ ] PR (pr template), CI green, user ok to merge, v0.2.0 pre-release, back-port summary to ai-study-library
+- [x] PR (pr template), CI green, user ok to merge, v0.2.0 pre-release, back-port summary to ai-study-library
   - [x] [PR #1](https://github.com/rodrigorjsf/cursor-workflows-starter/pull/1) opened with the pr template
   - [x] CI green (Node 22.13.0 and 22.x)
   - [x] Merged by the user (`6fee634`); branch removed locally and on origin
-  - [ ] v0.2.0 pre-release (waits for the user's ok)
+  - [x] [v0.2.0 pre-release](https://github.com/rodrigorjsf/cursor-workflows-starter/releases/tag/v0.2.0) (tag on `033a747`, CI green)
 
 ## Review
 
