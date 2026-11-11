@@ -262,3 +262,145 @@ Handoff files on disk are the only memory between stages → their schemas must 
   anonimizado, 0600, dashboard 127.0.0.1 + Host).
 - Não verificado: execução contra a API real; `Agent.getUsage(agentId)` para agentes locais já descartados
   (reconcile informa falhas); repasse da faixa de preço do Haiku no Cursor (o banco mede empiricamente).
+
+---
+
+# Plan — Validate locally and publish `cursor-workflows-starter` (2026-11-11)
+
+Source prompt: `ai/study/cursor-agent-sdk-workflows/PROMPT-publicar-repositorio.md` (commit `81d7356`).
+
+## Decisions (agreed with user)
+
+- Repo `rodrigorjsf/cursor-workflows-starter` (name free; distinct from the private Go `cursor-workflow-orchestrator`).
+  Public, MIT, `package.json` keeps `"private": true`.
+- `README.md` in pt-BR + short `README.en.md` with a "docs are pt-BR" banner.
+- Public scope: kit + research report in `docs/research/`; third-party doc mirrors replaced by official URLs with
+  access date; the publish prompt is cited only in `PROVENANCE.md`.
+- Provenance: the 7 study commits **plus `81d7356`** (the publish prompt).
+- History: one clean initial commit citing the SHAs.
+- Paid tests: US$ 2.00 total; every block announced with an estimate and run only after the user's "ok";
+  every run with `--max-cents` **and** `--max-tokens`; `WF_METRICS_DB=~/tmp/wf-verify.db`.
+- Credential: user runs `NO_OPEN_BROWSER=1 npm run wf -- login` in their own terminal; agent only checks
+  `whoami` and file mode; key revoked in the dashboard at the end.
+- Sandbox: agent creates private `rodrigorjsf/wf-sandbox` (tiny Node project + test + issue `complexity:low`);
+  end-to-end run with `openPr: true` to prove resume idempotence.
+- Back to ai-study-library: direct commits on `main`; doc mirrors in their own commit.
+- Node: `mise install node@22` (latest 22.x), used only via `mise exec`; global default untouched
+  (default is 22.11.0 < 22.13 and its npm is broken).
+- Windows-side checks (Cursor IDE MCP/skills, dashboard in the Windows browser): guided checklist run by the user.
+- **Account:** user creates a **personal Free** account for Phase 2 (decided 2026-11-11 after Phase 1: the docs do
+  not say whether the SDK runs on Free; legacy Start, a paid plan, excludes it). Work Enterprise (non-admin) is not
+  used; admin-only items stay open questions for the admin pitch.
+
+## Findings absorbed before any spend
+
+- Budget cap ignores plan-included usage: `engine.ts:311-314` adds only `chargedCents` (0 when included).
+  Fix test-first: cap counts `rawCostCents`, falling back to `chargedCents`; update docs 02 §3 and 07.
+
+## Working trees
+
+- `~/tmp/wf-kit-check`: pristine copy of the kit, local git baseline, fixes as local commits (diff review only).
+- `~/tmp/wf-docs-live/`: live doc pages (untrusted data).
+- `~/code/cursor-workflows-starter`: assembled in Phase 4 from the fixed tree.
+- The kit in this repo stays a snapshot; the study README points to the new repo as the maintained version.
+
+## Steps
+
+- [x] Phase 1.1 Environment evidence (node/npm via mise 22.x, gh, git, Cursor IDE build, filesystem)
+- [x] Phase 1.2 Clean install: `npm ci` (platform binaries), typecheck, tests (expect 21)
+- [x] Phase 1.3 Live docs: discover real paths (`llms.txt`/sitemap), fetch, log 404s; Workflow with one
+      refutation-biased verifier per [S]/[I] claim citing the fetched line; forum topics from doc 08
+- [x] Phase 1.4 Refresh mirrors in `ai/docs/cursor/` (commit `4aaa4f8`; root `docs/cursor/` left alone: syntheses, `ai/docs` wins)
+- [x] Ask the Phase 2 account question with Phase 1 evidence
+- [x] Pre-spend fix: budget cap on max(raw, charged) (test-first); also zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5)
+- [x] Doc corrections from the 74 doc verdicts (workflow), then Phase 2 corrections
+- [x] Phase 2 paid blocks on Premium (Blocks 1, 3–7, 9, 10); ~US$ 0.36 estimated; IDE/Windows checks pending
+- [ ] Phase 3 repo structure → user approval → independent review
+- [ ] Phase 4 assemble, validate (npm ci/typecheck/test, links, gitleaks), confirm, publish, CI green, release v0.1.0
+- [ ] Phase 5 back-port link and summary here; Review section
+
+## Phase 3 — public repository plan (agreed with user 2026-11-11)
+
+Source tree: `~/tmp/wf-kit-check` (kit at a69f2a2 + local fixes, 31 offline tests). Target: `~/code/cursor-workflows-starter`.
+
+Decisions:
+- Include the verification workflows under `scripts/verify/` with a setup script for a throwaway probe repo, run via
+  `WORKFLOWS_DIR=scripts/verify`.
+- Release `v0.1.0` as a **pre-release**: SDK and end-to-end verified on Premium; Cursor IDE invocation unverified.
+- MIT license, holder "Rodrigo França". One bug issue template asking plan, model and SDK version.
+- `verificacoes-locais.md` gets the 74 doc-claim verdicts in pt-BR with official URLs and access date.
+
+Structure:
+- Root: README.md (pt-BR, honest status, quick start, safety warning), README.en.md, LICENSE, CHANGELOG.md, PROVENANCE.md
+  (8 commits incl. 81d7356, both sessions, primary sources with access date), SECURITY.md, AGENTS.md, CLAUDE.md,
+  package.json (private), package-lock.json, tsconfig*.json, .gitignore, .gitattributes (`* text=auto eol=lf`),
+  .node-version.
+- .agents/skills, .agents/workflows/README.md, .cursor/mcp.json, .mcp.json, src/, workflows/, test/, scripts/,
+  docs/01..09 + docs/img, docs/research/{relatorio-pesquisa.md, verificacoes-locais.md}.
+- .github/workflows/ci.yml (ubuntu, Node 22.x, npm ci, typecheck, test, `permissions: contents: read`, no secrets),
+  .github/ISSUE_TEMPLATE/bug.md.
+
+Rules:
+- No third-party doc mirrors; every link leaving the kit points to an official URL (with access date) or to
+  ai-study-library at a69f2a2.
+- Never commit .workflows/, metrics-export/, *.db, auth.json or keys; gitleaks + git grep for crsr_/sk-/token shapes.
+- Commits authored with the GitHub noreply email; one clean initial commit citing the SHAs and PROVENANCE.md.
+
+## Phase 4 — assemble, validate, publish
+
+- [ ] Independent multi-lens review of this plan; apply adjustments; show them to the user
+- [ ] Docs: 74-claim table in verificacoes-locais.md; link rewrite in relatorio-pesquisa.md; README status; CHANGELOG
+- [ ] Assemble ~/code/cursor-workflows-starter; npm ci, typecheck, test; relative-link check; gitleaks; clean status
+- [ ] Show summary and ask for confirmation before `gh repo create --public`
+- [ ] Push, topics, CI green, pre-release v0.1.0
+
+## Adjustments from the independent review (4 lenses, 33 findings, 2026-11-11)
+
+Code (test-first where testable):
+- Node floor: `queries.ts` uses `?1` numbered params that break `npm test`/`stats`/`dash` on Node 22.13–22.19;
+  bind plain `?` twice; regression test; CI matrix `["22.13.0", "22.x"]`; `.node-version` = `22`.
+- `implement-issue`: before commit, fail if staged content has secret shapes (`crsr_`, `sk-`, the saved key) or
+  files named `auth.json`/`.env*` (an injected LOW/MED step skips review and its diff is pushed).
+- `workflow.ts` sandbox JSDoc: reads are NOT restricted; writes limited for shell calls; needs bubblewrap; untested.
+- Startup check of `process.versions.node` in `cli.ts` and `mcp-server.ts` (the IDE may spawn another Node).
+- `setup-probe-repo.sh`: pass paths via env (spaces); new `scripts/verify/setup-sandbox-repo.sh` so the end-to-end
+  numbers can be replicated (Cursor ToS: published benchmarks must be replicable).
+
+Docs sweep (grep against verificacoes §1–§11 before assembly):
+- grok-4.7 did run (MED, no params) in the e2e `corrigir-1`; only the HIGH/REVIEW variant is unexecuted.
+- Sandbox: untested, needs bubblewrap, does not restrict reads, may not cover `edit`; the out-of-repo write goes into
+  docs/07, README and SECURITY.md; SCOPE_RULE is advisory only.
+- "Gasto limitado" is not a guarantee: one step is unbounded; the cents cap is inert when getUsage is unavailable.
+- The recursion guard protects against accidents; it is not a security boundary.
+- Supported OS: tested only on Linux x64 (WSL2); implement-issue needs bash.
+- Claude Code side: name the PreToolUse matcher for `mcp__workflows__start_workflow`; separate MCP-registration
+  nodes for Cursor and Claude Code in the 03/04 diagrams.
+- §11: forum rows paraphrased (no verbatim post text, no usernames); at most one short quote per row.
+- New §12 "Não executado": IDE MCP/skills/`/run-workflow`, Windows-browser dashboard, sandbox, MED/HIGH/review
+  paths, team/MDM and `~/.claude` hooks, admin policies, monthly cap, Haiku context tier (needs credit).
+- Environment line per block (plan, SDK 1.3.1, model, settingSources; the 58 skills came from the author's machine).
+
+New files content:
+- README Status: date, SDK version, plans tested (Free blocked, Premium works), Linux/WSL2 only, test count from the
+  final run, what was measured (links to §), the e2e scope (LOW only), the incident, pending list from §12.
+- SECURITY.md: never-commit list; incident + advisory SCOPE_RULE; auth.json plaintext 0600, 90 days, readable by any
+  step, revoke after testing; `project` settings run the target repo's hooks/MCP; sandbox caveats; private reporting.
+- LICENSE MIT + note that `@cursor/sdk` is proprietary (Cursor ToS, paid plan); `"license": "MIT"` in package.json.
+- .gitignore: `*.db`, `*.db-wal`, `*.db-shm`, `*.sqlite*`, `auth.json`, `.env`, `.env.*`, `.probe/`, `.claude/skills/`.
+- Bug template with a redaction notice (no key, whoami output, metrics.db, unanonymized exports).
+- Report sources: official URL first, ai-study-library@a69f2a2 snapshot second.
+
+Assembly and gates:
+- `git -c core.autocrlf=false archive` into ~/code/cursor-workflows-starter; `git init -b main`; .gitattributes
+  before the first add; local user.email = GitHub noreply; check `git log --format="%ae %ce"` before push.
+- Gates: npm ci/typecheck/test on 22.13.0 and 22.23.4; link check; gitleaks; PII grep (home paths, hostnames, emails
+  other than noreply); clone with `core.autocrlf=true` and assert `w/lf`.
+- After `gh repo create`: enable private vulnerability reporting; topics; CI green; pre-release v0.1.0 with notes
+  built from §12.
+- Entrega final: repo/release URLs, CI conclusion, counts per section, cost as list-price estimate (35,33 ¢ in the
+  DB + ~0,82 ¢ probes; cost_source=estimate), pending list.
+- Phase 5: fix tasks/lessons.md (RunResult.model), banner on the study's starter-kit/README.md and report
+  (superseded snapshot, known defects), commit and push.
+
+Open for the user: re-run the LOW end-to-end on the exact tree to publish (est. 2–30 ¢); publish with the IDE and
+Windows checks pending (pre-release) or wait for them.
