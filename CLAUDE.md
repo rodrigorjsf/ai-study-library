@@ -25,3 +25,4 @@ When something fails repeatedly, when User has to re-explain, or when a workarou
 - No Chrome in WSL: archify `visual-check` skips; set `ARCHIFY_CHROME` first.
 - No osv-scanner installed: query `api.osv.dev/v1/querybatch` with lockfile versions.
 - archify `deliver` with `meta.repository` needs `--repo-root <checkout>`.
+- cursor.com blocked in cloud sandbox; read `@cursor/sdk` `.d.ts`/README from npm tarball.

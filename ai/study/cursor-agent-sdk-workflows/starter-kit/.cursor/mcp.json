@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "workflows": {
+      "command": "npx",
+      "args": ["tsx", "${workspaceFolder}/src/mcp-server.ts"],
+      "env": {
+        "WF_CWD": "${workspaceFolder}",
+        "WF_MAX_CENTS": "500"
+      }
+    }
+  }
+}

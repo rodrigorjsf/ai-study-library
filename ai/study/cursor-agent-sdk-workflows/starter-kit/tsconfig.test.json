@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "baseUrl": ".", "paths": { "@cursor/sdk": ["./test/fake-sdk.ts"] } },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}
