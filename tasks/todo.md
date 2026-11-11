@@ -152,3 +152,24 @@ Each stage has its **own orchestrator**, executed at **different times in fresh 
 `rejected`/`blocked`) + **exit gate** (stage critic + own checklist before writing the handoff).
 `pipeline-gatekeeper` is dropped as a required role; traceability owner stays as a shared worker.
 Handoff files on disk are the only memory between stages → their schemas must be self-contained.
+
+---
+
+# Plan — Cursor Agent SDK workflows: relatório + starter kit (2026-11-11)
+
+## Decisions (agreed with user)
+
+- Idioma: **pt-BR**. Local: `ai/study/cursor-agent-sdk-workflows/`.
+- Entrega: **blueprint + snippets** (código de referência marcado "não testado"; sessão sem acesso a cursor.com nem conta Cursor).
+- Linguagem do runtime: **TypeScript**. Invocação principal: **MCP server + CLI** sobre o mesmo runtime.
+- Eixo central: comparação com Claude Code dynamic workflows (`ai/docs/claude-code/workflows/workflows.md`).
+
+## Steps
+
+- [x] Rodar `/deep-research` (Cursor SDK, auth/billing, invocação, exemplos)
+- [x] Espelhar doc oficial de workflows do Claude Code
+- [ ] Levantar superfície exata da API do Cursor SDK (agente focado)
+- [ ] Escrever `00-relatorio-pesquisa.md` (achados verificados, comparação, paridade)
+- [ ] Escrever `starter-kit/` (README, docs 01–06, templates/implement-issue, skills workflow-authoring + skill-to-workflow)
+- [ ] Revisão do plano/estrutura por advisor antes de declarar pronto
+- [ ] Commit + push em `claude/keen-faraday-yoqwhs`
