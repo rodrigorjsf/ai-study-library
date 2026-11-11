@@ -1,15 +1,23 @@
 # 06 · Convertendo skills e subagents em workflows
 
 O processo está codificado na skill
-[`.cursor/skills/skill-to-workflow/SKILL.md`](../.cursor/skills/skill-to-workflow/SKILL.md). Use assim:
+[`.agents/skills/skill-to-workflow/SKILL.md`](../.agents/skills/skill-to-workflow/SKILL.md). Use assim:
 
 ```
-/skill-to-workflow .cursor/skills/implementar-feature/SKILL.md .cursor/agents/reviewer.md .cursor/agents/tester.md
+/skill-to-workflow .agents/skills/implementar-feature/SKILL.md .cursor/agents/reviewer.md .claude/agents/tester.md
 ```
 
-Ela funciona com fluxos do **Cursor** (`.cursor/skills`, `.cursor/agents`) e do **Claude Code** (`.claude/skills`,
-`.claude/agents`). O Cursor já lê `.claude/agents/` por compatibilidade, mas um fluxo convertido em workflow deixa
-de depender dessa leitura.
+Ela aceita artefatos de qualquer um destes lugares:
+
+- **skills** em `.agents/skills/`, `.cursor/skills/`, `.claude/skills/` e `.codex/skills/`;
+- **subagents** em `.cursor/agents/`, `.claude/agents/` e `.codex/agents/` (não há `.agents/agents/`
+  documentado);
+- **instruções** em `AGENTS.md`, `CLAUDE.md` e `.cursor/rules/`.
+
+O inventário registra **em quais harnesses cada artefato é descoberto hoje** (matriz em
+[04](04-invocacao-no-cursor-ide.md#onde-cada-harness-procura-cada-coisa)). Por exemplo, uma skill em
+`.agents/skills/` roda no Cursor mas é invisível ao Claude Code. Depois da conversão, o fluxo deixa de depender de
+onde cada harness procura: as etapas são código, e as instruções compartilhadas ficam em `AGENTS.md`.
 
 ## Quando converter (e quando não)
 
@@ -37,7 +45,7 @@ de depender dessa leitura.
 **Antes** (skill + 2 subagents, tudo decidido pelo modelo):
 
 ```markdown
-<!-- .cursor/skills/implementar-feature/SKILL.md -->
+<!-- .agents/skills/implementar-feature/SKILL.md -->
 1. Entenda a issue e, se for complexa, faça um plano.
 2. Implemente. Use o subagent `tester` para escrever testes quando relevante.
 3. Rode os testes e corrija até passar.
@@ -64,6 +72,7 @@ Revise o diff procurando bugs e problemas de segurança...
 | "quando relevante" (tester) | Sempre: etapa `escrever-testes` após implementar, modelo LOW |
 | "corrija até passar" | Até 2 rodadas, escalando o modelo na correção; depois falha explícita |
 | "se a mudança for grande" | `diffLines > 300` ou tier HIGH |
+| (review que falha "passa" sem ninguém notar) | Review exigido que não roda encerra o run com `review-failed`; depois de corrigir achados, testes e review rodam de novo |
 | `model: inherit` (reviewer) | `MODELS.REVIEW` explícito; `readonly: true` → `tools: ["read","grep","glob","ls","shell"]` (o shell é para `git diff`) |
 | "abra o PR" | `gh pr create` no código, só com testes verdes e sem achado bloqueante |
 

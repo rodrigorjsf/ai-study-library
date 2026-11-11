@@ -15,9 +15,11 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 
 > **Status:** blueprint.
 > - O código passa no typecheck contra `@cursor/sdk@1.3.1`.
-> - O controle de fluxo (schema, retries, fallback de modelo, teto de custo, resume) está coberto por testes
->   offline com um SDK falso.
-> - O MCP server foi exercitado pelo protocolo stdio.
+> - O controle de fluxo está coberto por 8 testes offline com um SDK falso: schema, validação de args, retries,
+>   timeout, concorrência, teto de custo e resume.
+> - O MCP server foi exercitado pelo protocolo stdio. O CLI (`start`/`wait`, jobs órfãos, guarda de recursão,
+>   workflows em `.agents/workflows/`) foi testado num repositório temporário.
+> - Um revisor independente auditou código e afirmações contra os `.d.ts` do SDK; as correções foram aplicadas.
 > - **Nada foi executado contra a API real do Cursor ainda.** O primeiro passo ao adotar é o
 >   [teste de fumaça](docs/01-instalacao.md#5-teste-de-fumaça-real).
 
@@ -25,6 +27,8 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 
 ```
 .
+├── AGENTS.md               # instruções dos agentes (Cursor, etapas dos workflows, Codex)
+├── CLAUDE.md               # só `@AGENTS.md`, para o Claude Code ler as mesmas instruções
 ├── src/
 │   ├── runtime/
 │   │   ├── workflow.ts     # tipos públicos + defineWorkflow()
@@ -38,23 +42,27 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 ├── workflows/
 │   └── implement-issue.ts  # exemplo: tier por label → plano → código → testes → review condicional → PR
 ├── test/                   # testes offline do engine (fake SDK)
-├── .cursor/
-│   ├── mcp.json            # registra o MCP server no Cursor
-│   └── skills/
-│       ├── run-workflow/       # /run-workflow <nome> <args>: dispara e acompanha
-│       ├── workflow-authoring/ # referência para escrever workflows
-│       └── skill-to-workflow/  # /skill-to-workflow: converte skills e subagents em workflow
+├── .agents/                # local neutro (Cursor e Codex leem nativamente)
+│   ├── skills/
+│   │   ├── run-workflow/       # /run-workflow <nome> <args>: dispara e acompanha
+│   │   ├── workflow-authoring/ # referência para escrever workflows
+│   │   └── skill-to-workflow/  # /skill-to-workflow: converte skills e subagents em workflow
+│   └── workflows/          # workflows do repositório (carregados junto com workflows/)
+├── .cursor/mcp.json        # MCP server no Cursor
+├── .mcp.json               # o mesmo MCP server no Claude Code
+├── scripts/link-claude-skills.sh  # expõe .agents/skills ao Claude Code (que não lê .agents/)
 └── docs/
 ```
 
 ## Começo rápido
 
 ```bash
-npm install
+npm ci
+npm test && npm run typecheck
 npm run wf -- login          # login do Cursor no navegador; o uso fica na SUA conta
 npm run models               # IDs de modelo liberados para você
-npm test && npm run typecheck
-npm run wf -- run implement-issue --args '{"issue":123}' --max-cents 100
+# primeiro run real: num repositório de teste (com commit e remote GitHub), com teto baixo
+npm run wf -- run implement-issue --cwd /caminho/do/repo-de-teste --args '{"issue":1}' --max-cents 100
 ```
 
 No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings → MCP) e digite no chat:
@@ -82,5 +90,8 @@ No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings 
 - Os agentes **executam tools sem pedir aprovação** (é o padrão das runs locais do SDK). O kit limita isso com
   allowlist de tools por etapa e carrega os hooks e as regras do projeto. Leia
   [07 · Governança](docs/07-governanca-e-custos.md) antes de usar em um repositório sensível.
-- O estado fica em `.workflows/` (journal, jobs, worktrees), que está no `.gitignore`.
+- O estado fica em `.workflows/` (journal, jobs, logs, worktrees) do repositório onde o workflow roda. O runtime
+  o adiciona a `.git/info/exclude`, sem mexer no `.gitignore` do repositório.
+- Os agentes das etapas carregam `AGENTS.md`, regras, skills, hooks e MCP do projeto, e hooks do time e
+  Enterprise (`settingSources: ["project","team","mdm"]`). Eles não conseguem disparar outro workflow.
 - Commit, push e PR são feitos pelo **código do workflow**, com `git` e `gh`, e só quando você pede (`openPr`).

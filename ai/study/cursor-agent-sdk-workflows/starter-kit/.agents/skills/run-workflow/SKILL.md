@@ -22,7 +22,11 @@ enquanto o job roda.
    - A cada retorno, mostre ao usuário a `phase` atual e as últimas linhas de `recent`, em uma ou duas linhas.
    - Não chame outra coisa entre as esperas.
 4. Quando `status` for `finished`, apresente o `result`: o que foi feito, a branch ou o PR e o custo (`spentCents`).
-   Quando for `failed`, mostre o `error` sem tentar corrigir por conta própria e ofereça relançar.
+   Se `result.status` não for `done` (por exemplo `tests-failed`, `review-failed`, `review-blocking`), diga isso
+   claramente: o workflow terminou sem entregar.
+5. Quando `status` for `failed`, mostre o `error` sem tentar corrigir por conta própria e ofereça relançar
+   **retomando**: `start_workflow` com o mesmo `name` e `args` e `resumeRunId` igual ao `runId` do job. As etapas
+   concluídas não são repetidas.
 
 ## Sem o servidor MCP
 

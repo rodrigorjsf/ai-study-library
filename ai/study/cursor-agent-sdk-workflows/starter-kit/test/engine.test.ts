@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
-import { calls, script } from "@cursor/sdk";
+import { calls, script, stats } from "@cursor/sdk";
 import { runWorkflow } from "../src/runtime/engine.js";
 import { defineWorkflow } from "../src/runtime/workflow.js";
 
@@ -17,9 +17,10 @@ afterEach(() => {
   rmSync(cwd, { recursive: true, force: true });
   script.length = 0;
   calls.length = 0;
+  Object.assign(stats, { active: 0, maxActive: 0, disposed: 0, usageReads: 0 });
 });
 
-test("schema: re-prompt até submit_result válido; 'mcp' entra na allowlist", async () => {
+test("schema: re-prompt até submit_result válido; 'mcp' entra na allowlist; contexto mdm carregado", async () => {
   script.push(() => ({}), submit({ tier: "BAD" }), submit({ tier: "MED" }));
   const wf = defineWorkflow({
     meta: { name: "s", description: "s" },
@@ -30,19 +31,27 @@ test("schema: re-prompt até submit_result válido; 'mcp' entra na allowlist", a
   assert.equal(r.status, "finished");
   assert.deepEqual(r.result, { tier: "MED" });
   assert.deepEqual(calls[0].tools, ["read", "mcp"]);
+  assert.deepEqual(calls[0].local.settingSources, ["project", "team", "mdm"]);
+  assert.equal(stats.disposed, 1);
 });
 
-test("fallback de modelo vira warning; strictModel falha", async () => {
-  const warnings: string[] = [];
-  script.push(() => ({ result: "x", model: { id: "outro" } }));
-  const wf = defineWorkflow({ meta: { name: "f", description: "f" }, run: (ctx) => ctx.agent("p", { model: { id: "pedido" } }) });
-  const r = await runWorkflow(wf, {}, { cwd, onEvent: (e) => e.type === "warning" && warnings.push(e.message) });
-  assert.equal(r.status, "finished");
-  assert.match(warnings[0]!, /pediu pedido, rodou outro/);
+test("schema sem type object na raiz é rejeitado antes de criar agente", async () => {
+  const wf = defineWorkflow({ meta: { name: "x", description: "x" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.agent("p", { schema: { type: "array" } }) });
+  const r = await runWorkflow(wf, {}, { cwd });
+  assert.equal(r.status, "failed");
+  assert.equal(calls.length, 0);
+});
 
-  script.push(() => ({ result: "x", model: { id: "outro" } }));
-  const strict = defineWorkflow({ meta: { name: "f2", description: "f" }, run: (ctx) => ctx.agent("p", { model: { id: "pedido" }, strictModel: true }) });
-  assert.equal((await runWorkflow(strict, {}, { cwd })).status, "failed");
+test("argsSchema é validado antes de rodar", async () => {
+  const wf = defineWorkflow({
+    meta: { name: "a", description: "a", argsSchema: { type: "object", required: ["issue"], properties: { issue: { type: "number" } } } },
+    defaults: { model: { id: "m" } },
+    run: (ctx) => ctx.agent("p"),
+  });
+  const r = await runWorkflow(wf, { issue: "abc" }, { cwd });
+  assert.equal(r.status, "failed");
+  assert.match(r.error!, /args inválidos/);
+  assert.equal(calls.length, 0);
 });
 
 test("etapa que falha em todas as tentativas derruba o workflow (não é pulada)", async () => {
@@ -51,6 +60,17 @@ test("etapa que falha em todas as tentativas derruba o workflow (não é pulada)
   const r = await runWorkflow(wf, {}, { cwd });
   assert.equal(r.status, "failed");
   assert.match(r.error!, /falhou após 2 tentativa/);
+  assert.equal(stats.disposed, 2);
+});
+
+test("timeout: etapa falha, custo é contabilizado e o agente é descartado", async () => {
+  script.push(() => ({ hang: true }));
+  const wf = defineWorkflow({ meta: { name: "t", description: "t" }, defaults: { model: { id: "m" } }, run: (ctx) => ctx.agent("x", { timeoutMs: 50, retries: 0 }) });
+  const r = await runWorkflow(wf, {}, { cwd });
+  assert.equal(r.status, "failed");
+  assert.match(r.error!, /timeout/);
+  assert.equal(r.spentCents, 7);
+  assert.equal(stats.disposed, 1);
 });
 
 test("resume: mesmo runId não cria agentes de novo", async () => {
@@ -65,9 +85,20 @@ test("resume: mesmo runId não cria agentes de novo", async () => {
   });
   const r1 = await runWorkflow(wf, {}, { cwd });
   const created = calls.length;
-  const r2 = await runWorkflow(wf, {}, { cwd, resumeRunId: r1.runId });
+  const r2 = await runWorkflow(wf, {}, { cwd, runId: r1.runId });
   assert.equal(calls.length, created);
   assert.deepEqual(r2.result, r1.result);
+});
+
+test("concorrência respeita o limite", async () => {
+  const wf = defineWorkflow({
+    meta: { name: "c", description: "c" },
+    defaults: { model: { id: "m" } },
+    run: (ctx) => ctx.parallel(Array.from({ length: 8 }, (_, i) => () => ctx.agent(`p${i}`))),
+  });
+  const r = await runWorkflow(wf, {}, { cwd, concurrency: 2 });
+  assert.equal(r.status, "finished");
+  assert.ok(stats.maxActive <= 2, `maxActive=${stats.maxActive}`);
 });
 
 test("teto de custo aborta, inclusive dentro de parallel", async () => {

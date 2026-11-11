@@ -160,16 +160,29 @@ Handoff files on disk are the only memory between stages → their schemas must 
 ## Decisions (agreed with user)
 
 - Idioma: **pt-BR**. Local: `ai/study/cursor-agent-sdk-workflows/`.
-- Entrega: **blueprint + snippets** (código de referência marcado "não testado"; sessão sem acesso a cursor.com nem conta Cursor).
+- Entrega: **blueprint + snippets** (código de referência; sessão sem acesso a cursor.com nem conta Cursor).
 - Linguagem do runtime: **TypeScript**. Invocação principal: **MCP server + CLI** sobre o mesmo runtime.
 - Eixo central: comparação com Claude Code dynamic workflows (`ai/docs/claude-code/workflows/workflows.md`).
+- Considerar `.agents/` além de `.cursor/` e `.claude/` (pedido do usuário).
 
 ## Steps
 
 - [x] Rodar `/deep-research` (Cursor SDK, auth/billing, invocação, exemplos)
 - [x] Espelhar doc oficial de workflows do Claude Code
-- [ ] Levantar superfície exata da API do Cursor SDK (agente focado)
-- [ ] Escrever `00-relatorio-pesquisa.md` (achados verificados, comparação, paridade)
-- [ ] Escrever `starter-kit/` (README, docs 01–06, templates/implement-issue, skills workflow-authoring + skill-to-workflow)
-- [ ] Revisão do plano/estrutura por advisor antes de declarar pronto
-- [ ] Commit + push em `claude/keen-faraday-yoqwhs`
+- [x] Levantar superfície exata da API do Cursor SDK (agente focado, pacote npm 1.3.1)
+- [x] Escrever `00-relatorio-pesquisa.md`
+- [x] Escrever `starter-kit/` (runtime, MCP, CLI, implement-issue, skills, docs 01–07, testes)
+- [x] Revisão independente (advisor) e correções
+- [x] Reestruturar para `.agents/` (skills, workflows do repo, AGENTS.md, link para Claude Code)
+- [x] Commit + push em `claude/keen-faraday-yoqwhs`
+
+## Review
+
+- Verificado: `tsc --noEmit` contra `@cursor/sdk@1.3.1` real; 8 testes offline (fake SDK) passam; MCP
+  server exercitado por stdio (list/start/status, guarda de recursão); CLI `start`/`wait`/órfão testado num repo
+  temporário; links relativos e diagramas Mermaid validados.
+- Não verificado: nenhuma execução contra a API real do Cursor (cursor.com bloqueado; sem conta).
+- Correções da revisão: checagem de fallback de modelo removida (o SDK devolve o modelo pedido); review exigido
+  que falha encerra o run; guarda contra workflow recursivo; handlers de crash e jobs órfãos; runId gravado no
+  início + resume pelo MCP; custo lido também em falha/timeout; worktree/commit/PR idempotentes; `wf login` não
+  imprime a chave; MDM carregado; doc de segurança alinhada ao código; afirmações rebaixadas para [S]/[I].

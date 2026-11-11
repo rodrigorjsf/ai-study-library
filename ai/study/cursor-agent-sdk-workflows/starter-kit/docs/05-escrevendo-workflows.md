@@ -1,7 +1,7 @@
 # 05 · Escrevendo workflows
 
 A referência operacional, que o agente do Cursor também usa, está na skill
-[`.cursor/skills/workflow-authoring/SKILL.md`](../.cursor/skills/workflow-authoring/SKILL.md). Este documento
+[`.agents/skills/workflow-authoring/SKILL.md`](../.agents/skills/workflow-authoring/SKILL.md). Este documento
 explica o *porquê* das regras e traz receitas.
 
 ## Princípio
@@ -85,7 +85,9 @@ const model = ctx.budget.remainingCents() < 100 ? MODELS.MED : MODELS.HIGH;
 2. No fake, `script.push(fn)` define o comportamento de cada `send()`:
    - `() => ({ result: "texto" })` simula texto livre;
    - `(o) => { o.local.customTools.submit_result.execute(obj, {}); return {}; }` simula saída estruturada;
-   - `() => ({ status: "error" })` simula uma falha.
+   - `() => ({ status: "error" })` simula uma falha;
+   - `() => ({ hang: true })` simula uma run que não termina (para testar `timeoutMs`).
+   `stats` expõe `maxActive`, `disposed` e `usageReads` para checar concorrência, descarte e leitura de custo.
 3. Cubra cada ramo: tier por label e sem label, review ligado e desligado, testes falhando até o teto.
 4. Para etapas com `execFileSync` (`gh`, `git`), extraia funções e injete stubs por `args`, ou rode o teste num
    repositório temporário.

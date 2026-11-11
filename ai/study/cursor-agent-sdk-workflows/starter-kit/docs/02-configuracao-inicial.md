@@ -24,9 +24,12 @@ compartilhadas, prefira `CURSOR_API_KEY` vinda de um gerenciador de segredos.
 Para passar a chave ao MCP server sem gravar em arquivo, use interpolação no `mcp.json`:
 
 ```json
-{ "mcpServers": { "workflows": { "command": "npx", "args": ["tsx", "${workspaceFolder}/src/mcp-server.ts"],
+{ "mcpServers": { "workflows": { "command": "${workspaceFolder}/node_modules/.bin/tsx", "args": ["${workspaceFolder}/src/mcp-server.ts"],
   "env": { "CURSOR_API_KEY": "${env:CURSOR_API_KEY}", "WF_CWD": "${workspaceFolder}" } } } }
 ```
+
+Só adicione essa linha se a variável estiver mesmo definida: interpolada vazia, ela pode encobrir o login salvo
+(não verificado; na dúvida, deixe de fora e use `wf login`).
 
 ## 2. Modelos
 
@@ -42,9 +45,11 @@ Os IDs dependem do plano e das restrições do admin. Liste com `npm run models`
 
 Os defaults vêm do `dag-task-runner` do cookbook oficial. Confirme todos com `npm run models` antes de usar.
 
-> **Fallback silencioso:** se o modelo pedido estiver bloqueado, o Cursor pode rodar outro sem erro. O engine
-> compara o modelo pedido com `RunResult.model` e emite `warning`. Com `strictModel: true` na etapa, a etapa
-> falha.
+> **Validação de modelo:** em runs locais, o SDK confere o ID (ou alias) contra o catálogo da sua conta antes de
+> rodar. Se o ID não existir para você, a etapa falha com "Cannot use this model". Uma substituição feita **do
+> lado do servidor** por política do admin **não é detectável** pelo SDK: `RunResult.model` devolve o modelo
+> pedido, não o que rodou. Para garantir o modelo, combine com o admin a lista liberada e confira em
+> `npm run models`.
 
 ## 3. Teto de custo
 
@@ -56,11 +61,18 @@ Os defaults vêm do `dag-task-runner` do cookbook oficial. Confirme todos com `n
 
 Como funciona:
 
-- O teto é checado **antes** de cada etapa, então um run pode ultrapassá-lo pelo custo de uma etapa.
+- O teto é checado **antes** de cada etapa (e de cada nova tentativa). Etapas que já começaram não são
+  interrompidas, então a ultrapassagem pode chegar a **concorrência × custo de uma etapa** (ex.: 4 etapas em
+  `parallel`). Para tetos apertados, use `concurrency` baixa.
+- O custo de cada etapa é lido com `agent.getUsage()` ao fim dela, inclusive quando ela falha ou estoura o tempo.
+  O SDK avisa que o custo "pode atrasar um pouco depois do fim da run"; o engine tenta ler de novo algumas vezes,
+  mas um custo que chegue depois disso fica de fora da soma.
 - `chargedCents` é **0 para uso incluído no plano**. Se a sua conta consome uma franquia, use também
   `--max-tokens`.
-- Se o limite da conta ou do time estourar no meio, o SDK lança `RateLimitError` e o workflow falha com
-  "Limite de uso do Cursor atingido".
+- Se o limite da conta ou do time estourar no meio, o esperado é um `RateLimitError` (a doc do erro cita "usage
+  limits exceeded"); o engine converte o não retentável em falha "Limite de uso do Cursor atingido". Pode ser que
+  o teto apareça como run com `status: "error"` em vez de exceção [I]; nesse caso a etapa falha após as
+  tentativas, com a mensagem do SDK.
 
 ## 4. Variáveis de ambiente
 
@@ -69,17 +81,23 @@ Como funciona:
 | `CURSOR_API_KEY` | — | Chave usada quando não há `apiKey` explícita |
 | `WF_CWD` | diretório atual | Repositório onde os agentes trabalham (MCP) |
 | `WF_MAX_CENTS` | sem teto | Teto padrão por run |
-| `WORKFLOWS_DIR` | `./workflows` do kit | Pasta de onde os workflows são carregados |
+| `WF_MAX_TOKENS` | sem teto | Teto padrão de tokens por run |
+| `WORKFLOWS_DIR` | — | Pasta extra de workflows (além de `workflows/` do kit e `.agents/workflows/` do repositório) |
 | `WF_MODEL_*` | ver §2 | Mapa de modelos do exemplo |
 | `NO_OPEN_BROWSER` | — | `wf login` imprime a URL em vez de abrir o navegador |
 
 ## 5. Contexto do projeto nos agentes
 
-O engine cria os agentes com `settingSources: ["project", "team"]`, o que carrega:
+O engine cria os agentes com `settingSources: ["project", "team", "mdm"]`, o que carrega:
 
 - `AGENTS.md` e `.cursor/rules/**` do repositório;
-- skills e hooks do projeto;
-- regras e hooks do time.
+- skills do projeto (`.agents/skills/` e `.cursor/skills/` como nativas; `.claude/skills/`, `.codex/skills/` como
+  compatibilidade), hooks e `.cursor/mcp.json` do projeto;
+- regras e hooks do time e hooks Enterprise (MDM).
 
-Para isolar um agente das regras do repositório (por exemplo, num repositório não confiável), altere
-`settingSources` em `src/runtime/engine.ts`.
+Para isolar os agentes das regras do repositório (por exemplo, num repositório não confiável), passe
+`settingSources` sem `"project"` em `RunOptions`.
+
+> **Recursão:** como o `.cursor/mcp.json` do projeto é carregado, o agente de uma etapa enxerga o próprio MCP
+> server `workflows`. O engine marca o ambiente com `WF_INSIDE_WORKFLOW=1`, e o servidor e o CLI se recusam a
+> iniciar workflows quando essa marca está presente.

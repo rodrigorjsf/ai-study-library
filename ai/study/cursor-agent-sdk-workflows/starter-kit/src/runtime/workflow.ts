@@ -22,7 +22,7 @@ export interface WorkflowMeta {
   /** Quando usar — texto para o agente do chat decidir chamar a tool. */
   whenToUse?: string;
   phases?: WorkflowPhase[];
-  /** JSON Schema dos args; o runtime valida antes de rodar. */
+  /** JSON Schema dos args; o runtime valida (Ajv) antes de rodar e falha o run se não bater. */
   argsSchema?: JsonSchema;
 }
 
@@ -33,11 +33,12 @@ export interface AgentCallOptions {
   phase?: string;
   /**
    * Modelo desta etapa. Obrigatório para agentes locais no SDK; o runtime usa
-   * `defaults.model` do workflow quando omitido.
+   * `defaults.model` do workflow quando omitido. O SDK valida o ID (ou alias) contra o catálogo da
+   * conta antes da run; ID fora do catálogo faz a etapa falhar.
    */
   model?: ModelSelection;
   /**
-   * Com schema, o agente precisa chamar a tool `submit_result`; o retorno é o objeto validado.
+   * JSON Schema com `type: "object"` na raiz. Com schema, o agente precisa chamar a tool `submit_result`; o retorno é o objeto validado.
    * Sem schema, o retorno é o texto final do agente.
    */
   schema?: JsonSchema;
@@ -55,8 +56,12 @@ export interface AgentCallOptions {
   retries?: number;
   /** Re-prompts quando o agente não chama `submit_result` ou envia JSON inválido. Default 2. */
   schemaRetries?: number;
-  /** Se true, falha quando o modelo efetivamente usado difere do pedido (fallback silencioso). */
-  strictModel?: boolean;
+  /**
+   * Liga o sandbox local do SDK: escrita limitada ao cwd, leitura fora do workspace bloqueada, shell em
+   * sandbox do SO e rede negada exceto a allowlist de `.cursor/sandbox.json`. Testes que baixam pacotes
+   * podem falhar com ele ligado.
+   */
+  sandbox?: boolean;
 }
 
 export interface Budget {
@@ -93,7 +98,7 @@ export interface WorkflowContext<A = unknown> {
 export interface WorkflowDefinition<A = unknown, R = unknown> {
   meta: WorkflowMeta;
   /** Defaults aplicados a toda chamada agent() que não sobrescrever. */
-  defaults?: Pick<AgentCallOptions, "model" | "timeoutMs" | "retries" | "schemaRetries" | "tools">;
+  defaults?: Pick<AgentCallOptions, "model" | "timeoutMs" | "retries" | "schemaRetries" | "tools" | "sandbox">;
   run(ctx: WorkflowContext<A>): Promise<R>;
 }
 

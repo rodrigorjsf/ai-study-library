@@ -10,6 +10,8 @@
 > - Leitura direta dos pacotes publicados: `@cursor/sdk@1.3.1`, que inclui `.d.ts` e README, e `cursor-sdk@1.3.1`
 >   do PyPI.
 > - Leitura dos repositórios oficiais `cursor/cookbook` (HEAD de 2026-11-09) e `cursor/sdk-bridge`.
+> - Revisão independente do relatório e do starter kit contra os `.d.ts` do SDK, com as correções aplicadas.
+>   Exemplo: a "detecção de fallback de modelo" foi retirada, porque o SDK não expõe o modelo efetivamente usado.
 > - Documentação oficial de workflows do Claude Code, espelhada em
 >   [`ai/docs/claude-code/workflows/workflows.md`](../../docs/claude-code/workflows/workflows.md).
 > - Espelhos locais da doc do Cursor em [`docs/cursor/`](../../../docs/cursor/).
@@ -76,7 +78,9 @@ a skills e subagents. A diferença está em **quem decide o próximo passo**:
 ### 1.1 Anatomia
 
 Um workflow é um arquivo `.js` com `export const meta = {name, description, phases}` seguido de um corpo com
-`await` no nível de topo. Lido do script do `/deep-research` que rodou nesta pesquisa:
+`await` no nível de topo. O que segue foi lido no script do `/deep-research` que rodou nesta pesquisa e na
+referência de autoria de workflows (skill `workflow-authoring` do Claude Code). `budget`, `isolation: 'worktree'`
+e `workflow(name)` aparecem nessa referência, não na página pública de workflows:
 
 - `agent(prompt, {schema, model, effort, label, phase, isolation: 'worktree', agentType})`: cria um subagent.
   - Com `schema`, o subagent é **forçado** a responder pela tool StructuredOutput, validada com até 5 tentativas.
@@ -176,16 +180,16 @@ Ainda segundo o pacote [PKG]:
 | Ferramenta "Workflow" / `ultracode` | Sim | **Não** | MCP `start_workflow` + skill `/run-workflow` |
 | `agent()` | Subagent com modelo, effort e tipo | `Agent.create` + `send` + `wait` | `ctx.agent()` |
 | `parallel()` / `pipeline()` / `phase()` | Sim | Não; `Promise.all` manual | `ctx.parallel` / `ctx.pipeline` / `ctx.phase` |
-| Modelo por etapa | `opts.model` (+ substituição pela allowlist da org) | `ModelSelection` em create/send/subagent, **com fallback silencioso** se o admin ou o plano bloquear | `opts.model` + checagem de `RunResult.model` (`strictModel`) |
+| Modelo por etapa | `opts.model` (+ substituição pela allowlist da org) | `ModelSelection` em create/send/subagent. No local, o SDK valida o ID contra o catálogo da conta e falha se não existir. `RunResult.model` devolve o **pedido**, então uma substituição feita pelo servidor não é visível | `opts.model` por etapa; ID inválido faz a etapa falhar |
 | Saída estruturada | `schema` forçado e validado (5 tentativas) | **Não** | Tool `submit_result` + Ajv + re-prompt na mesma conversa |
 | Resume | Journal automático por prefixo | `Agent.resume` só retoma a *conversa* | Journal por hash de prompt e opções (`--resume <runId>`) |
 | Isolamento de escrita | `isolation: 'worktree'` | Não (a CLI tem `-w`) | O workflow cria `git worktree` e passa em `cwd` |
 | Teto de custo | `budget` (tokens do turno) + aviso "Large workflow" | `getUsage()` em centavos; `RateLimitError` no teto da conta | `--max-cents` / `--max-tokens`; aborta o run |
 | Concorrência | 16 por padrão, 1.000 agentes por run | Não documentada | Semáforo (default 4) |
 | Aprovação | Prompt por run conforme o modo; regras `Workflow(<nome>)` | Local roda tools **sem aprovação** por padrão; sandbox, autoReview e hooks são opcionais | Allowlist de tools por etapa + hooks do projeto (`settingSources`) |
-| Contexto do projeto | CLAUDE.md injetado nos agentes | Opt-in via `settingSources` | O engine liga `["project","team"]` |
+| Contexto do projeto | CLAUDE.md injetado nos agentes | Opt-in via `settingSources` | O engine liga `["project","team","mdm"]`; instruções em `AGENTS.md` |
 | Progresso | `/workflows` (TUI) | Stream de eventos | Arquivo de job + `wait_workflow` / `wf wait` |
-| Salvar e distribuir | `.claude/workflows/`, `~/.claude/workflows/`, plugin `workflows/` | — | Pasta `workflows/` do kit; distribuição por repo ou pacote |
+| Salvar e distribuir | `.claude/workflows/`, `~/.claude/workflows/`, plugin `workflows/` | — | `workflows/` do kit + `.agents/workflows/` do repositório (este vence em nome repetido) |
 | Script isolado (sem fs/rede) | Sim | — | **Não**: roda em Node normal, o que é mais poderoso (git, gh, testes no próprio script) e exige disciplina para o resume |
 
 ---
@@ -195,7 +199,7 @@ Ainda segundo o pacote [PKG]:
 ```mermaid
 flowchart LR
   subgraph CUR["Cursor IDE"]
-    U1[Usuário no chat] -->|"/run-workflow implement-issue 123"| SK[Skill run-workflow<br/>disable-model-invocation]
+    U1[Usuário no chat] -->|"/run-workflow implement-issue 123"| SK[Skill run-workflow<br/>.agents/skills · disable-model-invocation]
     SK --> CA[Agente do chat<br/>modelo barato basta]
     CA -->|MCP stdio| MCP[MCP server do kit<br/>start / wait / status]
     CA -.->|"fallback: shell"| CLI[CLI wf start / wf wait]
@@ -230,23 +234,28 @@ com timeout maior).
 
 | Opção | Como | Debita de quem | Observações |
 |---|---|---|---|
-| **Login do SDK pelo usuário** (recomendado) | `npm run wf -- login` → `Cursor.auth.login()` abre o navegador e cria uma **chave de usuário nomeada, com validade de 90 dias**, em `~/.cursor/sdk/auth.json` [PKG] | A conta do próprio usuário [I: a chave é de usuário] | Uma vez por máquina. O MCP server, iniciado pelo IDE como processo do usuário, lê o mesmo arquivo. **O arquivo fica em texto puro** |
+| **Login do SDK pelo usuário** (recomendado) | `npm run wf -- login` → `Cursor.auth.login()` abre o navegador e cria uma **chave de usuário nomeada, com validade de 90 dias**, em `~/.cursor/sdk/auth.json` [PKG] | A conta do próprio usuário ("user keys bill the user" [DOC]) | Uma vez por máquina. O MCP server, iniciado pelo IDE como processo do usuário, lê o mesmo arquivo. **O arquivo fica em texto puro** |
 | Chave de usuário do dashboard | `CURSOR_API_KEY` no ambiente ou `${env:CURSOR_API_KEY}` no `mcp.json` | A conta do usuário | Bom para quem não quer login por navegador |
-| Service account (Enterprise) | Chave da conta de serviço | **Pool do time** [S] | Ideal para CI e Automations. Perde a atribuição por usuário. `SDKUser.userId` vem indefinido [PKG] |
+| Service account (Enterprise) | Chave da conta de serviço | **O time** ("service-account keys bill the team" [DOC]) | Ideal para CI e Automations. Perde a atribuição por usuário. `SDKUser.userId` vem indefinido [PKG] |
 | Chave Team Admin | — | — | **Não aceita** pelo SDK [S, confirmado 3-0] |
 | Ler o token da IDE ou da CLI | Keychain `cursor-access-token` ou `~/.cursor/auth.json` | — | **Não suportado**: o SDK não lê esses lugares [PKG], e esses locais só aparecem em relatos de fórum. Não use: é frágil e é ruim para segurança e conformidade |
 
 **Como o uso conta:**
 
-- Pela doc, as runs locais do SDK seguem **as mesmas regras de plano, pools e Privacy Mode do IDE** e aparecem
-  com a tag **SDK** no dashboard de uso. [DOC, confiança média]
+- O uso aparece com a tag **SDK** no dashboard de uso; chaves de usuário cobram o usuário e de service account
+  cobram o time. [DOC]
+- Que as runs locais seguem **as mesmas regras de plano, pools e Privacy Mode do IDE** vem de um resumo da página
+  do SDK, sem espelho local. [S]
 - `getUsage().cost.chargedCents` traz o valor cobrado e é **0 para uso incluído no plano** [PKG]. Por isso o kit
   também aceita teto por tokens.
-- Quando o teto da conta ou do time é atingido, o SDK lança `RateLimitError`. O kit converte isso em falha
-  explícita do workflow.
+- O `RateLimitError` do SDK (429) cita "usage limits exceeded" [PKG]. O kit converte o não retentável em falha
+  explícita do workflow. Se o teto da conta aparece como exceção ou como run com `status: "error"` não foi
+  verificado [I]; nos dois casos a etapa falha.
 - Modelos de terceiros em Teams e Enterprise pagam a Cursor Token Rate. N agentes em paralelo custam ~N vezes os
   tokens. [DOC]
-- Se o admin bloquear um modelo, o Cursor **cai em outro sem erro** [DOC]. Daí o `strictModel` no kit.
+- Para subagents do IDE, a doc diz que um modelo bloqueado pelo admin ou pelo plano **cai em outro sem erro**
+  [DOC]. No SDK local, um ID fora do catálogo da conta faz a run falhar ("Cannot use this model") [PKG]. Uma
+  substituição feita pelo servidor não aparece em `RunResult.model`, que devolve o modelo pedido [PKG].
 - Os limites de gasto do time e por membro ficam no dashboard e na Admin API. **Pergunta em aberto:** confirmar
   com o admin que o uso da chave de usuário do SDK entra no mesmo limite individual em dólares do IDE.
 
@@ -254,7 +263,8 @@ com timeout maior).
 
 - Hooks Enterprise (MDM) e Team. Um deny em qualquer fonte vence. O cookbook traz hooks de auditoria e de
   bloqueio de modelo por repositório. [DOC][GH]
-- Políticas do admin para MCP, rede e tools, e a *Cloud Agent Allowlist*, valem nas runs locais. [PKG]
+- Políticas do admin para MCP, rede e tools: um comentário interno do SDK sugere que valem nas runs locais, mas
+  não há doc pública. [I]
 - Pools self-hosted mantêm checkout e execução na sua infraestrutura, mas a **inferência continua na Cursor**. [GH]
 
 ---
@@ -263,12 +273,13 @@ com timeout maior).
 
 | Eixo | Claude Code | Cursor | Lacuna e tratamento |
 |---|---|---|---|
-| Caminho de instalação | `.claude/workflows/`, `~/.claude/workflows/`, plugin `workflows/`; subagents em `.claude/agents/` | Sem pasta de workflows. Subagents em `.cursor/agents/`, com leitura também de `.claude/agents/` e `.codex/agents/` [DOC] | O kit traz `workflows/`, `.cursor/mcp.json` e `.cursor/skills/`. O MCP server serve aos dois IDEs |
-| Eventos de hook | `PreToolUse` pode aprovar `Workflow`; agentes do workflow seguem regras de permissão | `stop`, `subagentStart`, `subagentStop`, `sessionStart`, `postToolUse`, `beforeMCPExecution` etc. Hooks do Claude Code também são carregados, com `loop_limit` `null` em vez de 5 [DOC]. Em cloud não disparam `sessionStart`, `sessionEnd` nem os hooks de MCP | Nas runs do SDK, hooks só com `settingSources` e sem `fs` [PKG]. Uma nota de release diz que um deny de `PreToolUse` do Claude Code bloqueia agentes locais [S]. Verificar no seu ambiente |
-| Como o contexto chega | CLAUDE.md injetado em todo subagent do workflow | `AGENTS.md` + `.cursor/rules` só com `settingSources: ["project"]`. `additional_context` via hooks | O engine liga `project` e `team`. Prompts de etapa autocontidos |
+| Caminho de instalação | `.claude/workflows/`, `~/.claude/workflows/`, plugin `workflows/`; subagents em `.claude/agents/` | Sem pasta de workflows. Subagents em `.cursor/agents/`, com leitura também de `.claude/agents/` e `.codex/agents/` [DOC] | O kit traz `workflows/` + `.agents/workflows/`, `.agents/skills/`, `.cursor/mcp.json` e `.mcp.json`. O MCP server serve aos dois |
+| Eventos de hook | `PreToolUse` pode aprovar `Workflow`; agentes do workflow seguem regras de permissão | `stop`, `subagentStart`, `subagentStop`, `sessionStart`, `postToolUse`, `beforeMCPExecution` etc. Hooks do Claude Code também são carregados, com `loop_limit` `null` em vez de 5 [DOC]. Em cloud não disparam `sessionStart`, `sessionEnd` nem os hooks de MCP | Nas runs do SDK, hooks só com `settingSources` e sem `fs` [PKG]. Uma nota de release diz que um deny de `PreToolUse` do Claude Code bloqueia agentes locais [S]. Se os hooks do Claude Code valem dentro das runs do SDK não foi verificado [S] |
+| Como o contexto chega | CLAUDE.md injetado em todo subagent do workflow | `AGENTS.md` + `.cursor/rules` só com `settingSources: ["project"]`. `additional_context` via hooks | O engine liga `project`, `team` e `mdm`; instruções em `AGENTS.md` (o `CLAUDE.md` do kit só faz `@AGENTS.md`). Prompts de etapa autocontidos |
 | MCP | Agentes do workflow alcançam o MCP da sessão via ToolSearch | `mcpServers` por create/send. Local: send → create → plugins → `.cursor/mcp.json` → `~/.cursor/mcp.json`. Cloud: servidores do time [DOC] | Passe `mcpServers` por etapa quando a etapa precisar |
 | Saída estruturada | Nativa | Ausente | `submit_result` (só local; custom tools não rodam em cloud) |
 | Modelos | Aliases (`sonnet`, `opus`, `haiku`) + IDs | IDs do Cursor (`composer-2`, `auto-low`, modelos de terceiros) via `models.list()` | Mapa de tier por ambiente (`WF_MODEL_*`) |
+| Pasta neutra `.agents/` | **Não lê nada** sob `.agents/`; lê `AGENTS.md` só se não houver `CLAUDE.md` [DOC] | Skills em `.agents/skills/` e `~/.agents/skills/` são nativas [DOC] e também carregadas pelas runs do SDK (first-party no bundle) [PKG]. Subagents não têm `.agents/agents/` [DOC] | Skills do kit em `.agents/skills/`; `scripts/link-claude-skills.sh` cria links em `.claude/skills/` para o Claude Code (o Cursor pode listar duas vezes). Instruções em `AGENTS.md` + `CLAUDE.md` com `@AGENTS.md` |
 
 ---
 
@@ -302,10 +313,13 @@ condicional** sobre o Cursor SDK. Esse é o espaço que o starter kit ocupa.
 1. Se o uso da chave de usuário do SDK entra no **limite individual em dólares** do membro, como o uso do IDE.
 2. O timeout de uma chamada de tool MCP no Cursor IDE (o kit evita depender disso com start/wait).
 3. Se os hooks do projeto disparam nas runs locais do SDK com `settingSources: ["project"]`.
-4. Se as allowlists de modelo do admin geram erro ou fallback silencioso nas runs do SDK (a doc de subagents diz
-   fallback).
+4. Se uma política de modelo do admin gera erro ou substituição silenciosa do lado do servidor nas runs do SDK.
+   A substituição não seria visível: `RunResult.model` devolve o modelo pedido.
 5. O limite prático de agentes simultâneos por usuário (a doc só diz "rate limits por time, por minuto"). Comece
    com concorrência 2–4.
+6. Se o Cursor deduplica uma skill que aparece em `.agents/skills/` e em `.claude/skills/` ao mesmo tempo (relevante
+   para quem usa o script de links para o Claude Code).
+7. Se o teto de uso da conta chega como `RateLimitError` ou como run com `status: "error"`.
 
 ---
 

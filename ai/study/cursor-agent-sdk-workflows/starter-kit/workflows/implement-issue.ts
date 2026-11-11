@@ -5,7 +5,9 @@
 //   - o tier escolhe o modelo de cada etapa;
 //   - plano só para MED/HIGH; code review só para HIGH ou diff grande;
 //   - testes rodam via shell no próprio workflow, e o loop de correção tem teto;
-//   - o PR só é aberto se testes passaram e não sobrou achado bloqueante.
+//   - review exigido que falha encerra o run (status "review-failed"), nunca vira "sem achados";
+//   - depois de corrigir achados bloqueantes, os testes e o review rodam de novo (1 rodada extra);
+//   - commit e PR só acontecem com testes verdes e review limpo, e são idempotentes no resume.
 //
 // IDs de modelo: confirme os seus com `Cursor.models.list()` — a lista depende do plano e das
 // restrições do admin. Os IDs abaixo vêm dos exemplos oficiais do cookbook (dag-task-runner).
@@ -13,6 +15,7 @@
 // STATUS: código de referência. Typecheck contra @cursor/sdk@1.3.1; não executado contra a API real.
 
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ModelSelection } from "@cursor/sdk";
 import { defineWorkflow } from "../src/runtime/workflow.js";
@@ -38,6 +41,7 @@ const LABEL_TIERS: Record<string, Tier> = {
 
 const REVIEW_DIFF_LINES = 300;
 const MAX_FIX_ROUNDS = 2;
+const MAX_REVIEW_FIX_ROUNDS = 1;
 
 interface Args {
   issue: number;
@@ -56,6 +60,23 @@ interface Issue {
 }
 
 const sh = (cmd: string, args: string[], cwd: string) => execFileSync(cmd, args, { cwd, encoding: "utf8" });
+
+function hasStagedChanges(cwd: string): boolean {
+  try {
+    execFileSync("git", ["diff", "--cached", "--quiet"], { cwd });
+    return false; // exit 0 = nada staged
+  } catch {
+    return true;
+  }
+}
+
+function existingPr(branch: string, repoFlag: string[], cwd: string): string | undefined {
+  try {
+    return sh("gh", ["pr", "view", branch, "--json", "url", "-q", ".url", ...repoFlag], cwd).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function runTests(command: string, cwd: string): { ok: boolean; output: string } {
   try {
@@ -150,10 +171,11 @@ export default defineWorkflow<Args>({
     ctx.phase("Implementação");
     const branch = `wf/issue-${issue.number}`;
     const worktree = join(ctx.cwd, ".workflows", "worktrees", branch.replace("/", "-"));
-    try {
-      sh("git", ["worktree", "add", "-B", branch, worktree], ctx.cwd);
-    } catch {
+    if (existsSync(worktree)) {
       ctx.log(`worktree ${worktree} já existe; reaproveitando`);
+    } else {
+      // Erro aqui (repo sem commit, não é repo git, branch em uso) derruba o workflow: melhor que agentes num cwd inexistente.
+      sh("git", ["worktree", "add", "-B", branch, worktree], ctx.cwd);
     }
     const task =
       `Implemente a issue #${issue.number}: ${issue.title}\n\n${issue.body}\n\n` +
@@ -189,41 +211,46 @@ export default defineWorkflow<Args>({
       .split("\n")
       .filter(Boolean)
       .reduce((n, l) => n + l.split("\t").slice(0, 2).map(Number).reduce((a, b) => a + (b || 0), 0), 0);
-    let blocking: Array<{ file: string; issue: string }> = [];
-    if (tier === "HIGH" || diffLines > REVIEW_DIFF_LINES) {
+    const needsReview = tier === "HIGH" || diffLines > REVIEW_DIFF_LINES;
+    if (needsReview) {
       ctx.phase("Review");
-      const lenses = ["corretude e casos de borda", "segurança e tratamento de erros"];
-      const reviews = await ctx.parallel(
-        lenses.map((lens) => () =>
-          ctx.agent<{ findings: Array<{ file: string; severity: string; issue: string }> }>(
-            `Revise as mudanças staged (\`git diff --cached\`) para a issue #${issue.number} com foco em ${lens}. ` +
-              `Marque como blocking só o que quebraria produção ou a issue.`,
-            { label: `review:${lens}`, phase: "Review", model: MODELS.REVIEW, cwd: worktree, tools: ["read", "grep", "glob", "ls", "shell"], schema: REVIEW_SCHEMA },
+      for (let round = 0; ; round++) {
+        const lenses = ["corretude e casos de borda", "segurança e tratamento de erros"];
+        const reviews = await ctx.parallel(
+          lenses.map((lens) => () =>
+            ctx.agent<{ findings: Array<{ file: string; severity: string; issue: string }> }>(
+              `Revise as mudanças staged (\`git diff --cached\`) para a issue #${issue.number} com foco em ${lens} ` +
+                `(rodada ${round + 1}). Marque como blocking só o que quebraria produção ou a issue. Não edite arquivos.`,
+              { label: `review:${lens}:${round + 1}`, phase: "Review", model: MODELS.REVIEW, cwd: worktree, tools: ["read", "grep", "glob", "ls", "shell"], schema: REVIEW_SCHEMA },
+            ),
           ),
-        ),
-      );
-      blocking = reviews.flatMap((r) => r?.findings ?? []).filter((f) => f.severity === "blocking");
-      if (blocking.length) {
+        );
+        // Review exigido que não rodou não pode virar "sem achados": falha explícita.
+        if (reviews.some((r) => r === null)) return { issue: issue.number, tier, status: "review-failed", worktree };
+        const blocking = reviews.flatMap((r) => r!.findings).filter((f) => f.severity === "blocking");
+        if (!blocking.length) break;
+        if (round >= MAX_REVIEW_FIX_ROUNDS) return { issue: issue.number, tier, status: "review-blocking", worktree, findings: blocking };
         await ctx.agent(`Corrija estes achados bloqueantes de review:\n${JSON.stringify(blocking, null, 2)}`, {
-          label: "corrigir-review",
+          label: `corrigir-review-${round + 1}`,
           model: MODELS[tier],
           cwd: worktree,
           schema: IMPL_SCHEMA,
         });
         tests = runTests(testCommand, worktree);
         if (!tests.ok) return { issue: issue.number, tier, status: "tests-failed-after-review", worktree, output: tests.output };
-        blocking = [];
+        sh("git", ["add", "-A"], worktree); // revisores leem o staged na próxima rodada
       }
     }
 
-    // ── Entrega: commit/PR feitos pelo código, não pelo agente ─────────────────────────
+    // ── Entrega: commit/PR feitos pelo código, não pelo agente; idempotentes para o resume ─
     ctx.phase("Entrega");
     sh("git", ["add", "-A"], worktree);
-    sh("git", ["commit", "-m", `fix: ${issue.title} (#${issue.number})`], worktree);
+    if (hasStagedChanges(worktree)) sh("git", ["commit", "-m", `fix: ${issue.title} (#${issue.number})`], worktree);
     let prUrl: string | undefined;
     if (openPr) {
       sh("git", ["push", "-u", "origin", branch], worktree);
-      prUrl = sh("gh", ["pr", "create", "--fill", "--body", `Closes #${issue.number}\n\n${impl.summary}`, ...repoFlag], worktree).trim();
+      prUrl = existingPr(branch, repoFlag, worktree) ??
+        sh("gh", ["pr", "create", "--head", branch, "--title", `${issue.title} (#${issue.number})`, "--body", `Closes #${issue.number}\n\n${impl.summary}`, ...repoFlag], worktree).trim();
     }
     return {
       issue: issue.number,
@@ -233,7 +260,7 @@ export default defineWorkflow<Args>({
       worktree,
       prUrl,
       summary: impl.summary,
-      reviewed: tier === "HIGH" || diffLines > REVIEW_DIFF_LINES,
+      reviewed: needsReview,
       spentCents: ctx.budget.spentCents(),
     };
   },

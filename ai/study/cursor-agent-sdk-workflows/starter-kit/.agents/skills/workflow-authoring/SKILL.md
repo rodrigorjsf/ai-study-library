@@ -49,7 +49,7 @@ export default defineWorkflow<{ target: string }>({
 
 Opções de `agent()`: `model`, `schema`, `tools` (allowlist: `["read","grep","glob","ls"]` para etapas só de leitura),
 `disallowedTools`, `cwd` (por exemplo um worktree), `agents` (subagents inline), `mcpServers`, `timeoutMs`, `retries`,
-`schemaRetries`, `strictModel`, `label` e `phase`.
+`schemaRetries`, `sandbox`, `label` e `phase`. O `schema` precisa ter `type: "object"` na raiz.
 
 ## Regras
 
@@ -59,13 +59,21 @@ Opções de `agent()`: `model`, `schema`, `tools` (allowlist: `["read","grep","g
 3. **Verificação é código.** Rode testes, lint e `git diff` com `execFileSync` dentro do workflow, não peça ao modelo
    "rode os testes e me diga se passou". Laços de correção sempre com teto (`for (round = 1; round <= N; ...)`).
 4. **O modelo é escolhido no código.** Use um mapa `tier → ModelSelection`. Confirme os IDs com `npm run models`
-   (a lista depende do plano e das restrições do admin). Use `strictModel: true` onde o modelo é requisito, porque
-   o Cursor pode cair em outro modelo em silêncio.
+   (a lista depende do plano e das restrições do admin). Um ID fora do catálogo faz a etapa falhar; uma
+   substituição feita pelo servidor não é detectável.
 5. **Escrita em paralelo só com isolamento.** Duas etapas simultâneas não podem editar os mesmos arquivos. Crie um
    `git worktree` por item e passe em `cwd`.
 6. **Efeitos externos ficam no código.** Commit, push, abrir PR e comentar em issue são feitos com `gh` ou `git` no
    workflow, depois das verificações, não pelo agente.
 7. **Nada de corte silencioso.** Se limitar cobertura (top-N, amostragem), registre com `ctx.log` o que ficou de fora.
+8. **Etapa exigida não vira `null` em silêncio.** `ctx.parallel` e `ctx.pipeline` transformam falhas em `null`.
+   Se o resultado for obrigatório (um review exigido, por exemplo), confira e encerre o run com um status
+   explícito quando faltar algum.
+9. **Efeitos idempotentes.** O resume reexecuta o código fora das etapas de agente. Proteja commit
+   (`git diff --cached --quiet`), push e criação de PR (`gh pr view` antes de `gh pr create`) para que rodar de
+   novo não quebre.
+10. **Não dispare workflows de dentro de etapas.** O runtime bloqueia (`WF_INSIDE_WORKFLOW`). Para compor, chame
+    funções TypeScript compartilhadas.
 
 ## Padrões úteis
 
