@@ -12,7 +12,9 @@
     "mcp": "tsx src/mcp-server.ts",
     "typecheck": "tsc --noEmit",
     "models": "tsx -e \"import {Cursor} from '@cursor/sdk'; console.log((await Cursor.models.list()).map(m=>m.id).join('\\n'))\"",
-    "test": "tsx --tsconfig tsconfig.test.json --test test/*.test.ts"
+    "test": "tsx --tsconfig tsconfig.test.json --test test/*.test.ts",
+    "dash": "tsx src/observability/dashboard.ts",
+    "stats": "tsx src/cli.ts stats"
   },
   "dependencies": {
     "@cursor/sdk": "1.3.1",

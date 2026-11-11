@@ -53,6 +53,9 @@ flowchart TB
    um agente novo e então lança `StepFailedError`. `RateLimitError` retentável espera com backoff exponencial;
    o não retentável (teto da conta) vira `BudgetExceededError`.
 10. **Descarte:** o agente é fechado com `await agent[Symbol.asyncDispose]()`, como no cookbook oficial.
+11. **Métricas:** cada tentativa emite `step-start`, `turn` (via `onDelta`) e `step-end` (tokens, `raw_cents`,
+    passos, tool calls, tipo de erro). O recorder grava no SQLite do usuário. Falha ao gravar vira `warning`,
+    nunca falha do workflow (ver [09](09-observabilidade.md)).
 
 ## O que o runtime garante
 

@@ -26,3 +26,5 @@ Leem este arquivo:
 - Ao rodar um workflow pelo chat, use `/run-workflow`: dispare e acompanhe, sem refazer etapas nem editar arquivos
   enquanto o job roda.
 - Commit, push e PR são feitos pelo código do workflow, não por você.
+- Métricas ficam em `~/.cursor-workflows/metrics.db` (`npm run stats`, `npm run dash`). Não envie o banco nem um
+  export feito com `--no-anonymize` para fora da máquina do usuário.

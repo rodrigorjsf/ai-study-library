@@ -118,6 +118,11 @@ export interface WorkflowContext<A = unknown> {
   ): Promise<any[]>;
   phase(title: string): void;
   log(message: string): void;
+  /**
+   * Métrica de negócio do run (vai para a tabela `metrics`): resultado de testes, achados de review, tamanho do
+   * diff, dificuldade (tier)… É o que permite medir custo por entrega e controlar a dificuldade nas comparações.
+   */
+  metric(name: string, value: number | string): void;
 }
 
 export interface WorkflowDefinition<A = unknown, R = unknown> {

@@ -32,6 +32,11 @@ Para as práticas de implementação (cache, contexto, prompts, memo), veja
 7. **Visibilidade:** `spentCents` e `usage` (tokens por tipo e `cacheHitRatio`) no resultado; `chargedCents` e
    `usage` por etapa nos eventos.
 8. **Memo entre runs:** etapas de leitura repetidas sobre o mesmo estado do repositório não custam nada.
+9. **Histórico e dashboard:**
+   - banco SQLite por usuário com custo bruto do Cursor, que aparece mesmo quando o uso é incluído no plano e o
+     cobrado é 0;
+   - custo por entrega e faixa de contexto × custo;
+   - export anonimizado para consolidar no time ([09](09-observabilidade.md)).
 
 > Uso incluído no plano reporta `chargedCents = 0`. Nesse caso, o teto em centavos não protege a franquia: use
 > também `--max-tokens`.

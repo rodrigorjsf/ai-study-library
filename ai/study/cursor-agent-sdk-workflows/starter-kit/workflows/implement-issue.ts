@@ -180,6 +180,9 @@ export default defineWorkflow<Args>({
       tier = c.tier;
     }
     ctx.log(`Issue #${issue.number} → tier ${tier} (modelo ${MODELS[tier].id})`);
+    // Covariável de dificuldade: compare custo/sucesso de modelos dentro do mesmo tier, não no agregado.
+    ctx.metric("tier", tier);
+    ctx.metric("tier_source", issue.labels.some((l) => LABEL_TIERS[l.name.toLowerCase()]) ? "label" : "classifier");
 
     // ── Plano: só para MED/HIGH ─────────────────────────────────────────────────────────
     let plan: { steps: string[]; files: string[]; testCommand: string; risks?: string[] } | undefined;
@@ -219,7 +222,9 @@ export default defineWorkflow<Args>({
     // ── Verificação: testes rodam no workflow; correção com teto de rodadas ─────────────
     ctx.phase("Verificação");
     let tests = runTests(testCommand, worktree);
+    let fixRounds = 0;
     for (let round = 1; !tests.ok && round <= MAX_FIX_ROUNDS; round++) {
+      fixRounds = round;
       ctx.log(`testes falharam; rodada de correção ${round}/${MAX_FIX_ROUNDS}`);
       impl = await ctx.agent(`${FIX_INSTRUCTIONS}\n\n## Saída dos testes\n${tests.output}`, {
         label: `corrigir-${round}`,
@@ -229,6 +234,8 @@ export default defineWorkflow<Args>({
       });
       tests = runTests(testCommand, worktree);
     }
+    ctx.metric("fix_rounds", fixRounds);
+    ctx.metric("tests_passed", tests.ok ? 1 : 0);
     if (!tests.ok) {
       return { issue: issue.number, tier, status: "tests-failed", worktree, output: tests.output };
     }
@@ -240,6 +247,8 @@ export default defineWorkflow<Args>({
       .filter(Boolean)
       .reduce((n, l) => n + l.split("\t").slice(0, 2).map(Number).reduce((a, b) => a + (b || 0), 0), 0);
     const needsReview = tier === "HIGH" || diffLines > REVIEW_DIFF_LINES;
+    ctx.metric("diff_lines", diffLines);
+    ctx.metric("reviewed", needsReview ? 1 : 0);
     if (needsReview) {
       ctx.phase("Review");
       for (let round = 0; ; round++) {
@@ -255,6 +264,7 @@ export default defineWorkflow<Args>({
         // Review exigido que não rodou não pode virar "sem achados": falha explícita.
         if (reviews.some((r) => r === null)) return { issue: issue.number, tier, status: "review-failed", worktree };
         const blocking = reviews.flatMap((r) => r!.findings).filter((f) => f.severity === "blocking");
+        ctx.metric(`review_blocking_round_${round + 1}`, blocking.length);
         if (!blocking.length) break;
         if (round >= MAX_REVIEW_FIX_ROUNDS) return { issue: issue.number, tier, status: "review-blocking", worktree, findings: blocking };
         await ctx.agent(`Corrija estes achados bloqueantes de review:\n${JSON.stringify(blocking, null, 2)}`, {

@@ -87,7 +87,7 @@ export function createJob(cwd: string, workflow: string, runId?: string, jobId: 
   return job;
 }
 
-function describe(e: WorkflowEvent): string {
+function describe(e: WorkflowEvent): string | undefined {
   switch (e.type) {
     case "log":
       return e.message;
@@ -101,6 +101,12 @@ function describe(e: WorkflowEvent): string {
     }
     case "warning":
       return `⚠ ${e.message}`;
+    case "metric":
+      return `· ${e.name} = ${e.value}`;
+    case "run-start":
+    case "run-end":
+    case "turn":
+      return undefined;
   }
 }
 
@@ -141,7 +147,9 @@ export function startJob<A>(
     runId: job.runId,
     onEvent: (e) => {
       if (e.type === "phase") job.phase = e.title;
-      job.recent = [...job.recent, describe(e)].slice(-20);
+      const line = describe(e);
+      if (line === undefined) return opts.onEvent?.(e);
+      job.recent = [...job.recent, line].slice(-20);
       writeJob(opts.cwd, job);
       opts.onEvent?.(e);
     },

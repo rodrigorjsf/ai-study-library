@@ -289,6 +289,30 @@ O detalhamento, com checklist, está em
   de novo e roda no modelo herdado. Convertidos em workflow, viram etapas com modelo, tools e contexto mínimos. Por
   isso a `/skill-to-workflow` tem uma etapa **obrigatória** de otimização de custo, com estimativa por caminho.
 
+### 5.2 Observabilidade: o que dá para medir
+
+Detalhes em [`starter-kit/docs/09-observabilidade.md`](starter-kit/docs/09-observabilidade.md).
+
+- **O SDK expõe** [PKG]:
+  - tokens e custo por agente (`getUsage()`), com `rawCostCents` sem descontos e `chargedCents` cobrado (este é
+    **0 para uso incluído no plano**);
+  - grupos de uso por turno (`runs[]`);
+  - pelo stream de deltas: fim de turno com uso, passos concluídos, tool calls e compactações de contexto.
+- **O SDK não expõe** o tamanho da janela de cada chamada ao modelo. O uso de `turn-ended` soma todos os passos do
+  turno. O kit usa `prompt ÷ passos` como aproximação (limite inferior) e agrupa em faixas de 25k.
+- **Faixas de preço por contexto:** na API da Anthropic, o Haiku 5.5 sobe de US$ 0,10/0,50 para US$ 0,50/2,50
+  acima de 100k tokens de prompt. Se o Cursor repassa isso não está confirmado. O banco do kit responde
+  empiricamente: o ¢/1k tokens do custo bruto por faixa de contexto mostra o salto, se existir.
+- **No kit:**
+  - SQLite local por usuário (`~/.cursor-workflows/metrics.db`) com runs, tentativas, turnos, grupos de uso e
+    métricas de negócio (`ctx.metric`);
+  - views de custo por entrega, eficiência por modelo e esforço, faixa de contexto, desperdício e economia;
+  - `wf stats`, dashboard em localhost sem dependências, export anonimizado;
+  - prompts só como hash.
+- **Claude Code, para comparação:** o `/workflows` mostra o uso de tokens de cada agente durante o run [DOC]. Histórico
+  estruturado entre runs fica a cargo de telemetria externa, como OpenTelemetry [I, não verificado nesta sessão]. No
+  Cursor, o kit precisou construir as duas coisas: acompanhamento do run e histórico.
+
 ---
 
 ## 6. Paridade Cursor × Claude Code (para um harness portátil)

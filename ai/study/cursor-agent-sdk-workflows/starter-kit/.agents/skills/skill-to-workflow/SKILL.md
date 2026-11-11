@@ -110,6 +110,8 @@ modelo do chat, com delegações que repetem o contexto fixo.
    `description` da skill original.
 2. Escreva `test/<nome>.test.ts` com o fake SDK, cobrindo cada ramo criado no passo 2.
 3. No topo do workflow, comente a estimativa de custo por caminho do passo 4.
+   Defina também **o que é entregar**: os `status` de retorno (`done` e os de falha) e as métricas de resultado e
+   de dificuldade emitidas com `ctx.metric` (ver `docs/09-observabilidade.md` §6). Dê `label` a toda etapa.
 4. Rode `npm run typecheck` e `npm test` e corrija até passar.
 5. **Não apague** as skills e os subagents originais. Sugira ao usuário marcar a skill antiga com
    `disable-model-invocation: true`, ou trocar o corpo dela por "use /run-workflow <nome>".
@@ -124,5 +126,6 @@ modelo do chat, com delegações que repetem o contexto fixo.
 - Paridade: se o fluxo original era do Claude Code, aponte o que muda no Cursor (formato dos hooks, `loop_limit`,
   subagents lidos de `.claude/agents/`, MCP do time em cloud).
 - O comando para o primeiro teste real com teto baixo: `npm run wf -- run <nome> --args '{...}' --max-cents 100`.
-  Depois desse run, compare o `usage` por etapa com a estimativa e ajuste os tiers. As duas etapas mais caras são
-  as primeiras candidatas.
+  Depois desse run, compare o custo por etapa com a estimativa (`npm run stats` ou `npm run dash`) e ajuste os
+  tiers. As duas etapas mais caras são as primeiras candidatas. Com alguns runs acumulados, compare custo por
+  entrega com o fluxo original.

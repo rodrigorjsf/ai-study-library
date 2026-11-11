@@ -76,6 +76,17 @@ runs, só para etapas de leitura), `label` e `phase`. O `schema` precisa ter `ty
 10. **Não dispare workflows de dentro de etapas.** O runtime bloqueia (`WF_INSIDE_WORKFLOW`). Para compor, chame
     funções TypeScript compartilhadas.
 
+## Observabilidade (detalhes em `docs/09-observabilidade.md`)
+
+O runtime grava as métricas de cada etapa no SQLite do usuário. O workflow precisa acrescentar o que significa
+**entregar**:
+
+- **Status:** devolva `{ status: "done", ... }` quando entregou e outro status explícito quando não entregou
+  (`"tests-failed"`, `"review-blocking"`…). É isso que permite medir custo por entrega.
+- **`ctx.metric(nome, valor)`** para os sinais de resultado (testes passaram, achados de review, linhas de diff) e
+  para a **covariável de dificuldade** (ex.: `tier`). Sem ela, comparar modelos mistura tarefas fáceis e difíceis.
+- **`label` explícito** em toda etapa. Sem label, o runtime usa um hash, e a análise por etapa fica ilegível.
+
 ## Custo (detalhes em `docs/08-custos-e-cache.md`)
 
 - **Meça.** O resultado do run traz `usage` (tokens por tipo e `cacheHitRatio`), e cada `step-end` traz o uso da

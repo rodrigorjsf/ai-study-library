@@ -9,26 +9,53 @@ export class CursorAgentError extends Error {
 }
 export class RateLimitError extends CursorAgentError {}
 export class AgentBusyError extends CursorAgentError {}
+const TURN_USAGE = { inputTokens: 20, outputTokens: 10, cacheReadTokens: 60, cacheWriteTokens: 20 };
+/** Deltas padrão de um send(): 2 passos, 1 tool call (read) e o fim do turno com uso. */
+const DEFAULT_DELTAS = [
+  { type: "step-completed", stepId: 1, stepDurationMs: 5 },
+  { type: "tool-call-started", callId: "c1", modelCallId: "m1", toolCall: { type: "read" } },
+  { type: "step-completed", stepId: 2, stepDurationMs: 5 },
+  { type: "turn-ended", usage: TURN_USAGE },
+];
+/** Custo devolvido por getUsage() (mude nos testes). */
+export const costConfig: { raw: number | undefined; charged: number; modelId?: string } = { raw: 9, charged: 7 };
 export const Agent = {
+  async getUsage(_agentId: string) {
+    return { usage: { ...TURN_USAGE, totalTokens: 110 }, cost: { chargedCents: 7, rawCostCents: 9 }, runs: [] };
+  },
   async create(o: any) {
     calls.push(o);
     stats.active++;
     stats.maxActive = Math.max(stats.maxActive, stats.active);
     let n = 0;
+    const turnUsages: Array<typeof TURN_USAGE> = [];
     return {
-      async send(msg: string) {
+      agentId: `agent-${calls.length}`,
+      async send(msg: string, options?: any) {
         const behave = script.shift() ?? (() => ({ status: "finished", result: "ok" }));
         const r = await behave(o, msg, n++);
+        for (const update of r?.deltas ?? DEFAULT_DELTAS) {
+          if (update.type === "turn-ended" && update.usage) turnUsages.push(update.usage);
+          await options?.onDelta?.({ update });
+        }
         if (r?.hang) return { cancel: async () => {}, wait: () => new Promise(() => {}) };
         return { cancel: async () => {}, wait: async () => ({ id: "r", status: "finished", model: o.model, ...r }) };
       },
       async getUsage() {
         stats.usageReads++;
-        return {
-          usage: { inputTokens: 20, outputTokens: 10, cacheReadTokens: 60, cacheWriteTokens: 20, totalTokens: 110 },
-          cost: { chargedCents: 7, rawCostCents: 7 },
-          runs: [],
-        };
+        const cost = costConfig.raw === undefined ? undefined : { chargedCents: costConfig.charged, rawCostCents: costConfig.raw };
+        // Como no SDK: o total do agente é a soma dos turnos que ele emitiu (ou o uso padrão, se nenhum).
+        const sum = (turnUsages.length ? turnUsages : [TURN_USAGE]).reduce(
+          (a, u) => ({
+            inputTokens: a.inputTokens + u.inputTokens,
+            outputTokens: a.outputTokens + u.outputTokens,
+            cacheReadTokens: a.cacheReadTokens + u.cacheReadTokens,
+            cacheWriteTokens: a.cacheWriteTokens + u.cacheWriteTokens,
+          }),
+          { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        );
+        const usage = { ...sum, totalTokens: sum.inputTokens + sum.outputTokens + sum.cacheReadTokens + sum.cacheWriteTokens };
+        return { usage, cost, runs: [{ runId: `usage-${stats.usageReads}`, usage, cost }] };
       },
       async [Symbol.asyncDispose]() {
         stats.active--;

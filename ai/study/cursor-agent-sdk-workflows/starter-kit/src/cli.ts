@@ -9,6 +9,10 @@
 //   wf status <jobId>
 //   wf wait <jobId> [--timeout 240]       # espera até o timeout e imprime o estado
 //   wf jobs
+//   wf stats [--days 30]                  # resumo de custo/eficiência (banco ~/.cursor-workflows/metrics.db)
+//   wf metrics export [--days 30] [--format csv|json] [--out dir] [--no-anonymize]
+//   wf metrics reconcile                  # completa custos que o Cursor ainda não tinha reportado
+//   wf metrics mark <runId> accepted|rejected
 //
 // STATUS: código de referência. Typecheck contra @cursor/sdk@1.3.1; não executado contra a API real.
 
@@ -31,6 +35,10 @@ const { positionals, values } = parseArgs({
     resume: { type: "string" },
     job: { type: "string" },
     timeout: { type: "string", default: "240" },
+    days: { type: "string", default: "30" },
+    format: { type: "string", default: "csv" },
+    out: { type: "string" },
+    "no-anonymize": { type: "boolean", default: false },
   },
 });
 
@@ -118,8 +126,55 @@ async function main(): Promise<number> {
       out(listJobs(cwd).map(({ jobId, workflow, status, phase, runId }) => ({ jobId, workflow, status, phase, runId })));
       return 0;
     }
+    case "stats": {
+      const { openDb } = await import("./observability/db.js");
+      const { summary } = await import("./observability/queries.js");
+      const db = await openDb();
+      const s = summary(db, Number(values.days));
+      for (const [section, rows] of Object.entries(s)) {
+        process.stdout.write(`\n== ${section}\n`);
+        if (rows.length) console.table(rows);
+        else process.stdout.write("(sem dados)\n");
+      }
+      db.close();
+      return 0;
+    }
+    case "metrics": {
+      const { openDb } = await import("./observability/db.js");
+      const q = await import("./observability/queries.js");
+      const db = await openDb();
+      try {
+        const sub = name;
+        if (sub === "export") {
+          const rows = q.exportRows(db, Number(values.days), !values["no-anonymize"]);
+          const { mkdirSync, writeFileSync } = await import("node:fs");
+          const { join } = await import("node:path");
+          const dir = resolve(values.out ?? "metrics-export");
+          mkdirSync(dir, { recursive: true });
+          for (const [table, data] of Object.entries(rows)) {
+            const file = join(dir, `${table}.${values.format === "json" ? "json" : "csv"}`);
+            writeFileSync(file, values.format === "json" ? JSON.stringify(data, null, 2) : q.toCsv(data));
+          }
+          out({ exported: dir, anonymized: !values["no-anonymize"], counts: Object.fromEntries(Object.entries(rows).map(([k, v]) => [k, v.length])) });
+          return 0;
+        }
+        if (sub === "reconcile") {
+          out(await q.reconcile(db));
+          return 0;
+        }
+        if (sub === "mark") {
+          const [, , runId, verdict] = positionals;
+          if (!runId || (verdict !== "accepted" && verdict !== "rejected")) throw new Error("uso: wf metrics mark <runId> accepted|rejected");
+          out({ runId, verdict, updated: q.markRun(db, runId, verdict) });
+          return 0;
+        }
+        throw new Error("uso: wf metrics <export|reconcile|mark> ...");
+      } finally {
+        db.close();
+      }
+    }
     default:
-      process.stderr.write("uso: wf <login|whoami|list|run|start|status|wait|jobs> ...\n");
+      process.stderr.write("uso: wf <login|whoami|list|run|start|status|wait|jobs|stats|metrics> ...\n");
       return 2;
   }
 }

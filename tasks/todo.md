@@ -224,9 +224,41 @@ Handoff files on disk are the only memory between stages → their schemas must 
 8. Docs: `docs/09-observabilidade.md`; links em README/08/03; skills (authoring: `ctx.metric` + `status`; converter: definir métricas de entrega); relatório §5.2.
 9. Testes offline: fake SDK emite `turn-ended`; verifica linhas no banco, views, estimativa com faixa, export, falha de gravação não derruba run.
 
+## Revised after advisor review (verified in the SDK bundle)
+
+- `turn-ended` = uso de um **turno inteiro do agente** (vários passos/chamadas ao modelo), não de uma chamada:
+  `input+cacheRead+cacheWrite` é volume cobrado, não ocupação da janela. Proxy rotulado: `avg_prompt_per_step =
+  prompt / passos` (limite inferior do contexto por chamada); faixas de 25k sobre ele. Faixa de preço por turno: cortada.
+- Custo: **`rawCostCents` do Cursor é o sinal principal** (`chargedCents` é 0 para uso incluído); `pricing` só como
+  fallback calculado em consulta. Custo por token × faixa de contexto revela empiricamente se a faixa do Haiku é repassada.
+- `getUsage().runs[]` vai para tabela própria (`usage_runs`), sem junção por posição com turnos; total da tentativa é a
+  verdade; `unattributed` como sinal. `cost_final` + `wf metrics reconcile` (`Agent.getUsage(agentId)` estático).
+- Linhas de tentativa só inseridas (nunca upsert de totais); runs retomados = nova execução (`exec_id`) do mesmo `run_id`;
+  hits de journal/memo viram linhas de custo zero com `cached`.
+- `outcome_status` cru + `outcome_class` (delivered/failed/error/unknown) + `human_verdict` (`wf metrics mark`); custo por
+  entrega = gasto total / entregas.
+- Privacidade: label default vira hash; args e repo por hash (+ nome da pasta); sem e-mail; export anonimizado por
+  padrão; dir 0700 / arquivo 0600; dashboard só 127.0.0.1, checa Host, sem CORS, banco read-only.
+- SQLite: WAL, `busy_timeout`, escrita em `BEGIN IMMEDIATE`, migração por `PRAGMA user_version`; `node:sqlite` carregado
+  por import dinâmico só com métricas ligadas; filtra apenas o ExperimentalWarning do SQLite. Avisar sobre WAL em
+  /mnt/c e rede.
+- Correlação: `model_key` canônico (id + params ordenados), hash da versão do workflow, covariável de dificuldade via
+  `ctx.metric` (ex.: tier), cache read separado.
+- Cortes V1: sem `wf pricing set` (tabela seed + SQL), tool calls agregadas por nome, dashboard com 4 painéis.
+
 ## Steps
 
-- [ ] Advisor review deste plano
-- [ ] Implementar 1–7 com testes
-- [ ] Docs e skills (8)
-- [ ] Verificação (typecheck, testes, dashboard via curl, CLI) + commit/push
+- [x] Advisor review deste plano
+- [x] Implementar 1–7 com testes (21 testes offline passam)
+- [x] Docs e skills (8): docs/09, README, 03/07/08, workflow-authoring, skill-to-workflow, AGENTS.md, relatório §5.2
+- [x] Verificação: typecheck; `wf stats` e receitas SQL contra banco de demonstração; dashboard via curl (403 para
+      Host estranho, sem CORS) e Playwright (claro/escuro/mobile, sem erros nem overflow); MCP smoke
+- [x] Commit/push
+
+## Review (observabilidade)
+
+- Revisão do plano mudou o que o schema mede: `turn-ended` = turno inteiro (não chamada); custo bruto do Cursor
+  como sinal principal; `usage_runs` sem junção por posição; inserções sem upsert; privacidade (label hash, export
+  anonimizado, 0600, dashboard 127.0.0.1 + Host).
+- Não verificado: execução contra a API real; `Agent.getUsage(agentId)` para agentes locais já descartados
+  (reconcile informa falhas); repasse da faixa de preço do Haiku no Cursor (o banco mede empiricamente).

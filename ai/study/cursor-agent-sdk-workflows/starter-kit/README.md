@@ -15,8 +15,12 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 
 > **Status:** blueprint.
 > - O código passa no typecheck contra `@cursor/sdk@1.3.1`.
-> - O controle de fluxo está coberto por 12 testes offline com um SDK falso: schema, validação de args, retries,
->   timeout, concorrência, teto de custo, resume, uso por tipo de token, `settingSources` por etapa e memo.
+> - 21 testes offline com um SDK falso:
+>   - controle de fluxo: schema, validação de args, retries, timeout, concorrência, teto de custo, resume, uso por
+>     tipo de token, `settingSources` por etapa e memo;
+>   - observabilidade: gravação no SQLite, custo por entrega, faixa de contexto, estimativa com faixa de preço,
+>     reconcile, export anonimizado, falha do banco sem derrubar o run.
+> - O dashboard foi verificado num navegador headless (claro, escuro e mobile).
 > - O MCP server foi exercitado pelo protocolo stdio. O CLI (`start`/`wait`, jobs órfãos, guarda de recursão,
 >   workflows em `.agents/workflows/`) foi testado num repositório temporário.
 > - Um revisor independente auditou código e afirmações contra os `.d.ts` do SDK; as correções foram aplicadas.
@@ -37,7 +41,8 @@ Cursor, que não tem esse runtime nativo. O porquê e a comparação completa es
 │   │   ├── journal.ts      # resume sem repetir etapas concluídas
 │   │   ├── jobs.ts         # execução assíncrona com estado em disco (start/wait)
 │   │   └── registry.ts     # descobre workflows/*.ts
-│   ├── cli.ts              # wf login | list | run | start | wait | status | jobs
+│   ├── observability/      # banco SQLite de métricas, recorder, consultas, dashboard localhost
+│   ├── cli.ts              # wf login | list | run | start | wait | status | jobs | stats | metrics
 │   └── mcp-server.ts       # tools MCP: list_workflows, start_workflow, wait_workflow, get_workflow_status
 ├── workflows/
 │   └── implement-issue.ts  # exemplo: tier por label → plano → código → testes → review condicional → PR
@@ -63,6 +68,8 @@ npm run wf -- login          # login do Cursor no navegador; o uso fica na SUA c
 npm run models               # IDs de modelo liberados para você
 # primeiro run real: num repositório de teste (com commit e remote GitHub), com teto baixo
 npm run wf -- run implement-issue --cwd /caminho/do/repo-de-teste --args '{"issue":1}' --max-cents 100
+npm run stats                # custo, tokens, eficiência (banco ~/.cursor-workflows/metrics.db)
+npm run dash                 # dashboard em http://127.0.0.1:4317
 ```
 
 No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings → MCP) e digite no chat:
@@ -83,6 +90,7 @@ No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings 
 | [06 · Convertendo skills e subagents](docs/06-convertendo-skills-e-subagents.md) | O processo da skill `/skill-to-workflow`, com um exemplo |
 | [07 · Governança e custos (Enterprise)](docs/07-governanca-e-custos.md) | Orçamento por usuário, políticas de admin, auditoria, riscos |
 | [08 · Custos, cache e boas práticas](docs/08-custos-e-cache.md) | De onde vem o custo, que caches existem (e quem controla), memo, contexto mínimo, prefixo estável, checklist |
+| [09 · Observabilidade](docs/09-observabilidade.md) | Banco SQLite por usuário, o que é medido (e o que não dá), views, receitas SQL, dashboard localhost, export, privacidade |
 
 ## Transparência: o que este kit faz por baixo
 
@@ -93,6 +101,8 @@ No Cursor IDE, abra o repositório, habilite o MCP server `workflows` (Settings 
   [07 · Governança](docs/07-governanca-e-custos.md) antes de usar em um repositório sensível.
 - O estado fica em `.workflows/` (journal, jobs, logs, worktrees) do repositório onde o workflow roda. O runtime
   o adiciona a `.git/info/exclude`, sem mexer no `.gitignore` do repositório.
+- Cada run grava métricas (tokens, custo, modelo, passos, resultado) em `~/.cursor-workflows/metrics.db`. Os prompts
+  ficam só como hash. Desligue com `WF_METRICS=off` (ver [09](docs/09-observabilidade.md)).
 - Os agentes das etapas carregam `AGENTS.md`, regras, skills, hooks e MCP do projeto, e hooks do time e
   Enterprise (`settingSources: ["project","team","mdm"]`). Eles não conseguem disparar outro workflow.
 - Commit, push e PR são feitos pelo **código do workflow**, com `git` e `gh`, e só quando você pede (`openPr`).

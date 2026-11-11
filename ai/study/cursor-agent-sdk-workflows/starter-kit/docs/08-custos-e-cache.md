@@ -58,6 +58,9 @@ um grava o mesmo bloco [S]. Por isso este kit **não** promete economia de cache
 
 ## 3. Medir antes de otimizar
 
+> Tudo o que está abaixo também fica gravado por run no banco de métricas, com histórico, views e dashboard. Veja
+> [09 · Observabilidade](09-observabilidade.md). A análise de **faixa de contexto × custo** está lá.
+
 Todo run devolve `usage` com tokens por tipo e `cacheHitRatio`. Cada etapa emite `step-end` com o próprio
 `usage` e `chargedCents`:
 

@@ -8,7 +8,7 @@ a conta do próprio usuário, pensando no contexto empresarial.
 | Arquivo | Para quê |
 |---|---|
 | [`00-relatorio-pesquisa.md`](00-relatorio-pesquisa.md) | O relatório: o que é o Workflow do Claude Code, o que o Cursor SDK oferece, a comparação 1:1, invocação no IDE, auth e billing enterprise, paridade, exemplos, incertezas e recomendação |
-| [`starter-kit/`](starter-kit/README.md) | **Semente de um novo repositório:** runtime TS (`agent`/`parallel`/`pipeline`/`phase`/journal/budget), MCP server, CLI, workflow de exemplo (`implement-issue`), skills do Cursor (`/run-workflow`, `workflow-authoring`, `/skill-to-workflow`) e a documentação de instalação à governança |
+| [`starter-kit/`](starter-kit/README.md) | **Semente de um novo repositório:** runtime TS (`agent`/`parallel`/`pipeline`/`phase`/journal/budget), MCP server, CLI, workflow de exemplo (`implement-issue`), skills do Cursor (`/run-workflow`, `workflow-authoring`, `/skill-to-workflow`) a documentação de instalação à governança, e observabilidade (SQLite por usuário, `wf stats`, dashboard localhost) |
 
 ## Para criar o novo repositório
 
