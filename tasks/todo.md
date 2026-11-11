@@ -423,3 +423,96 @@ Windows checks pending (pre-release) or wait for them.
 - Spend: 39.64 ¢ list-price estimate in ~/tmp/wf-verify.db + ~0.82 ¢ probes; the real charge is only on the dashboard.
 - Pending (verificacoes §12): Cursor IDE MCP/skills/run-workflow, Windows browser dashboard, sandbox, MED/HIGH paths,
   team/MDM hooks, admin policies, monthly cap, macOS/Windows.
+
+---
+
+# Plan — `implement-issue` follows the mattpocock tdd / codebase-design / code-review / pr skills (2026-11-11)
+
+Repo: `~/code/cursor-workflows-starter` (public). Work on branch `feat/implement-issue-skills`, PR to `main`
+(PR body written with the `pr` template), CI green, merge only with the user's ok, then pre-release `v0.2.0`.
+Source skills: mattpocock-skills 1.3.1 (MIT, Matt Pocock); the `pr` template credits `show-me` (Dex Horthy).
+Instructions are paraphrased in pt-BR, not copied; credits go to a `CREDITS.md` and the docs.
+
+## Decisions (agreed with user)
+
+- Seams (tdd "confirm seams with the user"): MED/HIGH run twice. Run 1 plans, comments the seams on the issue
+  (idempotent marker) and returns `status: "seams-proposed"`; run 2 is `--resume <runId>` with `approveSeams: true`
+  (or `seams: [...]` edited), so the planner replays from the journal. LOW is automatic (one slice).
+- Review always runs, with three separate axes in parallel: Standards and Spec (code-review skill) plus Security.
+  Reports stay separate, never merged or re-ranked.
+- HIGH uses "Design it twice": 3 read-only designers with different constraints + a judge that picks or combines.
+  MED uses one planner with the codebase-design vocabulary.
+
+## Flow (code decides; agents do one small task each)
+
+1. Triage (code): issue, tier by label or classifier (unchanged). Code lists context files that exist
+   (`GLOSSARY.md`, `docs/adr/`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `AGENTS.md`) and passes the paths.
+2. Plan: LOW none (one implicit slice); MED planner; HIGH 3 designers in `ctx.parallel` + judge (fails with
+   `design-failed` if fewer than 2 designs). Output `{seams[], slices[{behavior, seam, testIdea}], testCommand}`.
+   Slice caps: LOW 1, MED 3, HIGH 5 (dropped slices logged). Seam approval as above.
+3. TDD loop per slice (code-enforced red → green):
+   - before each step the code stages everything, so `git diff` + untracked = files the step touched;
+   - `teste-N`: write ONE test at the seam through the public interface; only test files may change
+     (`testGlobs` arg, sensible default) → else one retry, then `tdd-violation`;
+   - code runs the tests: they must FAIL (red) → if green, one retry, then `test-not-red`; keep the red output;
+   - `codigo-N`: minimal code to pass; test files may not change → else one retry, then `tdd-violation`;
+   - code runs the tests: must pass, up to 2 fix rounds (no test edits) → else `tests-failed`; keep green output.
+4. Review (always): diff since the worktree base computed by code and passed in the prompt (truncated); reviewers
+   get read-only tools, no shell. Standards = repo standards files + Fowler smell baseline (judgement calls, repo
+   overrides); Spec = the issue (missing / scope creep / wrong, quoting the issue); Security. Blocking = Standards
+   `hard`, Spec `missing`/`wrong`, Security `blocking`. One fix/refactor round (tests must stay green), re-review
+   only the axes that blocked; still blocking → `review-blocking`. Non-blocking findings go to the PR body.
+5. PR (pr skill): cheap agent writes Summary (smallest visual) + Merge Danger (door, blast radius); code assembles
+   the template with Evidence = real red → green outputs per slice, plus non-blocking review findings; secret gate;
+   commit; push; PR (idempotent: skip if it exists).
+6. Statuses: `done`, `seams-proposed`, `design-failed`, `tdd-violation`, `test-not-red`, `tests-failed`,
+   `review-failed`, `review-blocking`, `tests-failed-after-review`, `secret-blocked`. Metrics per slice and per axis.
+
+## Tests (test-first, fake SDK, fake `gh` on PATH, temp git repo, real `node --test` as the test command)
+
+LOW happy path (red, green, 3 axes, PR body with Evidence); MED seams-proposed then resume with approveSeams
+(planner not re-run, comment not duplicated); red step touching non-test file; test not red; green step touching
+tests; review blocking → fix → clean; review still blocking; HIGH runs 3 designers + judge. Existing 35 stay green.
+
+## Real-API checks (cost policy: plan-included models; caps on every run)
+
+`wf-sandbox`: one LOW issue (est. 250–400k tokens) and one MED issue in two runs (est. 0.5–1M tokens), each with
+`--resume`, marker-file check for writes outside the repo, results in `verificacoes-locais.md`.
+
+## Docs
+
+docs/05 (TDD-enforced slices pattern), docs/06 (this conversion as the worked example of /skill-to-workflow),
+README/README.en (implement-issue description), run-workflow SKILL.md (`seams-proposed` handling), CHANGELOG 0.2.0,
+CREDITS.md, verificacoes-locais.md (new runs).
+
+### Advisor adjustments (adopted)
+
+1. Resume vs red/green: per-slice progress and captured red/green outputs persist in
+   `<cwd>/.workflows/runs/<runId>/tdd-progress.json`; on resume, completed slices skip agents and checks, and the
+   PR Evidence is built from that file. Tests: resume after `done` makes 0 agent calls and keeps 1 PR; resume after
+   a crash in slice 2 skips slice 1.
+2. Optional `setupCommand` (e.g. `npm ci`) runs once in the worktree; then the suite must be green before slice 1,
+   else `baseline-red`. Invariant: suite green at the start of every slice.
+3. Touched files per step via tree snapshots (`git add -A && git write-tree` before and after, then
+   `git diff --name-only A B`); steps are told not to run git.
+4. Review fix: Spec `missing` → extra TDD slices (cap 2); Standards/Security → refactor round (no test-file changes,
+   suite stays green). The Spec reviewer is told which slices the cap dropped; the PR lists them.
+5. Two-run seams: confirm CLI `--resume` and MCP `resumeRunId` accept new args; `seams` edited → re-plan with the
+   approved seams in the prompt; the issue comment carries the exact relaunch command (CLI and chat);
+   `seams-proposed` maps to a new `pending` outcome class; run-workflow SKILL.md handles it.
+6. Tests: git identity in the temp repo; check nested `node --test` exit codes; glob → regex helper compatible with
+   Node 22.13; fake `gh` (issue view with comments, issue comment, pr view, pr create); bare repo as origin.
+7. /skill-to-workflow step 4: per-step cost table and per-path estimate in the workflow header; read-only steps
+   (planner, designers, judge, reviewers, PR writer) use `settingSources: []`; inventory and implicit-decision tables
+   in docs/06.
+8. Credits: check the `show-me` license; cite license and URL for both sources.
+9. Live runs only from the final branch tree; create `complexity:medium` in wf-sandbox; HIGH stays pending (§12, PR,
+   CHANGELOG).
+
+## Steps
+
+- [x] Advisor review of this plan
+- [ ] Branch; offline tests first (red), then the workflow (green); typecheck; both Nodes
+- [ ] Docs and credits
+- [ ] Real-API LOW and MED runs on wf-sandbox; evidence
+- [ ] PR (pr template), CI green, user ok to merge, v0.2.0 pre-release, back-port summary to ai-study-library
