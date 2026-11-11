@@ -12,6 +12,16 @@ a conta do próprio usuário, pensando no contexto empresarial.
 
 ## Para criar o novo repositório
 
+**Caminho recomendado:** use [`PROMPT-publicar-repositorio.md`](PROMPT-publicar-repositorio.md) numa sessão local
+(WSL), com o Claude Code ou o agente do Cursor. O prompt conduz o agente em quatro passos:
+
+1. as verificações que a sessão na nuvem não conseguiu fazer (docs ao vivo do Cursor, API real, Cursor IDE, WSL);
+2. a correção dos docs conforme os resultados;
+3. a montagem do repositório público com a proveniência dos commits;
+4. a publicação, só com sua confirmação.
+
+Caminho manual, sem as verificações:
+
 ```bash
 cp -r ai/study/cursor-agent-sdk-workflows/starter-kit ~/code/cursor-workflows
 cd ~/code/cursor-workflows && git init && npm install && npm test && npm run typecheck
