@@ -1,5 +1,9 @@
 # Cursor Workflows Starter Kit
 
+> **Retrato do estudo (2026-11-11, commit `a69f2a2`).** A versão mantida, com correções verificadas contra a API real, é
+> [rodrigorjsf/cursor-workflows-starter](https://github.com/rodrigorjsf/cursor-workflows-starter). Defeitos conhecidos neste retrato: guarda contra recursão que não
+> funciona, teto em centavos cego, modelos default inexistentes (`auto-low`) e fórmulas de cache erradas.
+
 Esqueleto de repositório para criar **workflows de agentes determinísticos** sobre o
 [Cursor SDK](https://cursor.com/docs/sdk/typescript) (`@cursor/sdk`). Os workflows podem ser invocados do **chat do
 Cursor IDE** (via MCP), do **terminal** e de **CI** (via CLI).

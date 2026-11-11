@@ -315,9 +315,9 @@ Source prompt: `ai/study/cursor-agent-sdk-workflows/PROMPT-publicar-repositorio.
 - [x] Pre-spend fix: budget cap on max(raw, charged) (test-first); also zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5)
 - [x] Doc corrections from the 74 doc verdicts (workflow), then Phase 2 corrections
 - [x] Phase 2 paid blocks on Premium (Blocks 1, 3–7, 9, 10); ~US$ 0.36 estimated; IDE/Windows checks pending
-- [ ] Phase 3 repo structure → user approval → independent review
-- [ ] Phase 4 assemble, validate (npm ci/typecheck/test, links, gitleaks), confirm, publish, CI green, release v0.1.0
-- [ ] Phase 5 back-port link and summary here; Review section
+- [x] Phase 3 repo structure → user approval → independent review
+- [x] Phase 4 assemble, validate (npm ci/typecheck/test, links, gitleaks), confirm, publish, CI green, release v0.1.0
+- [x] Phase 5 back-port link and summary here; Review section
 
 ## Phase 3 — public repository plan (agreed with user 2026-11-11)
 
@@ -348,11 +348,11 @@ Rules:
 
 ## Phase 4 — assemble, validate, publish
 
-- [ ] Independent multi-lens review of this plan; apply adjustments; show them to the user
-- [ ] Docs: 74-claim table in verificacoes-locais.md; link rewrite in relatorio-pesquisa.md; README status; CHANGELOG
-- [ ] Assemble ~/code/cursor-workflows-starter; npm ci, typecheck, test; relative-link check; gitleaks; clean status
-- [ ] Show summary and ask for confirmation before `gh repo create --public`
-- [ ] Push, topics, CI green, pre-release v0.1.0
+- [x] Independent multi-lens review of this plan; apply adjustments; show them to the user
+- [x] Docs: 74-claim table in verificacoes-locais.md; link rewrite in relatorio-pesquisa.md; README status; CHANGELOG
+- [x] Assemble ~/code/cursor-workflows-starter; npm ci, typecheck, test; relative-link check; gitleaks; clean status
+- [x] Show summary and ask for confirmation before `gh repo create --public`
+- [x] Push, topics, CI green, pre-release v0.1.0
 
 ## Adjustments from the independent review (4 lenses, 33 findings, 2026-11-11)
 
@@ -404,3 +404,22 @@ Assembly and gates:
 
 Open for the user: re-run the LOW end-to-end on the exact tree to publish (est. 2–30 ¢); publish with the IDE and
 Windows checks pending (pre-release) or wait for them.
+
+## Review (publish cursor-workflows-starter, 2026-11-11)
+
+- Published: https://github.com/rodrigorjsf/cursor-workflows-starter (public, MIT, topics, private vulnerability
+  reporting on); initial commit cb16a2b; CI green on Node 22.13.0 and 22.x; pre-release
+  https://github.com/rodrigorjsf/cursor-workflows-starter/releases/tag/v0.1.0.
+- Live docs: 74 claims checked (27 confirmed, 38 partial, 3 refuted, 6 inconclusive); mirrors refreshed in
+  ai/docs/cursor (4aaa4f8); root docs/cursor left alone.
+- Real API: the Free plan blocks the SDK (plan_required on Agent.create); Premium works. Measured: RunResult.model is
+  the resolved id, inputTokens includes cache, settingSources is opt-in for AGENTS.md/hooks/MCP, a Claude Code
+  PreToolUse deny is honored in SDK runs, getUsage is feature_unavailable for local agents even on Premium.
+- Kit bugs fixed (35 offline tests): recursion guard, cents cap (raw vs charged; getUsage fallback), token formulas,
+  npm run models, Node 22.13–22.19 SQL, login-shell tests, model defaults; added secret gate, plan_required abort,
+  Node check, resolved model in schema v2, verify scripts.
+- Incident: an unsandboxed fix step edited the mise npm wrapper outside the repo; reverted on request; the final e2e
+  on the published tree (wf-sandbox PR #6, repo now public) wrote nothing outside the repo.
+- Spend: 39.64 ¢ list-price estimate in ~/tmp/wf-verify.db + ~0.82 ¢ probes; the real charge is only on the dashboard.
+- Pending (verificacoes §12): Cursor IDE MCP/skills/run-workflow, Windows browser dashboard, sandbox, MED/HIGH paths,
+  team/MDM hooks, admin policies, monthly cap, macOS/Windows.

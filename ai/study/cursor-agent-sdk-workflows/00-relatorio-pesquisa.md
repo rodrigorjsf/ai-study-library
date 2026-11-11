@@ -1,5 +1,9 @@
 # Cursor SDK como motor de workflows determinísticos: relatório de pesquisa
 
+> **Retrato do estudo (2026-11-11, commit `a69f2a2`).** A versão mantida, com correções verificadas contra a API real, é
+> [rodrigorjsf/cursor-workflows-starter](https://github.com/rodrigorjsf/cursor-workflows-starter). O relatório corrigido está em
+> `docs/research/relatorio-pesquisa.md` de lá; este traz afirmações que a verificação refutou ou corrigiu.
+
 > **Data:** 2026-11-11 · **Escopo:** Cursor SDK (`@cursor/sdk`), Cursor CLI headless, Cloud Agents. Comparação
 > com os *dynamic workflows* do Claude Code. Viabilidade de um harness próprio, invocável do chat do Cursor IDE
 > e usável em contexto empresarial.
