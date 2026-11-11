@@ -27,6 +27,5 @@ When something fails repeatedly, when User has to re-explain, or when a workarou
 - archify `deliver` with `meta.repository` needs `--repo-root <checkout>`.
 - cursor.com blocked in cloud sandbox; read `@cursor/sdk` `.d.ts`/README from npm tarball.
 - Global `core.autocrlf=true`: extract with `git -c core.autocrlf=false archive` to keep LF.
-- Use `mise exec node@22.23.4 --`: default 22.11 is too old; `bash -lc` brings it back.
 - Find cursor.com doc paths in `https://cursor.com/llms.txt`; old paths 404.
 - Cursor SDK login URL expires in minutes: generate it only when the user is ready.
