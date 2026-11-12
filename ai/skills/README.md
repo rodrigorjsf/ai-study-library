@@ -13,8 +13,9 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 | [`repo-audit-study`](repo-audit-study/SKILL.md) | user-invoked | Audits agent-tooling repositories at a pinned commit (architecture, security, harness integration), compares them, plans enterprise adoption, and publishes a verified study with diagrams and a deck. |
 | [`verified-research`](verified-research/SKILL.md) | model-invoked | Primary-source research where every quote is confirmed against a saved copy of its source. |
 | [`html-presentation`](html-presentation/SKILL.md) | model-invoked | Standalone HTML deck from a study, following `DESIGN.md` when present; persists a claude.ai Design canvas as HTML. |
+| [`gauntlet-loop-claude-code`](gauntlet-loop-claude-code/SKILL.md) | model-invoked | Runs work through a gauntlet loop under Claude Code's ultracode: a separate critic grades every piece against a named bar each round, fix waves close what it finds, and a whole-repository read closes the loop. Claude Code only. |
 
-The rest of this page documents `coding-standards`, `test-suite-review` and the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`).
+The rest of this page documents `coding-standards`, `test-suite-review`, the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`) and `gauntlet-loop-claude-code`.
 
 ## Where the two skills come from
 
@@ -251,3 +252,74 @@ exported deck reproduces the committed deck byte for byte). The skills as a whol
 a new repository. Diagrams need the `archify` skill; the comparison and plan reviews need an advisor or a critic
 subagent.
 
+
+## `gauntlet-loop-claude-code`
+
+A gauntlet loop drives work toward a bar the builder cannot grade itself into: a **bar** named
+before the work, a **critic** that never saw the building, an **exit** written before round 1,
+rounds that **measure** and fix waves that **close**. This skill is the whole technique plus the
+way it runs in Claude Code, so it depends on no other skill.
+
+| File | Read when |
+|---|---|
+| `SKILL.md` | always: the opt-in under ultracode, the nine starting steps, the round script, reading a round, the trend, ownership, the closing checks (the iron law: one agent reads the whole repository) |
+| `BAR.md` | naming the bar, or a critic keeps returning the same grade |
+| `CUTTING.md` | cutting the work, fanning out builders, attributing verdicts |
+| `JUDGING.md` | an artifact bar, two drafts to pick between, or work a model or tool consumes |
+| `FIX-WAVES.md` | a round came back with blocking findings |
+| `LONG-RUNS.md` | resuming, pausing, the handoff contract, a scheduled resume |
+| `scripts/trend.py` | every round: opens it with an opaque tag, checks it is complete, prints the trend row, records token usage |
+
+### How it runs
+
+```mermaid
+flowchart TD
+    A[Opt-in: session ultracode] --> B[Paths, keys, bar, exit, bounds, brief]
+    B --> C[Build the pieces, if new]
+    C --> D[Round: one Workflow, critics + sweep in parallel]
+    D --> E[trend.py check and rows]
+    E --> F{Every key PASS?}
+    F -- yes --> J[When the loop ends: iron law, request re-read, push]
+    F -- no --> G{Bound reached or trend test fired?}
+    G -- bound --> J
+    G -- trend --> H[User chooses what changes]
+    G -- no --> I[Fix wave: background Agent revisers, then adversarial review]
+    H --> I
+    I --> D
+
+    classDef gate fill:#fde68a,stroke:#b45309,color:#111
+    classDef done fill:#bbf7d0,stroke:#15803d,color:#111
+    class H gate
+    class J done
+```
+
+### Harness coverage
+
+| Harness | What happens |
+|---|---|
+| Claude Code | Runs as written: `Workflow` for rounds, `Agent` for builders, revisers and reviewers, `TaskStop`, `CronCreate`, ultracode (`/effort ultracode`) |
+| Cursor | Reads `~/.claude/skills`, so it may list the skill, but it has no `Workflow` tool or ultracode: the steps that fan out cannot run there. The technique files (`BAR.md`, `CUTTING.md`, `JUDGING.md`, `FIX-WAVES.md`) still read as harness-neutral guidance |
+
+### Installing
+
+The installed copy is a symlink to this folder, so an edit made through either path lands in this
+repository:
+
+```bash
+ln -s ~/Workspace/ai-study-library/ai/skills/gauntlet-loop-claude-code ~/.claude/skills/gauntlet-loop-claude-code
+```
+
+The folder's `.gitattributes` keeps its files LF on checkout, since the frontmatter and the
+script's shebang must not gain a carriage return.
+
+### Status
+
+Graded by its own loop on 2026-11-11, with the loop's state kept outside this repository. Two
+rounds of five fresh critics (fidelity to the sources and to the user's decisions,
+`writing-for-agents`, Claude Code facts, a dry run, a cross-file sweep) went from 29 to 24 blocking
+findings. That is a stop at the two-round bound, not a pass. A fix wave then closed those findings
+and went through the two adversarial review cycles `FIX-WAVES.md` allows (4 blocking left, then 3).
+The last three were fixed after the final cycle and have not been reviewed. The whole loop cost
+about 2.1M subagent tokens. `scripts/trend.py` reproduces the numbers of a real 26-round loop
+(round 26: 2 PASS of 12, 14 blocking) and refuses to write into that older layout. The rewritten
+skill has not yet driven a real loop.
