@@ -272,6 +272,8 @@ way it runs in Claude Code, so it depends on no other skill.
 
 ### How it runs
 
+The flow of the Claude Code runner; Cursor has no counterpart for the round workflow.
+
 ```mermaid
 flowchart TD
     A[Opt-in: session ultracode] --> B[Paths, keys, bar, exit, bounds, brief]
@@ -284,7 +286,8 @@ flowchart TD
     G -- bound --> J
     G -- trend --> H[User chooses what changes]
     G -- no --> I[Fix wave: background Agent revisers, then adversarial review]
-    H --> I
+    H -- change the bar, exit or fixes --> I
+    H -- stop --> J
     I --> D
 
     classDef gate fill:#fde68a,stroke:#b45309,color:#111
@@ -298,7 +301,7 @@ flowchart TD
 | Harness | What happens |
 |---|---|
 | Claude Code | Runs as written: `Workflow` for rounds, `Agent` for builders, revisers and reviewers, `TaskStop`, `CronCreate`, ultracode (`/effort ultracode`) |
-| Cursor | Reads `~/.claude/skills`, so it may list the skill, but it has no `Workflow` tool or ultracode: the steps that fan out cannot run there. The technique files (`BAR.md`, `CUTTING.md`, `JUDGING.md`, `FIX-WAVES.md`) still read as harness-neutral guidance |
+| Cursor | Loads `~/.claude/skills` for compatibility (`ai/docs/cursor/skills/agent-skills-guide.md:80`), so the skill is listed, but it does not run there as written: rounds and picks are `Workflow` stages, fix waves use `Agent`, `SendMessage` and `trend.py usage` over task `<usage>` blocks, and the opt-in, pause and resume steps rest on ultracode, `TaskStop` and `CronCreate`, none of which Cursor has. Cursor's subagents do run in their own context, in the foreground or the background (`ai/docs/cursor/subagents/subagents-guide.md`), so a hand-written port could give them the critic and reviser roles. `BAR.md` and `CUTTING.md` carry no harness mechanics and read the same anywhere |
 
 ### Installing
 
@@ -314,12 +317,13 @@ script's shebang must not gain a carriage return.
 
 ### Status
 
-Graded by its own loop on 2026-11-11, with the loop's state kept outside this repository. Two
-rounds of five fresh critics (fidelity to the sources and to the user's decisions,
-`writing-for-agents`, Claude Code facts, a dry run, a cross-file sweep) went from 29 to 24 blocking
-findings. That is a stop at the two-round bound, not a pass. A fix wave then closed those findings
-and went through the two adversarial review cycles `FIX-WAVES.md` allows (4 blocking left, then 3).
-The last three were fixed after the final cycle and have not been reviewed. The whole loop cost
-about 2.1M subagent tokens. `scripts/trend.py` reproduces the numbers of a real 26-round loop
-(round 26: 2 PASS of 12, 14 blocking) and refuses to write into that older layout. The rewritten
-skill has not yet driven a real loop.
+Graded by its own loop on 2026-11-11, with the loop's state kept outside this repository. Two rounds
+of five fresh critics (fidelity to the sources and to the user's decisions, `writing-for-agents`,
+Claude Code facts, a dry run, a cross-file sweep) went from 29 to 24 blocking findings. That is a
+stop at the two-round bound, not a pass. A fix wave then closed those findings and went through the
+two adversarial review cycles `FIX-WAVES.md` allows (4 blocking left, then 3). The last three were
+fixed after the final cycle and have not been reviewed. The closing whole-repository read then found
+two statements made false elsewhere (this page's Cursor row, and an older loop's resume note), both
+fixed. The whole loop cost about 2.4M subagent tokens. `scripts/trend.py` reproduces the raw counts
+of a real 26-round loop (round 26: 2 PASS of 12, 14 blocking) and refuses to write into that older
+layout. The rewritten skill has not yet driven a real loop.
