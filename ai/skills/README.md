@@ -305,11 +305,12 @@ flowchart TD
 
 ### Installing
 
-The installed copy is a symlink to this folder, so an edit made through either path lands in this
-repository:
+The installed copy is a real directory, so the skill keeps working when this repository moves or
+changes branch. This folder is the source of truth: edit it here, then copy it over.
 
 ```bash
-ln -s ~/Workspace/ai-study-library/ai/skills/gauntlet-loop-claude-code ~/.claude/skills/gauntlet-loop-claude-code
+rm -rf ~/.claude/skills/gauntlet-loop-claude-code
+cp -a ~/Workspace/ai-study-library/ai/skills/gauntlet-loop-claude-code ~/.claude/skills/
 ```
 
 The folder's `.gitattributes` keeps its files LF on checkout, since the frontmatter and the
