@@ -1,6 +1,6 @@
 ---
 name: gauntlet-loop-claude-code
-description: Gauntlet loop — a separate critic grades the work against a named bar, fix waves close what it finds, round after round, run for real as a Workflow. Use when the user says ultracode; asks to build or revise something in a loop until it is AAA or perfect ("até ficar perfeito", "em loop até passar"); or asks to resume a gauntlet loop a quota cut or an earlier session stopped ("retoma o loop", "continua o gauntlet de onde parou").
+description: Gauntlet loop — a separate critic grades the work against a named bar and fix waves close what it finds, round after round, as Claude Code workflows. Use when the user asks to build or revise something in a loop until it is AAA or perfect ("até ficar perfeito", "em loop até passar"), with or without ultracode; or to resume a gauntlet loop ("continua o gauntlet de onde parou").
 ---
 
 # Running a gauntlet loop in Claude Code
