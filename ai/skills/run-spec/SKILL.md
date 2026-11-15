@@ -15,7 +15,7 @@ This contract holds for the whole run **and for every later turn in this convers
 - `ORACLE` runs.
 - The git and gh commands written in the steps below.
 - Writing and reading your own files in STATE.
-- Spawning `ticket-implementer`, `wave-integrator`, `followup-triager`, and `review-fixer`.
+- Spawning `ticket-implementer`, `wave-integrator`, `followup-triager`, and `review-fixer`, plus `ticket-reviewer` for step 6's Security, UX/AIX and Design axes.
 - `SendMessage` to a subagent, only for the relays, the stall probe, and step 3's same-conversation resume, plus `ListAgents` for that resume.
 - Running the `code-review` skill in step 6, and the skill that OWNER_NOTES names for after the queue (`QUEUE.md`).
 
@@ -173,26 +173,48 @@ Then start the **watchdog** with `run_in_background`: `bash /home/rodrigo/.claud
 
 ## 6. Final review
 
-Rounds 1 and 2 review the whole branch. Round 3 is a **verification round**: it reviews only the commits of round 2's fixer, which no review has read yet. The only code that ships unreviewed is then round 3's own small fixes.
+Five axes review the branch:
+
+- **Standards** and **Spec**: from the `code-review` skill.
+- **Security**, **UX/AIX** and **Design**: briefs in `${CLAUDE_SKILL_DIR}/axes/`.
+
+Standards, Spec and Security's blocking findings are the **blocking axes**: only they decide whether another round runs. UX/AIX, Design and Security's `needs-human` findings are **advisory**. The fixer handles them, but they never start a round on their own.
+
+Rounds 1 and 2 review the whole branch. Round 3 is a **verification round**: it reviews only the commits of round 2's fixer, which no review has read yet. The only code that ships unreviewed is then round 3's own small fixes, plus the fixes of an advisory-only round (item 3).
 
 `r` = the count of `$STATE/review-<N>.md` reports, not counting `review-<N>-fix.md`, + 1. First, if `review-<r-1>.md` reports findings but has no `review-<r-1>-fix.md`, a fixer was cut off: run item 4 for round `r-1`, then come back here. Go to step 7 when:
 - `r` > 3, or
-- `r` = 3 and `git rev-list --count $(cat $STATE/review-2-base)..WORK` is 0, because round 2's fixer committed nothing.
+- `r` = 3 and `git rev-list --count $(cat $STATE/review-2-base)..WORK` is 0, because round 2's fixer committed nothing, or
+- `review-<r-1>.md` reports zero blocking findings, and it either reports no advisory findings either, or has a `review-<r-1>-fix.md` (an advisory-only round whose fixer already ran). This makes a resume after a clean or advisory-only round go straight on.
 
-1. Run the `mattpocock-skills:code-review` skill. Give it every answer up front, so it never asks:
-   - Rounds 1–2: the fixed point `$(git merge-base WORK origin/DEFAULT)` (or `DEFAULT` with no remote), and the spec SPEC.
-   - Round 3: the fixed point `$(cat $STATE/review-2-base)`, and as spec SPEC plus `$STATE/review-2.md` and `$STATE/review-2-fix.md`. Add to both axes' briefs: "Check only that each finding marked `fixed` is fixed, and that these commits break nothing. Report nothing outside these commits."
-   - Spawn each axis with `subagent_type: ticket-reviewer`.
-   - When any `$STATE/review-*-fix.md` exists, add its `dismissed` lines to both briefs as **known dismissals**: "Re-raise a known dismissal only with evidence its reason does not answer, and say which dismissal it reopens."
+1. Run the review. Give every reviewer its answers up front, so none of them asks:
+   - **Fixed point**:
+     - Rounds 1–2: `F` = `$(git merge-base WORK origin/DEFAULT)`, or `DEFAULT` with no remote.
+     - Round 3: `F` = `$(cat $STATE/review-2-base)`, and the spec is SPEC plus `$STATE/review-2.md` and `$STATE/review-2-fix.md`. Add to every axis brief: "Check only that each finding marked `fixed` is fixed, and that these commits break nothing. Report nothing outside these commits."
+   - **Known dismissals**: when any `$STATE/review-*-fix.md` exists, add its `dismissed` lines to every brief: "Re-raise a known dismissal only with evidence its reason does not answer, and say which dismissal it reopens."
+   - **UX/AIX gate**: run `git diff --name-only F...WORK | grep -E -q -f <(grep -v '^[[:space:]]*$' ${CLAUDE_SKILL_DIR}/axes/ux-aix.triggers)`. It succeeds when the diff touches a UI or agent-surface file. When it fails, do not spawn the UX/AIX reviewer, and record the axis as `skipped: no UI or agent-surface files`.
+   - **Spawning**: run the `mattpocock-skills:code-review` skill with F and the spec. When it spawns its Standards and Spec axes, spawn the new axes in the same message, so all of them run in parallel. Use `subagent_type: ticket-reviewer` for all five. Each new-axis prompt is only `KEY: value` lines:
+     - `AXIS`: Security, UX/AIX or Design
+     - `AXIS_BRIEF`: the absolute path of `${CLAUDE_SKILL_DIR}/axes/security.md`, `ux-aix.md` or `design.md`
+     - `REPO`: MAIN
+     - `DIFF`: `git diff F...WORK`
+     - `COMMITS`: `git log F..WORK --oneline`
+     - `SPEC`
+     - `ROUND`
+     - `KNOWN_DISMISSALS`: a path, or `none`
+     - in round 3, `VERIFY_ONLY` with the round-3 sentence above
 
-   Take the aggregated report as-is; the diff itself stays with the reviewers.
-2. Write the report verbatim to `$STATE/review-<r>.md`. In chat, print only `review <r>: Standards <x>, Spec <y>`. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
-3. The skill's closing summary reports zero findings on both axes → go to step 7.
-4. Otherwise run `git rev-parse WORK > $STATE/review-<r>-base`, spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `ROUND: <r>`, `FINDINGS: $STATE/review-<r>.md`, and write its status block to `$STATE/review-<r>-fix.md`.
-5. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves, and the next pass through step 6 reviews the branch as round `r` + 1.
+   Take the reports as-is; the diff itself stays with the reviewers.
+2. Write the report verbatim to `$STATE/review-<r>.md`: the skill's aggregated report, then `## Security`, `## UX/AIX` (or its `skipped` line) and `## Design`, each as its reviewer returned it. In chat, print only `review <r>: Standards <x>, Spec <y>, Security <z>, UX/AIX <w|skipped>, Design <v>`, taking `z`, `w` and `v` from each section's `COUNT:` line. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
+3. Route by what the round found:
+   - Every section reports zero findings → go to step 7.
+   - The blocking axes report zero findings (the skill's closing summary for Standards and Spec, plus `COUNT: 0 blocking` for Security), but advisory findings remain → run item 4 once, and item 5's triage if it applies. Then go to step 7 without a new round.
+   - Otherwise → item 4.
+4. Run `git rev-parse WORK > $STATE/review-<r>-base`, spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `ROUND: <r>`, `FINDINGS: $STATE/review-<r>.md`, and write its status block to `$STATE/review-<r>-fix.md`.
+5. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves, and the next pass through step 6 reviews the branch as round `r` + 1. This holds after an advisory-only round too.
 6. Otherwise, return to the top of step 6 for the next round.
 
-The **remaining findings** are the lines of the last `review-<N>-fix.md` that are not `fixed`, plus a RED status if that fixer returned one.
+The **remaining findings** are the lines of the last `review-<N>-fix.md` that are not `fixed`, including every `needs-human` line, plus a RED status if that fixer returned one.
 
 Done when a review is clean, or the step 7 condition above holds after the last fixer and its triage have returned.
 

@@ -2,7 +2,7 @@
 
 Decisions and sources: [README.md](README.md) (pt-BR study). This plan is the execution order.
 
-## Part A — add the three axes (edit in `~/.claude`)
+## Part A — add the three axes (edited in the repo copy, after a verbatim import commit; see B3)
 
 ### A1. Axis briefs — `~/.claude/skills/run-spec/axes/`
 

@@ -21,7 +21,7 @@ A skill diz explicitamente "two axes, don't merge or rerank". Faltam três lente
 | Quem orquestra | O `/run-spec` spawna os 3 eixos novos com briefs próprios, ao lado da skill pinada | A skill é de terceiro, pinada à mão, e hardcoda dois eixos |
 | Filtro de falso positivo no Security | Um reviewer único: exploit path obrigatório, lista de exclusões, corte ≥8/10, e um balde `needs-human` para crypto/config | Evita N spawns de filtro. Ver o custo em §3.4. |
 | Quando o eixo UX/UI/AIX roda | **Só quando o diff toca o domínio.** O orquestrador decide pela lista de arquivos alterados antes de spawnar o reviewer (ver §4.1) | Pedido do usuário: o run-spec deve ser inteligente o bastante para pular o eixo |
-| Versionamento | Editar direto em `~/.claude` (sem importar para git) | Escolha do usuário. Fica sem rollback. |
+| Versionamento | O fluxo inteiro vive em [`ai/skills/run-spec/`](../../skills/run-spec/README.md) e é instalado em `~/.claude` por `install.sh` | Pedido do usuário: trazer o run-spec para o repo, documentado como fluxo único |
 
 ## 3. Eixo Security
 
@@ -83,7 +83,7 @@ O orquestrador decide **antes** de spawnar, sem gastar um reviewer para ouvir "n
 3. Sem casamento, o eixo é **pulado**. O relatório registra `## UX/AIX — skipped: no UI or agent-surface files in <range>`, para que a ausência seja visível e auditável.
 O gatilho olha só a lista de arquivos, nunca a spec. O contrato do dispatcher proíbe que ele leia spec, tickets ou código (`SKILL.md`, "Dispatcher contract"). Uma mensagem de erro em código de backend que chega ao usuário escapa do gatilho.
 
-Os padrões são heurística. Um repo com layout incomum ajusta o arquivo de triggers. O custo do falso negativo é perder um review de julgamento, que de qualquer forma não bloqueia a saída do loop.
+Os padrões são heurística. Um repo com layout incomum ajusta o arquivo de triggers. Linhas em branco são filtradas antes do `grep -E -f`: uma linha vazia casaria com qualquer caminho. O custo do falso negativo é perder um review de julgamento, que de qualquer forma não bloqueia a saída do loop.
 
 ### 4.2 Fontes de critério
 

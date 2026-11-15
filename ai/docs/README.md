@@ -33,12 +33,13 @@ A snapshot marked `Superseded` or `Obsolete` is kept for history. Read its block
 |---|---|---|
 | [`software-factory/`](software-factory/README.md) | Study | ZazenCodes' factory, Austin Marchese's harness engineering, Matt Pocock's skills v1.3, the local `/run-spec` flow, the unified study, the evidence on prototyping, a full assessment of wayfinder, a study of guardrails, and six video transcripts |
 | [`agent-memory/`](agent-memory/README.md) | Study (pt-BR) | Agent memory concepts, architecture and security audit of ai-memory and claude-mem, Cursor/Claude Code integration, comparison, archify diagrams |
+| [`run-spec-review-axes/`](run-spec-review-axes/README.md) | Study (pt-BR) | Security, UX/UI/AIX and Design review axes for `/run-spec`: criteria sources, reviewer briefs, LLM-reviewer pitfalls, Claude Code vs Cursor (Bugbot); the flow itself lives in [`ai/skills/run-spec/`](../skills/run-spec/README.md) |
 | [`shopify-helix/`](shopify-helix/README.md) | Study (pt-BR) | Shopify Helix (checkpoints + four gates), the AI LABS Claude Code re-creation, source lineage tiered A/B/C (Ralph loop, evaluator-optimizer, LLM-as-a-judge, spec-kit/Kiro), Claude Code vs Cursor stop-hook mapping, a worked Helix vs spec-kit comparison, archify diagrams |
 | [`models/`](models/claude-5-5-model-selection.md) | Study | Opus, Sonnet and Haiku 5.5: benchmarks per effort level, cost per task, role recommendations |
 | `analysis/` | Analysis | The state-of-practice summary, plus one deep-extraction file per source document |
 | `claude-code/` | Vendor mirror | Hooks, memory, plugins, skills, subagents, prompting |
 | `claude/` | Vendor mirror | Anthropic's long-running-harness article; two superseded prompting duplicates |
-| `cursor/` | Vendor mirror | Rules, hooks, MCP, plugins, skills, subagents, tools |
+| `cursor/` | Vendor mirror | Rules, hooks, MCP, plugins, skills, subagents, tools, Bugbot |
 | `shared/` | Vendor mirror | Agent Skills open standard, skill authoring best practices |
 | `structured-outputs/` | Vendor mirror | Structured outputs, strict tool use, defining tools, consistency |
 | `tool-calling/` | Mirror + snapshots | Programmatic tool calling, tool search |

@@ -1,5 +1,7 @@
 # The `/run-spec` flow — AFK execution of a spec's tickets
 
+> **Revision 2026-11-15:** superseded as the description of the current flow by [`ai/skills/run-spec/README.md`](../../skills/run-spec/README.md), which now holds the flow's source files, a five-axis final review, the queue and resume rules. This page stays as the 2026-10-11 snapshot and its assessment.
+
 > **Sources (read 2026-10-11, on this machine)**
 > - `~/.claude/skills/run-spec/SKILL.md` and `tickets.py`
 > - `~/.claude/agents/ticket-implementer.md`, `ticket-reviewer.md`, `wave-integrator.md`, `review-fixer.md`

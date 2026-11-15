@@ -1,0 +1,10 @@
+\.(tsx|jsx|vue|svelte|astro|html?|css|scss|sass|less|styl)$
+\.(hbs|handlebars|ejs|erb|jinja2?|j2|njk|liquid|twig|mustache|razor|cshtml)$
+(^|/)(locales?|i18n|l10n|translations?)/
+\.(po|pot|xlf|xliff|arb)$
+(^|/)(design-)?tokens?/
+(^|/)(tailwind|postcss)\.config\.
+(^|/)(components?|pages|views|screens|layouts|ui)/
+(^|/)(mcp|tools)/
+(^|/)(cli|bin|cmd)/
+(^|/)prompts?/
