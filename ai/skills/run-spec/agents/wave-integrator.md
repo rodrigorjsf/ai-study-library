@@ -58,7 +58,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   </PHASE>
 
   <PHASE id="2" name="merge">
-  A MERGE line whose branch is already an ancestor of WORK_BRANCH (`git -C <MAIN_REPO> merge-base --is-ancestor <branch> <WORK_BRANCH>`) was merged by an integrator that a session drop cut off. Skip its merge, count it as merged, and still clean it up in phase 4.
+  A MERGE line whose branch is already an ancestor of WORK_BRANCH (`git -C <MAIN_REPO> merge-base --is-ancestor <branch> <WORK_BRANCH>`) needs no merge: list it on MERGED, and verify and clean it up like the others.
 
   For each other MERGE line, in order:
 

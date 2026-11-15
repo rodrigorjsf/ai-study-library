@@ -21,7 +21,7 @@ Synthesize from what you already know and what you capture below. Filing is inte
    - **(b) Owned external resource.** A tool, plugin, skill, MCP server, or repo used in the current flow misbehaves, and its repo owner is the same account (`gh api user -q .login`) or an org that account owns. The current task does not own the resource, so there is nothing to fix in place.
 
    Neither holds:
-   - **Third-party resource the user does not own:** file no issue. Work around it, and record the workaround as an Applied Learning bullet in the project's root `CLAUDE.md`.
+   - **Third-party resource the user does not own:** file no issue. Work around it, and record the workaround where your rules send learnings; without such a rule, as an Applied Learning bullet in the project's root `CLAUDE.md`.
    - **Anything else:** absorb it. When the user explicitly asks for an issue ("abre uma issue"), the user's request is the qualification; skip the gate.
 
    Every absorbed item gets one line in the final summary, PR body, handoff, or triage comment (`absorbed: <what>, verified by <command or where it was added>`), so the extra scope stays reviewable.
@@ -42,8 +42,8 @@ Synthesize from what you already know and what you capture below. Filing is inte
 6. **Create.** `gh issue create --repo owner/repo --title "…" --body-file <path> [--label …]`. Use `--body-file`, never an inline heredoc: backticks in the body break shell quoting.
    *Done when:* you hold the new issue URL.
 
-7. **Link back.** Add the issue reference at every place that carries the limitation: a code comment next to the workaround, a line in the doc that states the limitation, the PR body. Name the issue as `#N` or `see #N`. Keep `fix #N`, `fixes #N`, `closes #N` out of commit subjects and PR bodies until the fix is verified; GitHub auto-closes the issue on push or merge.
-   *Done when:* every site that carries the limitation names the issue, and you have reported the URL to the user in one line.
+7. **Link back.** Add the issue reference at every place that carries the limitation: a code comment next to the workaround (only where your rules allow code comments), a line in the doc that states the limitation, the PR body. Name the issue as `#N` or `see #N`. Keep `fix #N`, `fixes #N`, `closes #N` out of commit subjects and PR bodies until the fix is verified; GitHub auto-closes the issue on push or merge.
+   *Done when:* every site above that your rules allow names the issue, and you have reported the URL to the user in one line.
 
 ## Template
 

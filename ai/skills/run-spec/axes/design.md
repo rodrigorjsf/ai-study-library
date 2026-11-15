@@ -26,17 +26,17 @@ Review only the modules the diff **creates**, or whose **interface** it changes.
 
 ## What to check
 
-- **Shallow module.** A new module whose interface is nearly as large as its implementation, or a pass-through method. Evidence: what the callers would lose if the module were inlined into them, with the callers counted by Grep.
-- **Leaky interface.** Callers must know an ordering, a hidden invariant, or a configuration step the module could own. The same rule or check is repeated in callers instead of living once in the module (information leakage, change amplification).
+- **Shallow module.** A new module whose interface is nearly as large as its implementation, a pass-through method, or a class whose methods mostly delegate. Evidence: what the callers would lose if the module were inlined into them, with the callers counted by Grep.
+- **Leaky interface.** Callers must know an ordering, a hidden invariant, or a configuration step the module could own (information leakage).
 - **Test past the interface.** A new test reaches into internals, replaces the module's own collaborators instead of using a seam at its interface, or would break on a pure refactor of the implementation.
-- **Hypothetical seam.** A new port, interface, or injection point whose enabling point only ever selects one implementation, with no test double behind it.
+- **Hypothetical seam or speculative extension point.** A new port, interface, or injection point whose enabling point only ever selects one implementation, with no test double behind it; or an option, hook, or abstract layer the diff adds that no caller or test uses yet.
 - **Hard-wired dependency.** The module constructs its own I/O dependency (a client, a clock, a filesystem) inside its body, so no test can separate it: the dependency should arrive through an enabling point.
 - **Domain language.** A new concept named with a term `GLOSSARY.md` does not define, or a name that contradicts the glossary. Skip this check when the repo has no glossary.
 - **ADR conflict.** The change contradicts an ADR in `docs/adr/`. Report it only when the friction is concrete, and name the ADR.
 
 ## Do not report
 
-- A smell from the baseline in `standards.md`, next to this brief, under its smell name: Standards owns those. A pass-through method is reported here only as a shallow module.
+- A defect that a smell in `standards.md`, next to this brief, names: Standards owns it.
 - Refactors of code the diff did not touch.
 - Naming taste outside the glossary.
 - Style.

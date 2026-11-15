@@ -7,8 +7,12 @@ failure records, and prints one JSON object. The orchestrator never reads
 ticket bodies, code, or handoffs itself; it asks this script.
 
 A ticket is done when a commit carrying its `Ticket:` trailer reaches the work
-branch, or when the tracker already marks it closed. The trailer alone counts:
-no other commit marks a ticket done.
+branch and is not on the default branch, or when the tracker already marks it
+closed. The trailer alone counts: no other commit marks a ticket done. Trailers
+already on the default branch belong to merged runs, whose tickets the tracker
+records (`Closes #N`, or the local `Status: resolved`); local ids restart at 01
+in every spec, so an earlier spec's `Ticket: 01` must not mark this spec's 01.
+The default branch is `refs/remotes/origin/HEAD`, else `main`, else `master`.
 
 Usage:
   tickets.py --tracker github|local --spec <#N|path> --work-branch <branch> --failures-dir <dir>
@@ -112,6 +116,16 @@ def github_tickets(spec):
     return f"{n}-{kebab(title)}", f"#{n}", tickets
 
 
+def default_refs():
+    head = sh("git", "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD", check=False).strip()
+    for name in ([head.removeprefix("origin/")] if head else []) + ["main", "master"]:
+        refs = [r for r in (f"refs/heads/{name}", f"refs/remotes/origin/{name}")
+                if sh("git", "rev-parse", "-q", "--verify", f"{r}^{{commit}}", check=False).strip()]
+        if refs:
+            return refs
+    return []
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tracker", required=True, choices=["github", "local"])
@@ -121,10 +135,9 @@ def main():
     a = ap.parse_args()
 
     slug, spec, tickets = (github_tickets if a.tracker == "github" else local_tickets)(a.spec)
-    def log(fmt):
-        return sh("git", "log", a.work_branch, f"--format={fmt}", check=False)
-    # a ticket is done once a commit carrying its Ticket: trailer reaches WORK
-    trailers = set(log("%(trailers:key=Ticket,valueonly)").split())
+    refs = default_refs()
+    trailers = set(sh("git", "log", a.work_branch, *(["--not", *refs] if refs else []),
+                      "--format=%(trailers:key=Ticket,valueonly)", check=False).split())
     fdir = pathlib.Path(a.failures_dir)
     by_id = {t["id"]: t for t in tickets}
     for t in tickets:

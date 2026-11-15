@@ -36,7 +36,7 @@ These are hard exclusions:
 
 - denial of service and resource exhaustion
 - rate limiting
-- missing hardening without a concrete exploit
+- missing hardening without a concrete exploit, except a crypto, configuration, or security-policy gap: it goes under `needs-human` (see below)
 - outdated third-party dependencies
 - test-only files
 - documentation and markdown

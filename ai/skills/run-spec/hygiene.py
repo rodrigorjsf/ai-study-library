@@ -26,10 +26,18 @@ HASH_NAMES = set("Dockerfile Makefile makefile Containerfile Gemfile Rakefile".s
 SKIP_DIRS = {"node_modules", "vendor", "dist", "build", ".git"}
 LOCKFILE = re.compile(r"(?:\.lockb?|-lock\.(?:json|ya?ml)|^go\.sum|^npm-shrinkwrap\.json)$")
 CODING = re.compile(r"[ \t\f]*#.*?coding[:=]")
-DIRECTIVE = re.compile(
-    r"(?:#|//+|/\*+|\{/\*|--|<!--)\s*(?:eslint-|@ts-|prettier-ignore|biome-ignore|(?:istanbul|c8|v8) ignore|"
-    r"shellcheck|rubocop:|nolint|nosonar|spdx-license-identifier|@license|syntax=|yamllint|"
-    r"noqa|type:|pragma|pylint:|mypy:|fmt:|isort:)|//go:|/// <reference", re.I)
+PRAGMAS = r"@(?:\w+-environment|flow|noflow|generated|format|prettier|jsx\w*)\b"
+TAG = (r"(?:(?:pyright|pylint|mypy|ruff|flake8|fmt|isort|yapf|pytype|type|typed|rubocop|tslint|swiftlint|phpcs|jscs|"
+       r"frozen_string_literal|shareable_constant_value|warn_indent|warn_past_scope|encoding):|"
+       r"(?:eslint|stylelint|deno-lint|deno-fmt|ktlint|tflint|pyre)-|@ts-|syntax=|jshint\s+(?:ignore:|[\w-]+\s*:)|"
+       rf"{PRAGMAS}|(?:prettier-ignore|biome-ignore|(?:istanbul|c8|v8) ignore|clang-format (?:on|off)|@license|"
+       r"shellcheck|hadolint|yamllint|nolint(?:nextline|begin|end)?|nosonar|nosec|noqa|pragma|"
+       r"spdx-license-identifier)\b)")
+DIRECTIVE = re.compile(rf"(?:#|//+|/\*+|\{{/\*|--|<!--)\s*{TAG}|/\*+\s*(?:eslint|globals?|exported)\s|//go:|/// <reference",
+                       re.I)
+PRAGMA = re.compile(rf"^[\s*/{{]*{PRAGMAS}", re.I | re.M)
+NOTICE = re.compile(r"license|copyright", re.I)
+CLOSERS = {"/*": "*/", "{/*": "*/", "<!--": "-->"}
 HUNK = re.compile(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
@@ -76,8 +84,40 @@ def added_lines(patch):
     return files
 
 
+def created(fields):
+    paths, i = set(), 0
+    while i + 1 < len(fields):
+        if fields[i].startswith("R"):
+            if not fields[i + 1].lower().endswith((".md", ".mdx")):
+                paths.add(fields[i + 2])
+            i += 3
+        else:
+            paths.add(fields[i + 1])
+            i += 2
+    return paths
+
+
 def exempt(n, text):
     return (n == 1 and text.startswith("#!")) or (n <= 2 and bool(CODING.match(text))) or bool(DIRECTIVE.match(text))
+
+
+def header(text, markers):
+    lines = text.split("\n")
+    i = 1 if lines[0].startswith(("#!", "<?")) else 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    blocks = []
+    while i < len(lines) and (opener := next((m for m in markers if lines[i].strip().startswith(m)), None)):
+        j, close = i, CLOSERS.get(opener)
+        if close and close not in lines[i].strip()[len(opener):]:
+            j += 1
+            while j < len(lines) and close not in lines[j]:
+                j += 1
+        blocks.append((i + 1, min(j, len(lines) - 1) + 1, "\n".join(lines[i:j + 1])))
+        i = j + 1
+    if any(NOTICE.search(body) for _, _, body in blocks):
+        return set(range(blocks[0][0], blocks[-1][1] + 1))
+    return {n for first, last, body in blocks if PRAGMA.search(body) for n in range(first, last + 1)}
 
 
 def marker_hits(markers, lines):
@@ -113,7 +153,7 @@ def main():
     ap.add_argument("--allow", action="append", default=[])
     a = ap.parse_args()
     rng = f"{a.base}...{a.head}"
-    new_files = set(filter(None, git("diff", "--name-only", "-z", "-M", "--diff-filter=A", rng, "--").split("\0")))
+    new_files = created(git("diff", "--name-status", "-z", "-M", "--diff-filter=AR", rng, "--").split("\0"))
     files = added_lines(git("diff", "-U0", "-M", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/",
                             "--diff-filter=d", rng, "--"))
     out = []
@@ -129,11 +169,15 @@ def main():
         if not lines:
             continue
         if path.lower().endswith((".py", ".pyi")):
+            m = ("#",)
             hits = python_hits(a.head, path, lines)
         else:
             p = PurePosixPath(path)
             m = ("#",) if p.name in HASH_NAMES else MARKERS.get(p.suffix.lower()[1:])
             hits = marker_hits(m, lines) if m else {}
+        if hits:
+            top = header(git("show", f"{a.head}:{path}"), m)
+            hits = {n: text for n, text in hits.items() if n not in top}
         out += [f"{path}:{n}: comment: {text.strip()[:120]}" for n, text in sorted(hits.items())]
     if out:
         print("\n".join(out))

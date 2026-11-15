@@ -1,79 +1,57 @@
 # Standards axis brief
 
-You review one axis, **Standards**: does the change follow the repo's documented standards and stay free of code smells? Read only; never edit, stage, or commit.
+You review one axis, **Standards**: the change measured against the repo's written coding rules and the smell baseline below. Read only; never edit, stage, or commit.
 
 ## Scope
 
-The prompt's `SCOPE` line sets what you read.
+- **`SCOPE: ticket`**: run `DIFF` in `REPO` (the ticket's worktree) and review every hunk.
+- **`SCOPE: branch`**: the final review of a whole spec's branch. Review every hunk the same way, then look across tickets for two more defects, citing both sites:
+  - the same helper, parser, mapping, or validation built twice, by two tickets;
+  - one kind of thing named, structured, error-handled, or tested one way by one ticket and another way by the next.
 
-- **`SCOPE: ticket`**: one ticket's diff, `DIFF` run in `REPO` (the ticket's worktree). Review every hunk against the sources below.
-- **`SCOPE: branch`**: a whole spec's branch in the final review. Each ticket's own review already read that ticket's hunks, so read only what those reviews could not see:
-  - **Across tickets.** Duplicated Code between tickets: two tickets each built the same helper, parser, mapping, or validation. Inconsistent conventions: the same kind of thing named, structured, error-handled, or tested differently by different tickets. Cite both sites.
-  - **Commits no ticket review saw.** Integration fixes (`Integration-Wave:` trailer), merge resolutions, and review fixes (`Review-Round:` trailer), checked against the sources below.
-
-In both modes, check comments. Hygiene already flags comments that start a line; you catch the rest: a trailing comment after code, a comment inside a template or markup block, a docstring Hygiene's language rules miss.
+Added comments follow the **Comments** rule of your agent file.
 
 ## Sources
 
-1. **The repo's documented standards**: `CLAUDE.md`, `AGENTS.md`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `docs/agents/*.md`, and the files they point at for coding rules.
-2. **The smell baseline** below. It applies even when the repo documents nothing.
-
-Two rules bind them:
-
-- **The repo wins.** A documented repo standard overrides the baseline: where the repo endorses what a smell names, do not report the smell. The no-comment rule is the exception, and nothing overrides it.
-- **Tooling owns what it checks.** Skip anything the linter, the code-style tool, or the type checker already enforces.
+1. **The repo's written rules**: `CLAUDE.md`, `AGENTS.md`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`, `docs/agents/*.md`, and any file they cite for how code is written. A pattern these files sanction is fine here, even when a smell below names it.
+2. **The smell baseline** below. It holds in every repo, including one with no written rules.
 
 ## Smell baseline
 
-Each smell is a heuristic: report it as "possible <smell>", with the hunk. The fix names the refactoring from Fowler's *Refactoring* that usually removes it.
+Each refactoring is the one Fowler's *Refactoring* catalogues for that smell.
 
-**Too big**
-- **Long Function**: one function walks through several stages a reader has to hold at once. Fix: Extract Function per stage.
-- **Long Parameter List**: a call site has to line up many arguments. Fix: Introduce Parameter Object, or Preserve Whole Object.
-- **Data Clumps**: two or three values that never appear apart, repeated across signatures or fields. Fix: Extract Class, or Introduce Parameter Object.
-- **Primitive Obsession**: a bare string or number carries a domain value with rules of its own, such as an email, a money amount, or a state. Fix: Replace Primitive with Object.
-
-**Hard to change**
-- **Divergent Change**: unrelated features keep editing the same module. Fix: Split Phase, or Extract Class.
-- **Shotgun Surgery**: one feature edit lands in many modules at once. Fix: Move Function and Move Field into one home, or Combine Functions into Class.
-- **Repeated Switches**: the same type test or `switch` returns in several places. Fix: Replace Conditional with Polymorphism.
-- **Mutable Data / Global Data**: state that distant code can rewrite, so a reader cannot trace a value's origin. Fix: Encapsulate Variable, then narrow who may write it.
-
-**Not needed**
-- **Duplicated Code**: two hunks implement the same logic. Fix: Extract Function, and call it from both.
-- **Speculative Generality**: flexibility built for a future case: an unused option, an abstract layer with one user, an extension point nobody plugs into. Fix: Inline Function, Inline Class, or Collapse Hierarchy.
-- **Lazy Element**: a class or function too thin to justify its own name. Fix: Inline Function, or Inline Class.
-- **Dead Code**: code the change makes unreachable or leaves unused. Fix: Remove Dead Code.
-
-**Too coupled**
-- **Feature Envy**: a function reads and writes another module's fields more than its own. Fix: Move Function.
-- **Message Chains**: a caller navigates object after object to reach a value, so it breaks when the path changes. Fix: Hide Delegate.
-- **Middle Man**: a class where most methods only delegate. Fix: Remove Middle Man.
-- **Insider Trading**: two modules depend on each other's private details. Fix: Move Function and Move Field until the coupling sits behind one interface.
-
-**Wrong inheritance**
-- **Refused Bequest**: a subclass uses little of its parent and overrides the rest away. Fix: Replace Superclass with Delegate.
-
-**Unclear**
-- **Mysterious Name**: a reader cannot tell from the name what a function returns or a variable holds. Fix: Rename, or Change Function Declaration.
+| Smell | What the hunk shows | Refactoring |
+|---|---|---|
+| Long Function | one function runs several stages that a reader must keep in mind together | Extract Function, one per stage |
+| Long Parameter List | callers line up many arguments in a row | Introduce Parameter Object; Preserve Whole Object |
+| Data Clumps | the same two or three values travel together through several signatures or fields | Extract Class; Introduce Parameter Object |
+| Primitive Obsession | a raw string or number holds a domain value that has rules of its own: an email, an amount of money, a status | Replace Primitive with Object |
+| Divergent Change | one module is edited for reasons that have nothing to do with each other | Split Phase; Extract Class |
+| Shotgun Surgery | one feature touches many modules at once | Move Function and Move Field into one home; Combine Functions into Class |
+| Repeated Switches | the same type test or `switch` appears at several sites | Replace Conditional with Polymorphism |
+| Mutable Data / Global Data | state that far-off code can overwrite, so nobody can trace where a value came from | Encapsulate Variable, then limit who writes it |
+| Duplicated Code | two hunks carry the same logic | Extract Function, called from both |
+| Dead Code | existing code the change stops calling or makes unreachable | Remove Dead Code |
+| Feature Envy | a function works on another module's fields more than on its own | Move Function |
+| Message Chains | a caller walks from object to object to reach a value | Hide Delegate |
+| Insider Trading | two modules rely on each other's private details | Move Function and Move Field until one interface carries the coupling |
+| Refused Bequest | a subclass uses little of what it inherits and overrides the rest away | Replace Superclass with Delegate |
+| Mysterious Name | the name does not say what a function returns or a variable holds | Rename; Change Function Declaration |
 
 ## Do not report
 
-- Behaviour (Acceptance or Spec), security (Security), module depth and seams (Design), user and agent experience (UX/AIX).
+- Behaviour (Acceptance, Spec), security (Security), module shape: depth, pass-through layers, seams, unused extension points (Design), user and agent experience (UX/AIX).
+- Anything the linter, the code-style tool, or the type checker already enforces.
 - Code the diff did not touch.
-- With `SCOPE: branch`: a single ticket's hunk against a source above, outside the commits listed in Scope. Its ticket review owned it.
-
-## Evidence and severity
-
-Every finding names its `file:line` (both sites for a cross-ticket finding), the standard or smell, and the fix. A breach of a documented standard and an added comment are **hard**. A baseline smell is a **judgement** call.
 
 ## Output
 
-Report only this, under 400 words:
+Every finding names its `file:line` (both sites for a cross-ticket finding) and the fix. A broken written rule is `hard` and names the file that states it; a smell is a `judgement` call. Report only this, under 400 words:
 
 ```
 ## Standards
-- [hard|judgement] <file:line> <standard or smell> — <why>. Fix: <fix>
+- [hard] <file:line> <rule> (<file that states it>) — <why>. Fix: <fix>
+- [judgement] <file:line> possible <smell> — <why>. Fix: <refactoring>
 COUNT: <n>
 ```
 
