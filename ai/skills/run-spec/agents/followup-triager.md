@@ -86,7 +86,7 @@ Work through these steps for one follow-up. There is no maintainer to consult: t
 3. The oracle lists it in `tickets` (locally, a file under SPEC's `issues/`), not done. When its body holds the line `Replaced by the implementation brief from triage.` (APPLY's first write), triage attached it: its verdict is `ready-for-agent`; when its triage is complete, apply nothing and report it `attached: yes`, which phase 4 verifies like a new attach, otherwise finish it as case 5 says. Without that line it is one of the spec's own tickets → `skipped`: the run builds it, and the filer's comment on it is its implementer's input.
 4. No line of its body (locally, above its `## Comments` heading) reads `Filed by run-spec <SLUG>.`: another spec's ticket or follow-up, or an older issue the dedupe matched → `skipped (not filed by this run)`.
 5. Its body holds the line `Replaced by the implementation brief from triage.`: a cut-off attach. Its verdict is `ready-for-agent`: steps 2, 3 and 5 gather its brief, then APPLY finishes the attach.
-6. Its triage is complete → `skipped`.
+6. Its triage is complete → apply nothing, and report the verdict its brief's `**Verdict:**` line names.
 7. Otherwise, steps 2 to 5.
 
 A label the filer put on a follow-up does not count as triage: it is one more input to your verdict.

@@ -20,7 +20,7 @@ flowchart TB
     REP -- GREEN --> ORPH
     REP -- "RED: halt" --> S7
     RB -- no --> ORPH["Orphan branches WORK--id<br/>merged: delete<br/>FAILED status: 5c FAILED path<br/>finished: status-id.md reads DONE<br/>unfinished: resume, or discard when the oracle<br/>no longer lists it in remaining"]
-    ORPH --> REC["dead main-owner agent: re-run from its record<br/>finished orphans: 5d + 5e<br/>unrecorded merges: a recovered wave-NN.md<br/>owed triage (5e)<br/>resume queue: 5a-5f with RESUME: true"]
+    ORPH --> REC["dead main-owner agent: re-run from its record<br/>finished orphans: 5d + 5e<br/>unrecorded merges: a recovered wave-NN.md<br/>owed user-k fix, then owed triage (5e)<br/>resume queue: 5a-5f with RESUME: true"]
     REC --> S4
     S4{{"4. ORACLE<br/>tickets.py"}}
     S4 -- "ready: first P ids" --> S5A
@@ -38,7 +38,7 @@ flowchart TB
     S5D -- "STATUS: RED: halt" --> S7
     S6["6. Final review, up to 3 rounds"] -- "a fixer's follow-ups attached" --> S4
     S6 --> S7
-    S7["7. Closing acceptance in its own verify-final-m<br/>when WORK moved past the newest Acceptance HEAD<br/>(skipped on a halt)<br/>PR body: Summary · Evidence · Merge Danger<br/>push, open PR; merge only with --merge, via QUEUE.md gates"] --> Q{"more specs in QUEUE,<br/>and this spec not held<br/>(no halt, no held merge)?"}
+    S7["7. Closing acceptance in its own verify-final-m<br/>when WORK moved past the newest Acceptance HEAD<br/>(skipped on a halt,<br/>but not after a user-k fix)<br/>PR body: Summary · Evidence · Merge Danger<br/>push, open PR; merge only with --merge, via QUEUE.md gates"] --> Q{"more specs in QUEUE,<br/>and this spec not held<br/>(no halt, no held merge)?"}
     Q -- yes --> S1
     Q -- no --> END([report])
 ```
@@ -90,7 +90,7 @@ The per-ticket review inside `ticket-implementer` stays two-axis: it spawns two 
 
 ### Step 7: closing acceptance and the PR
 
-The **newest Acceptance** is `$STATE/acceptance-final.md` when it exists, else the Acceptance section of the last `review-N.md`. Its `HEAD:` line names the WORK it ran on. Except on a halt, `acceptance-verifier` runs once more with `ROUND: final` when WORK has moved past that line, when the line is missing, or when the newest fix file (`review-N-fix.md` or `user-k-fix.md`) dismisses a FAIL after the newest Acceptance was written. Each closing run gets its own `verify-final-m/`, reads the newest Acceptance's directory as `PREVIOUS`, and replaces `acceptance-final.md`; a run cut off before its section was written leaves its directory to the next one, which stops what it left. A `user-k` fix's follow-ups go through 5e's triage, and its block is relayed verbatim; when it returns GREEN, step 7 runs again, without the merge. A FAIL there is not delivered: the PR lists it, it holds `--merge`, and it starts no round.
+The **newest Acceptance** is `$STATE/acceptance-final.md` when it exists, else the Acceptance section of the last `review-N.md`. Its `HEAD:` line names the WORK it ran on. Except on a halt, and always when step 7 runs again after a GREEN `user-k` fix, `acceptance-verifier` runs once more with `ROUND: final` when WORK has moved past that line, when the line is missing, or when the newest fix file (`review-N-fix.md` or `user-k-fix.md`) dismisses an Acceptance finding (scope creep included) after the newest Acceptance was written. Each closing run gets its own `verify-final-m/`, reads the newest Acceptance's directory as `PREVIOUS`, and replaces `acceptance-final.md`; a run cut off before its section was written leaves its directory to the next one, which stops what it left. A `user-k` fix's follow-ups go through 5e's triage, and its block is relayed verbatim; when it returns GREEN, step 7 runs again, without the merge. A FAIL there is not delivered: the PR lists it, it holds `--merge`, and it starts no round.
 
 The PR body uses the ticket report's sections, less Commits: `## Summary` (the SUMMARY and report link of each merged ticket: one the oracle lists as done whose status file reads `STATUS: DONE`; then `git diff --stat F...WORK`), `## Evidence` (the newest Acceptance, then **Not verified**), `## Merge Danger` (**Door:** one-way with each one-way merged ticket and why, else two-way; **Blast Radius:** each merged ticket's `BLAST:` line). Follow-ups, triage verdicts, skipped and stuck tickets, remaining findings, the halt reason and the owner's code-changing decisions follow.
 
@@ -172,7 +172,7 @@ What the agents read from that input:
 | `verify-N/`, `verify-final-m/` | acceptance-verifier | probe scripts and output; `scope-creep`, which the next run re-checks as `PREVIOUS`; and `started`: what it started, which a cut-off verifier's successor in the same directory stops |
 | `acceptance-final.md` | step 7 | the newest closing acceptance; each closing run replaces it |
 | `owner-<k>.md`, `probes.md`, `learnings.md`, `pr-body.md` | dispatcher | the owner's mid-run messages, stall probes and respawns, learnings, the PR body |
-| `user-<k>.md`, `user-<k>-base`, `user-<k>-fix.md` | dispatcher, after the report | the owner's later request, WORK when its fixer first started, the fixer's status block |
+| `user-<k>.md`, `user-<k>-base`, `user-<k>-fix.md` | dispatcher, after the report | the owner's later request, WORK when its fixer first started, the fixer's status block; a `user-<k>.md` without its `-fix.md` is respawned by step 3 |
 | `<git-common-dir>/run-spec/queue.md` | `QUEUE.md` | `MERGE: true\|false`, `OWNER_NOTES:`, then one line per spec: `<spec> pending`, `<spec> merging <PR URL> <WORK>` (set before `gh pr merge`, `done` right after it succeeds), `<spec> held <PR URL> <WORK>` (a halt or a held merge: the queue stops, and a later run resumes it) or `<spec> done <PR URL> <WORK>`. A resumed queue marks a `merging` spec done when its PR reads `MERGED`, and runs it again otherwise |
 
 ## Install
@@ -213,3 +213,9 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 - **Unmeasured:** every fix wave after c7dfe8a has had critic rounds but no run, so none of the mechanisms they added has run. The followup-triager has never run: the smoke run filed no follow-up.
 - No code-reading axis reads the fixes of round 3, or of an advisory-only round whose triage attaches nothing (UX/AIX, Design, Security `needs-human`). The fixer's full suite and hygiene gate check them, and the closing acceptance re-runs every criterion on them.
 - The UX/AIX gate looks only at file paths. A user-facing string changed in a backend file does not trigger it.
+
+### Known limitations
+
+These need a subagent to die at one instant inside its own work; generic detection and step 3's re-run do not cover them.
+
+- A `ticket-implementer` that dies after its `fix(<scope>): address review findings` commit and before its report: the resumed run skips phase 4, so the report and handoff lose that review's `absorbed:` items and its queued follow-ups are never filed. Compare the ticket report with that commit, and file any missing follow-up by hand.
