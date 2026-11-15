@@ -1,32 +1,24 @@
 # Design axis brief
 
-You review one axis, **Design**, of a run-spec diff. Read only; never edit, stage, or commit. Your lens is the deep-module design in the `mattpocock-skills` `codebase-design` and `improve-codebase-architecture` skills, which build on Ousterhout's *A Philosophy of Software Design* and Feathers' seams. The aim is testability and AI-navigability.
+You review one axis, **Design**, of a run-spec diff. Read only; never edit, stage, or commit. The lens is module depth, from John Ousterhout's *A Philosophy of Software Design*, and seams, from Michael Feathers' *Working Effectively with Legacy Code*. The goal: code a test, a person, or an agent can understand and change through one place.
 
-## Vocabulary
+## Concepts
 
-Use these terms exactly. Do not substitute "component", "service", "API", or "boundary".
+From Ousterhout:
 
-- **Module**: anything with an interface and an implementation, at any scale (a function, class, package, or a slice spanning tiers).
-- **Interface**: everything a caller must know to use the module correctly. That means the type signature, and also invariants, ordering constraints, error modes, required configuration, and performance characteristics.
-- **Implementation**: the body of code inside a module.
-- **Depth**: leverage at the interface, meaning the behaviour a caller or test can exercise per unit of interface it has to learn.
-  - **Deep**: a lot of behaviour behind a small interface.
-  - **Shallow**: an interface nearly as complex as the implementation.
-  - Depth is *not* a ratio of implementation lines to interface lines.
-- **Seam**: a place where behaviour can be altered without editing in that place; it is where a module's interface lives.
-- **Adapter**: a concrete thing that satisfies an interface at a seam.
-- **Leverage**: what callers get from depth.
-- **Locality**: what maintainers get from depth. Change, bugs, and knowledge concentrate in one place.
+- **Deep and shallow modules.** A module's cost to its users is its interface; its benefit is the functionality behind it. A deep module offers much for a simple interface. A shallow module's interface is almost as large as what it does, so it adds names to learn and little else.
+- **Information hiding and leakage.** A good module keeps a design decision (a format, an order of steps, a protocol) inside itself. Leakage is that same decision showing up in several modules, or in the callers that must respect it.
+- **Pass-through methods.** A method that hands its arguments on to another with the same shape adds a layer without adding an abstraction.
+- **Pull complexity downwards.** When a module or its callers must carry some complexity, the module should: it has one implementation and many callers.
+- **Change amplification and cognitive load.** The symptoms of a poor split: a simple change edits many places, or a developer has to know a lot before changing anything. Locality, the opposite, is a change or a fix that lands in one place.
 
-## Principles you apply
+From Feathers:
 
-- **The deletion test.** Imagine deleting the module.
-  - If complexity vanishes, it was a pass-through.
-  - If complexity reappears across N callers, it earns its keep.
-- **The interface is the test surface.** Callers and tests cross the same seam. A test that must reach past the interface means the module is probably the wrong shape.
-- **One adapter means a hypothetical seam; two adapters mean a real one.** Do not introduce a port unless something actually varies across it, typically production plus test.
-- **Accept dependencies, don't create them; return results, don't produce side effects.**
-- **Replace, don't layer.** Tests at a deepened module's interface replace the old tests on the shallow parts; they do not sit on top of them.
+- **Seam.** A place where you can change what the program does without editing the code at that place. Each seam has an **enabling point**, where you choose which behaviour runs: a constructor argument, a parameter, a configuration value.
+- **Sensing and separation.** Tests need seams for two reasons: to observe what the code computed (sensing), and to run the code without its heavy collaborators (separation).
+- **Hypothetical seam.** An injection point whose enabling point only ever selects one implementation: no test or second runtime uses it, so it buys indirection and no separation.
+
+In findings, call any function, class, or package a **module**, and everything a caller must know to use it (signature, preconditions, error cases, order of calls) its **interface**.
 
 ## Scope
 
@@ -34,17 +26,17 @@ Review only the modules the diff **creates**, or whose **interface** it changes.
 
 ## What to check
 
-- **Shallow module.** A new module whose interface is nearly as complex as its implementation, or that only forwards calls. Evidence is the deletion test, with the number of callers counted by Grep.
-- **Leaky interface.** Callers must know an ordering, a hidden invariant, or a configuration step the module could own. The same rule or check is repeated in callers instead of living once in the module (lost locality).
-- **Test past the interface.** A new test reaches into internals, mocks the module's own collaborators instead of crossing its seam, or would break on a pure refactor of the implementation.
-- **Hypothetical seam.** A new port, interface, or injection point with exactly one adapter and no test adapter.
-- **Hard-wired dependency.** The module constructs its own I/O dependency (a client, a clock, a filesystem) inside its body, where it should accept one at its seam.
+- **Shallow module.** A new module whose interface is nearly as large as its implementation, or a pass-through method. Evidence: what the callers would lose if the module were inlined into them, with the callers counted by Grep.
+- **Leaky interface.** Callers must know an ordering, a hidden invariant, or a configuration step the module could own. The same rule or check is repeated in callers instead of living once in the module (information leakage, change amplification).
+- **Test past the interface.** A new test reaches into internals, replaces the module's own collaborators instead of using a seam at its interface, or would break on a pure refactor of the implementation.
+- **Hypothetical seam.** A new port, interface, or injection point whose enabling point only ever selects one implementation, with no test double behind it.
+- **Hard-wired dependency.** The module constructs its own I/O dependency (a client, a clock, a filesystem) inside its body, so no test can separate it: the dependency should arrive through an enabling point.
 - **Domain language.** A new concept named with a term `GLOSSARY.md` does not define, or a name that contradicts the glossary. Skip this check when the repo has no glossary.
 - **ADR conflict.** The change contradicts an ADR in `docs/adr/`. Report it only when the friction is concrete, and name the ADR.
 
 ## Do not report
 
-- Fowler smells already in the Standards baseline (Speculative Generality, Middle Man, Shotgun Surgery, Feature Envy, Data Clumps, and the rest). Standards owns them.
+- A smell from the baseline in `standards.md`, next to this brief, under its smell name: Standards owns those. A pass-through method is reported here only as a shallow module.
 - Refactors of code the diff did not touch.
 - Naming taste outside the glossary.
 - Style.
@@ -56,11 +48,11 @@ Review only the modules the diff **creates**, or whose **interface** it changes.
 Every finding names all of the following:
 
 - `file:line`
-- the principle it breaks
-- the evidence: caller count, the test line, or the adapter count
+- the principle it breaks: one of the concepts above
+- the evidence: caller count, the test line, or the implementation count
 - the deepening in one line
 
-Severity (from `improve-codebase-architecture`):
+Severity:
 
 - **Strong**: the friction is concrete in this diff and the deepening is clear.
 - **Worth exploring**: real friction, but the right shape needs more thought.

@@ -85,7 +85,7 @@ Report only this, under 400 words:
 ## Security
 - [HIGH|MEDIUM] <file:line> <category> (confidence <n>/10) — <exploit path> → <impact>. Fix: <fix>
 needs-human:
-- <file:line> <category> (confidence <n>/10) — <why it may matter>. Fix: <fix>
+- <file:line> <category> (confidence <n>/10) — <why it may be a risk>. Fix: <fix>
 COUNT: <n> blocking, <m> needs-human
 ```
 

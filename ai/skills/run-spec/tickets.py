@@ -2,7 +2,7 @@
 """Ticket-state oracle for the run-spec skill.
 
 Reads only ticket metadata (ids, titles, blocking edges, state) from the
-mattpocock-skills tracker plus the work branch's `Ticket:` commit trailers and
+spec's tracker plus the work branch's `Ticket:` commit trailers and
 failure records, and prints one JSON object. The orchestrator never reads
 ticket bodies, code, or handoffs itself; it asks this script.
 

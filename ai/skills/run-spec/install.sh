@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Install the committed run-spec flow from this repository into ~/.claude, as copies.
-#   skill          -> ~/.claude/skills/run-spec/   (SKILL.md, QUEUE.md, tickets.py, hygiene.py, watchdog.sh, axes/)
+#   skill          -> ~/.claude/skills/run-spec/   (SKILL.md, QUEUE.md, tickets.py, hygiene.py, watchdog.sh, axes/, guides/)
 #   agents         -> ~/.claude/agents/            (the five run-spec agents)
 #   follow-up-issue-> ~/.claude/skills/follow-up-issue/
 # Installs from HEAD with core.autocrlf=false, so a CRLF working tree never reaches the installed files.
-# ponytail: the install path is fixed because SKILL.md step 5b runs ~/.claude/skills/run-spec/watchdog.sh by absolute path.
 set -euo pipefail
 
 repo=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
