@@ -1,5 +1,7 @@
+import collections
 import importlib.util
 import os
+import random
 import subprocess
 import sys
 import tempfile
@@ -13,13 +15,15 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def notice(name, style, width):
-    body = ["Copyright (c) 2026 Acme Corp", ""]
+def notice(name, style, width, holder="Acme Corp", year=2026):
+    body = [f"Copyright (c) {year} {holder}", ""]
     for para in MODULE.LICENSES[name].split("\n\n"):
-        body += textwrap.wrap(para, width) + [""]
+        body += textwrap.wrap(para, width, break_long_words=False) + [""]
     body = body[:-1]
     if style == "block":
         return "/*\n" + "".join(f" * {line}".rstrip() + "\n" for line in body) + " */\n"
+    if style == "html":
+        return "<!--\n" + "".join(f"  {line}".rstrip() + "\n" for line in body) + "-->\n"
     return "".join(f"{style} {line}".rstrip() + "\n" for line in body)
 
 
@@ -173,9 +177,13 @@ def commit(repo, files, msg, remove=()):
     return git(repo, "rev-parse", "HEAD")
 
 
-def hygiene(repo, *args):
-    r = subprocess.run([sys.executable, "-I", str(HYGIENE), *args], cwd=repo, env=ENV, capture_output=True, text=True)
+def gate(script, repo, *args):
+    r = subprocess.run([sys.executable, "-I", str(script), *args], cwd=repo, env=ENV, capture_output=True, text=True)
     return r.returncode, r.stdout.splitlines(), r.stderr.splitlines()
+
+
+def hygiene(repo, *args):
+    return gate(HYGIENE, repo, *args)
 
 
 with tempfile.TemporaryDirectory() as tmp:
@@ -250,5 +258,232 @@ with tempfile.TemporaryDirectory() as tmp:
     head = commit(repo, MOVE_HEAD, "head", remove=["old.ts"])
     assert "R" in git(repo, "diff", "--name-status", "-M", base, head, "--", "old.ts", "new.ts")
     assert hygiene(repo, base, head) == (1, MOVE_EXPECTED, []), hygiene(repo, base, head)
+
+
+PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
+PROPERTY_CASES = 300
+WORDS = ("retries cache because upstream drops calls timeout queue parser backoff flaky renders avatar slow billing "
+         "rounds sums bundler widget gadget ledger socket").split()
+HOLDERS = ("Acme Corp", "Widget Works Ltd", "Gadget Labs", "Ledger Socket Inc", "Parser Guild")
+Lang = collections.namedtuple("Lang", "ext statements comments notices strings markers", defaults=((), ()))
+
+LANGS = (
+    Lang(
+        "ts",
+        statements=("const {name} = {number};", 'let {name}: string = "{phrase}";',
+                    "export function {name}({other}: number) {{\n  return {other} / {number};\n}}",
+                    "if ({name} > {number}) {{\n  {other}();\n}}", "const {name} = `{phrase} ${{{other}}}`;",
+                    "{name}.push({other}, {number});", "import {{ {name} }} from './{other}';"),
+        comments=("// {phrase}", "/* {phrase} */", "/** {phrase} */"),
+        notices=("//", "block"),
+        strings=('const {name} = "{prefix}{marker}{suffix}";', "const {name} = '{prefix}{marker}{suffix}';",
+                 "const {name} = `{prefix}{marker}{suffix} ${{{other}}} {prefix}{marker}`;",
+                 'const {name} = "{prefix}\\"{marker}{suffix}";',
+                 "export default {{ {name}: '{prefix}{marker}{suffix}', {other}: {number} }};",
+                 'console.log("{prefix}{marker}{suffix}", {number});'),
+        markers=("//", "/*")),
+    Lang(
+        "java",
+        statements=("int {name} = {number};", 'String {name} = "{phrase}";',
+                    "public void {name}() {{\n  {other}({number});\n}}", "if ({name} > {number}) {{\n  {other}();\n}}"),
+        comments=("// {phrase}", "/* {phrase} */", "/** {phrase} */"),
+        notices=("//", "block")),
+    Lang(
+        "go",
+        statements=("package {name}", "func {name}({other} int) int {{\n\treturn {other} / {number}\n}}",
+                    "var {name} = {number}", 'fmt.Println("{phrase}")', "if {name} > {number} {{\n\t{other}()\n}}"),
+        comments=("// {phrase}", "/* {phrase} */"),
+        notices=("//",)),
+    Lang(
+        "css",
+        statements=(".{name} {{\n  margin: {number}px;\n}}", "#{other} .{name} {{ color: red; }}",
+                    "@media (min-width: {number}px) {{\n  .{name} {{ display: none; }}\n}}"),
+        comments=("/* {phrase} */",),
+        notices=("block",)),
+    Lang(
+        "html",
+        statements=("<p>{phrase}</p>", '<div class="{name}">', "</div>", '<a href="/{name}">{phrase}</a>',
+                    "<ul>\n  <li>{phrase}</li>\n</ul>"),
+        comments=("<!-- {phrase} -->",),
+        notices=("html",)),
+    Lang(
+        "sh",
+        statements=("{name}={number}", 'echo "{phrase}"', 'if [ "$1" = "{name}" ]; then\n  {other} {number}\nfi',
+                    "{name}() {{\n  echo {number}\n}}", "export {name}={other}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('echo "{prefix}{marker}{suffix}"', "echo '{prefix}{marker}{suffix}'",
+                 '{name}="{prefix}{marker}{suffix}"', "printf '%s\\n' \"{prefix}{marker}{suffix}\"",
+                 'if [ "$1" = "{prefix}{marker}{suffix}" ]; then'),
+        markers=("#", "//")),
+    Lang(
+        "sql",
+        statements=("SELECT {name}, {other} FROM {name} WHERE {name} > {number};",
+                    "INSERT INTO {name} VALUES ({number}, '{phrase}');",
+                    "UPDATE {name} SET {other} = {number} WHERE id = {number};",
+                    "SELECT\n  {name},\n  {other}\nFROM {name};"),
+        comments=("-- {phrase}",),
+        notices=("--",),
+        strings=("SELECT '{prefix}{marker}{suffix}' AS {name};",
+                 "INSERT INTO {name} VALUES ('{prefix}{marker}{suffix}', {number});",
+                 "UPDATE {name} SET {other} = '{prefix}''{marker}{suffix}' WHERE id = {number};",
+                 "SELECT {name} FROM {other} WHERE {name} LIKE '%{marker}%';"),
+        markers=("--",)),
+    Lang(
+        "py",
+        statements=("{name} = {number}", '{name} = "{phrase}"', "def {name}({other}):\n    return {other} + {number}",
+                    "if {name} > {number}:\n    {other} = {name}", "print({name}, {other})",
+                    "class {name}:\n    {other} = {number}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('{name} = "{prefix}{marker}{suffix}"', "{name} = '{prefix}{marker}{suffix}'",
+                 '{name} = f"{prefix}{marker}{suffix} {{{other}}}"', '{name} = r"{prefix}{marker}{suffix}"',
+                 '{name} = b"{prefix}{marker}{suffix}"', '{name} = """{prefix}{marker}{suffix}"""',
+                 'print("{prefix}{marker}{suffix}", {number})', '{name} = "{prefix}\\"{marker}{suffix}"',
+                 '{name} = {{"{other}": "{prefix}{marker}{suffix}"}}'),
+        markers=("#", "--", "/*")),
+    Lang(
+        "rb",
+        statements=("{name} = {number}", 'puts "{phrase}"', "def {name}({other})\n  {other} + {number}\nend",
+                    "if {name} > {number}\n  {other}\nend"),
+        comments=("# {phrase}",),
+        notices=("#",)),
+    Lang(
+        "yaml",
+        statements=("{name}: {number}", '{name}: "{phrase}"', "{name}:\n  {other}: {number}\n  items:\n    - {phrase}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('{name}: "{prefix}{marker}{suffix}"', "{name}: '{prefix}{marker}{suffix}'",
+                 '- "{prefix}{marker}{suffix}"', '  {name}: "{prefix}{marker}{suffix}"',
+                 '{name}: ["{prefix}{marker}{suffix}", {number}]'),
+        markers=("#",)),
+)
+STRING_LANGS = tuple(lang for lang in LANGS if lang.strings)
+NOTICE_LANGS = tuple(lang for lang in LANGS if lang.notices)
+
+
+def ident(rng):
+    return rng.choice(WORDS) + str(rng.randint(0, 99))
+
+
+def phrase(rng):
+    return " ".join(rng.choice(WORDS) for _ in range(rng.randint(1, 5)))
+
+
+def fill(rng, template, markers=()):
+    return template.format(name=ident(rng), other=ident(rng), number=rng.randint(0, 999), phrase=phrase(rng),
+                           marker=rng.choice(markers or ("",)),
+                           prefix=rng.choice(("", phrase(rng) + " ", ident(rng) + ":")),
+                           suffix=rng.choice(("", " " + phrase(rng), ident(rng))))
+
+
+def source_lines(rng, lang, templates):
+    lines = []
+    for _ in range(rng.randint(1, 12)):
+        lines += fill(rng, rng.choice(templates), lang.markers).split("\n")
+        if rng.random() < 0.2:
+            lines.append("")
+    return lines
+
+
+def source(rng, lang, templates=None):
+    return "\n".join(source_lines(rng, lang, templates or lang.statements)) + "\n"
+
+
+def licensed_source(rng, lang):
+    text = notice(rng.choice(sorted(MODULE.LICENSES)), rng.choice(lang.notices), rng.randint(1, 200),
+                  rng.choice(HOLDERS), rng.randint(1990, 2026))
+    if rng.random() < 0.5:
+        text = text.replace("http://", "https://")
+    return text + source(rng, lang)
+
+
+def generated_files(rng, languages, make_text):
+    files = {}
+    for i in range(PROPERTY_CASES):
+        lang = rng.choice(languages)
+        files[f"case{i:03d}.{lang.ext}"] = make_text(lang)
+    return files
+
+
+def reported_in_repo(script, files, base_files=None):
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        git(repo, "init", "-q", "-b", "main")
+        base = commit(repo, {"keep.txt": "x\n", **(base_files or {})}, "base")
+        head = commit(repo, files, "head")
+        return gate(script, repo, base, head)
+
+
+def unexpected_output(script, files):
+    code, out, err = reported_in_repo(script, files)
+    shown = [f"{line}\n{files.get(line.split(':')[0], '')}" for line in out[:3]]
+    return [] if (code, out, err) == (0, [], []) else [f"exit {code}, stderr {err}", *shown]
+
+
+def no_comment_tokens(rng, script):
+    return unexpected_output(script, generated_files(rng, LANGS, lambda lang: source(rng, lang)))
+
+
+def marker_inside_string(rng, script):
+    files = generated_files(rng, STRING_LANGS, lambda lang: source(rng, lang, lang.statements + lang.strings * 3))
+    return unexpected_output(script, files)
+
+
+def licence_notice_any_width(rng, script):
+    return unexpected_output(script, generated_files(rng, NOTICE_LANGS, lambda lang: licensed_source(rng, lang)))
+
+
+def added_comment_reported(rng, script):
+    base_files, head_files, expected = {}, {}, []
+    for i in range(PROPERTY_CASES):
+        lang = rng.choice(LANGS)
+        path, lines = f"case{i:03d}.{lang.ext}", source_lines(rng, lang, lang.statements)
+        at = rng.randint(0, len(lines))
+        comment = " " * rng.choice((0, 0, 2, 4)) + fill(rng, rng.choice(lang.comments))
+        base_files[path] = "\n".join(lines) + "\n"
+        head_files[path] = "\n".join(lines[:at] + [comment] + lines[at:]) + "\n"
+        expected.append(f"{path}:{at + 1}: comment: {comment.strip()}")
+    code, out, err = reported_in_repo(script, head_files, base_files)
+    missing = sorted(set(expected) - set(out))
+    return [] if (code, out, err) == (1, sorted(expected), []) else [
+        f"exit {code}, stderr {err}, {len(out)} of {len(expected)} lines reported", *missing[:3]]
+
+
+PROPERTIES = {"no-comment-tokens": no_comment_tokens, "marker-inside-string": marker_inside_string,
+              "licence-notice-any-width": licence_notice_any_width, "added-comment-reported": added_comment_reported}
+
+
+def run_properties(script, seed):
+    return {name: prop(random.Random(f"{seed}/{name}"), script) for name, prop in PROPERTIES.items()}
+
+
+def failure_report(results, seed):
+    return [f"property {name} failed with seed {seed}; rerun with RUN_SPEC_PROPERTY_SEED={seed}\n" + "\n".join(details)
+            for name, details in results.items() if details]
+
+
+REPORTS_EVERY_FILE = (
+    "import subprocess, sys\n"
+    "diff = subprocess.run(['git', 'diff', '--name-only', f'{sys.argv[1]}...{sys.argv[2]}'],\n"
+    "                      capture_output=True, text=True)\n"
+    "print('\\n'.join(f'{path}:1: comment: x' for path in diff.stdout.split()))\n"
+    "sys.exit(1)\n"
+)
+
+with tempfile.TemporaryDirectory() as tmp:
+    broken_gate = Path(tmp) / "hygiene.py"
+    broken_gate.write_text(REPORTS_EVERY_FILE)
+    failed = run_properties(broken_gate, 7)
+    assert all(failed.values()), failed
+    assert all("with seed 7;" in text for text in failure_report(failed, 7)), failure_report(failed, 7)
+    assert failed == run_properties(broken_gate, 7)
+    assert failed != run_properties(broken_gate, 8)
+
+results = run_properties(HYGIENE, PROPERTY_SEED)
+for name, details in results.items():
+    print(f"property {name}: {PROPERTY_CASES} cases, seed {PROPERTY_SEED}, {'FAILED' if details else 'passed'}")
+if any(results.values()):
+    sys.exit("\n\n".join(failure_report(results, PROPERTY_SEED)))
 
 print("ok")
