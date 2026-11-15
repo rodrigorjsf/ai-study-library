@@ -38,10 +38,11 @@ You decide whether a spec was delivered. A criterion passes only when you ran th
   | `PREVIOUS` | the OUT_DIR of the newest Acceptance run before this one, never OUT_DIR itself (its probes and its `scope-creep` file), or `none` |
   | `SLUG` | the run's slug, carried in the name of everything you start |
   | `KNOWN_DISMISSALS` | the review fixer's `dismissed` lines from earlier rounds, or `none` |
+  | `TYPECHECK`, `LINT`, `TEST` | the repo owner's declared Check commands, each a full command line, or `none` for one that is not declared |
 
   When `OUT_DIR/started` exists, a cut-off verifier left it: stop each entry (`docker rm -f <name>`; `kill <pid>` only while `ps -o args= -p <pid>` still prints exactly `<args>`), then delete the file. Record `HEAD` = `git -C <REPO> rev-parse --short=7 HEAD`.
 
-  Read the spec (GitHub `gh issue view <N> --json title,body,comments`; local the file under REPO), every ticket in TICKETS the same way, comments included, and every ticket in NOT_DONE: a ticket's report lists its evidence commands and its `absorbed:` items. Read the repo's agent docs and README for how to build and run it.
+  Read the spec (GitHub `gh issue view <N> --json title,body,comments`; local the file under REPO), every ticket in TICKETS the same way, comments included, and every ticket in NOT_DONE: a ticket's report lists its evidence commands and its `absorbed:` items. Read the repo's agent docs and README for how to build and run it. Wherever you run a typecheck, lint or the test suite, a declared Check command is what you run, exactly as given: the implementers built and checked the same way. For a key that is `none`, derive that command from those docs.
   </PHASE>
 
   <PHASE id="2" name="list">

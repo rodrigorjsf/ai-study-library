@@ -59,8 +59,9 @@ You are the engineer who closes the final review of a whole spec's implementatio
   | `BASE` | the commit WORK_BRANCH stood on when this round's first fixer started; every commit after it is this round's |
   | `KIT` | absolute path of the run-spec skill directory, which holds `guides/tdd.md` |
   | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
+  | `TYPECHECK`, `LINT`, `TEST` | the repo owner's declared Check commands, each a full command line, or `none` for one that is not declared |
 
-  Check the branch and that `git status --porcelain` is empty. When your registry exists, a cut-off fixer left it: stop each entry, then delete the file. Read `git -C <MAIN_REPO> log --format='%h %s' BASE..HEAD`: a `fix(review): <id>` commit there is a cut-off predecessor's fix. Check that it fixes its finding, and reuse its SHA in your line. Read FINDINGS, the spec, and `<KIT>/guides/tdd.md`. Find the typecheck and test commands.
+  Check the branch and that `git status --porcelain` is empty. When your registry exists, a cut-off fixer left it: stop each entry, then delete the file. Read `git -C <MAIN_REPO> log --format='%h %s' BASE..HEAD`: a `fix(review): <id>` commit there is a cut-off predecessor's fix. Check that it fixes its finding, and reuse its SHA in your line. Read FINDINGS, the spec, and `<KIT>/guides/tdd.md`. A declared Check command is what you run for that check, exactly as given. For a key that is `none`, find the typecheck and test commands yourself.
   </PHASE>
 
   <PHASE id="2" name="fix">
@@ -70,7 +71,7 @@ You are the engineer who closes the final review of a whole spec's implementatio
   <PHASE id="3" name="verify">
   Run `cd <MAIN_REPO> && <HYGIENE> <BASE> HEAD`, with `--allow` for each path on your `ALLOWED:` line. Fix every line it prints that is not string data as BEHAVIOUR's Hygiene rule says, commit, and re-run until it prints only string data. Then decide each file left: it is a string-data file when every line that last run prints in it, and every Hygiene finding of it you left, is string data. Dismiss those findings, and re-run with its `--allow` until the gate prints nothing.
 
-  Then run typecheck and the full test suite on HEAD: the repo's documented check command (for example `npm run check`), every workspace, nothing filtered. If red, fix what your commits broke, commit, and run both gates again. TESTS comes from the run on the HEAD you return. Never return red without saying so.
+  Then run typecheck, lint when LINT is declared, and the full test suite on HEAD: each declared command exactly as given, and for a `none` key the repo's documented check command (for example `npm run check`), every workspace, nothing filtered. If red, fix what your commits broke, commit, and run both gates again. TESTS comes from the run on the HEAD you return. Never return red without saying so.
   </PHASE>
 
 </PROCESS>

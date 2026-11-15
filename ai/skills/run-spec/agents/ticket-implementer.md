@@ -35,7 +35,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
 - **NEVER** poll for a subagent's end. Reviewer subagents run in the background, and their completion arrives as a notification that resumes you: end your turn and wait for it. No `until …; do sleep …; done` loop, no `grep` for `stop_reason` / `end_turn` in a transcript or `.output` file (that string never appears there, so such a loop spins forever and outlives you), no `Monitor` on those files. Before the Output block, no background command you started may still be running.
 - **EVERY** commit on this branch carries the trailers `Ticket: <TICKET_ID>` and `Spec: <SLUG>` (plus `Refs: #<n>` in GitHub mode), added with `--trailer`, never with `-m`: git parses trailers only from the final paragraph. The orchestrator detects finished tickets from these trailers.
 - **Logs are ticket-private.** Parallel ticket agents share the session scratchpad: write every log, probe script, and scratch file under `<scratchpad>/t<id>/`, never in WORKTREE. Run a long suite with `run_in_background` on the bare command, redirected to that log, ending in `; echo EXIT=$?` (a repo script that does this, such as `npm run check:log`, counts). Its exit notification is the signal: a `&` inside the command, or a `| tail` / `| grep` after it, ends the call at once or reports the wrong exit code.
-- **EVERY** "done" claim maps to command output captured in this run: full test suite green, typecheck green, HYGIENE silent, every criterion's evidence, `git -C <WORKTREE> status --porcelain` empty.
+- **EVERY** "done" claim maps to command output captured in this run: full test suite green, typecheck green, lint green when declared, HYGIENE silent, every criterion's evidence, `git -C <WORKTREE> status --porcelain` empty.
 </HARD_RULES>
 
 <PROCESS>
@@ -61,6 +61,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   | `CONTEXT_HANDOFFS` | zero or more absolute paths: handoffs of blocker tickets, the last integration summary, or a prior failed attempt of this ticket |
   | `HYGIENE` | the hygiene gate: `cd <WORKTREE> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
   | `KIT` | absolute path of the run-spec skill directory, which holds `guides/tdd.md` and the review briefs under `axes/` |
+  | `TYPECHECK`, `LINT`, `TEST` | the repo owner's declared Check commands, each a full command line, or `none` for one that is not declared |
   | `RESUME` | optional; `true` when an earlier run of this same ticket was cut off by a session drop |
 
   1. When the registry exists, an earlier run of this ticket left it: stop each entry by the registry rule (HARD_RULES), then delete the file. Check `git -C <WORKTREE> branch --show-current` equals BRANCH, and, unless RESUME is `true`, that `git -C <WORKTREE> rev-parse HEAD` equals BASE_SHA. On mismatch, go to phase 7 with the failure reason.
@@ -69,13 +70,13 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   3. Read the spec the same way. Note its `Testing Decisions` section.
   4. Read every CONTEXT_HANDOFFS file. A prior failed attempt of this ticket tells you what not to repeat.
   4b. Install dependencies when WORKTREE has a lockfile but no installed packages (a fresh worktree has none): for example `package-lock.json` without `node_modules/` → `npm ci --prefer-offline`, prefixed with `mise exec --` when the repo has a `mise.toml`.
-  5. Read the repo's agent docs if present: `CLAUDE.md`, `AGENTS.md`, `GLOSSARY.md` (`CONTEXT.md` in a repo that predates the rename), `docs/agents/*.md`, `docs/adr/`. Find the typecheck and test commands (package manifest, Makefile, CLAUDE.md), and how to build and run the public entry point.
+  5. Read the repo's agent docs if present: `CLAUDE.md`, `AGENTS.md`, `GLOSSARY.md` (`CONTEXT.md` in a repo that predates the rename), `docs/agents/*.md`, `docs/adr/`. A declared Check command is what you run for that check, exactly as given. For a key that is `none`, find the typecheck and test commands yourself (package manifest, Makefile, CLAUDE.md), and run no separate lint. Find how to build and run the public entry point.
   </PHASE>
 
   <PHASE id="2" name="build-test-first">
   Read `<KIT>/guides/tdd.md`. Write down the seams under test (from the spec, or chosen per BEHAVIOUR). Then build per the guide: one vertical red → green slice at a time, per acceptance criterion.
 
-  Run typecheck and the single affected test file after every slice.
+  Run typecheck and the single affected test file after every slice: a declared TEST narrows to that file through the test runner's own file argument.
   </PHASE>
 
   <PHASE id="3" name="verify-commit-prove">
@@ -88,10 +89,10 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
 
      Commit before the review: the reviewers diff `BASE_SHA...HEAD`, so they cannot see uncommitted work, and an empty diff leaves them nothing to review. A DONE ticket lands at least one commit with the `Ticket:` trailer, because the oracle marks a ticket done only through that trailer: when the criteria already hold and nothing changes, commit `git -C <WORKTREE> commit --allow-empty -m "chore(<scope>): <ticket title> already holds"` with the same trailers, skip phase 4, and prove the criteria in step 4.
   2. Run `cd <WORKTREE> && <HYGIENE> <BASE_SHA> HEAD`, with `--allow <path>` only for a Markdown file the ticket or spec names, or for a file whose every line it still prints is string data, not a comment (a line deletion cannot fix). Fix every other line it prints: delete the comment, or delete the file and carry what it said into the report. Commit, and re-run until it prints nothing.
-  3. Run typecheck and the full test suite on HEAD. Both must be green. When you change anything to get there, commit and return to step 2. Record `GATED` = `git -C <WORKTREE> rev-parse --short=7 HEAD`.
+  3. Run typecheck, lint when LINT is declared, and the full test suite on HEAD, each declared command exactly as given and unfiltered. All must be green. When you change anything to get there, commit and return to step 2. Record `GATED` = `git -C <WORKTREE> rev-parse --short=7 HEAD`.
   4. Prove every acceptance criterion through the public entry point: tier A at least, B only when the criterion has no observable surface. Each criterion's evidence is one command that stands alone, so a reviewer can re-run it after you stopped everything: it builds or starts what it needs, probes under `timeout`, and stops what it started. When it needs a running server, that command is a probe script under `<scratchpad>/t<id>/`. Keep each command with its decisive output. A criterion you cannot exercise here is UNVERIFIED, naming what it needs. A criterion that fails is a bug: return to phase 2 for it.
 
-  Done when typecheck, the suite, and HYGIENE last ran on GATED, which is HEAD, every criterion has a command and its decisive output from it, and nothing you started is still running.
+  Done when typecheck, the suite, lint when declared, and HYGIENE last ran on GATED, which is HEAD, every criterion has a command and its decisive output from it, and nothing you started is still running.
   </PHASE>
 
   <PHASE id="4" name="review-and-fix">

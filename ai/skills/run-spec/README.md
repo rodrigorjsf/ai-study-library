@@ -121,7 +121,7 @@ The PR body uses the ticket report's sections, less Commits: `## Summary` (the S
 | Prerequisite | Why |
 |---|---|
 | In the target repo: `docs/agents/issue-tracker.md` | Its heading picks the tracker: `# Issue tracker: GitHub` or `# Issue tracker: Local Markdown`. See [Input format](#input-format). |
-| In the target repo, optional: `docs/agents/run-spec.md` | A `max-parallel: <N>` line sets the wave size (default 3). |
+| In the target repo, optional: `docs/agents/run-spec.md` | A `max-parallel: <N>` line sets the wave size (default 3). The optional lines `typecheck: <command>`, `lint: <command>` and `test: <command>` declare the [Check commands](#check-commands). |
 | In the target repo, local tracker: the spec's `issues/` committed | Worktrees see only committed files. |
 | `git`, `python3`; `gh` for the GitHub tracker and for PRs | Branches, worktrees, the oracle, the tracker |
 | `rsync`, on the machine that runs `install.sh` | The install copies the skill with `rsync --delete` |
@@ -153,7 +153,22 @@ What the agents read from that input:
 - the spec's `Testing Decisions` section, when present: the seams the implementer and the fixer test at;
 - the spec's user stories: the acceptance verifier runs each one as a scenario;
 - the spec's out-of-scope list: the triager's scope check;
-- optional `docs/agents/triage-labels.md`: maps the triage verdicts to label strings; without it, each verdict's name is its label.
+- optional `docs/agents/triage-labels.md`: maps the triage verdicts to label strings; without it, each verdict's name is its label;
+- optional `docs/agents/run-spec.md`: the [Check commands](#check-commands) every implementer, integrator, verifier and fixer runs.
+
+#### Check commands
+
+The repository owner declares the typecheck, lint and test commands once, as lines of `docs/agents/run-spec.md` that start at the first column:
+
+```
+typecheck: npm run typecheck
+lint: npm run lint
+test: npm test
+```
+
+Each line is optional, and a repository without lint declares only the other two. The dispatcher reads them in step 1, the way it reads `max-parallel`: the first line that starts with `typecheck:`, `lint:` or `test:` gives that key's command, with its line ending and surrounding spaces dropped. It passes them to every `ticket-implementer`, `wave-integrator`, `acceptance-verifier` and `review-fixer` it spawns as the prompt lines `TYPECHECK: <command>`, `LINT: <command>` and `TEST: <command>`.
+
+An agent runs a declared command exactly as given, unfiltered, as the check it names. A key that is not declared, or has no command after its colon, is passed as `none`, and the agent derives that command from the package manifest, the Makefile and the agent docs, as before; a `none` lint means no separate lint run. A target without `docs/agents/run-spec.md` passes `none` for all three, and runs as before.
 
 ### Run records (`$STATE` = `<git-common-dir>/run-spec/<slug>`, untracked)
 
@@ -200,6 +215,7 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 | Read-only reviewer | `tools: Read, Grep, Glob, Bash` in `ticket-reviewer.md`; Bash can still write, so the rest is its prompt rule | No `tools:` field, and `ticket-reviewer.md` sets no `readonly` on purpose: Cursor's `readonly` blocks state-changing shell commands, and the per-ticket Spec reviewer re-runs the implementer's evidence commands | No enforced read-only reviewer in Cursor: only the prompt keeps a reviewer from editing |
 | Acceptance verifier | `tools: Bash, Read, Grep, Glob, Write`, no `readonly` | no `readonly`, so it can build, start servers and write probes | Writing only under `OUT_DIR` is a prompt rule in both harnesses: neither field scopes paths |
 | Hygiene gate | `python3 hygiene.py`, standard library only | same | none |
+| Check commands | The dispatcher reads `typecheck:`, `lint:` and `test:` from the target's `docs/agents/run-spec.md` with `tr` and `sed`, and passes them as `TYPECHECK`, `LINT` and `TEST` prompt lines | Same file and same prompt lines: they need no skill-directory variable and no harness feature | none |
 | Models | `claude-opus-5-5`, `claude-sonnet-5-5` with `effort:` | `inherit` or a Cursor model id (`claude-opus-5[effort=high]` form) | Claude Code model ids may not resolve in Cursor |
 | Resume | Step 3's recovery from git and STATE (red base, orphans, `main-owner`, owed triage), on every start | same: it uses only git and files | none |
 | Stall and overdue probes | `ListAgents`, `SendMessage`, background task notifications, `run_in_background` for the watchdog | A subagent is resumed by its agent ID in the parent's prompt ("Resume agent abc123 …"); no listing of running agents or message-to-running-agent tool is documented | The 5b probes and respawns are Claude Code-only, and `SKILL.md` has no Cursor branch for them |
