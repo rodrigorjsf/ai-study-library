@@ -1,5 +1,7 @@
 # Unified software-factory harness — a study
 
+> **Revision 2026-11-15:** this study predates the run-spec rework on branch `feat/run-spec-aaa`. `/run-spec` no longer depends on the mattpocock-skills plugin: it ships its own review briefs, its TDD guide and six agents (see [`ai/skills/run-spec/`](../../skills/run-spec/README.md)). So the 1.3.x dependency at §6 and open question 3 no longer apply to it. Its PR body already has the `pr` shape (`## Summary`, `## Evidence`, `## Merge Danger`), so the "replaces /run-spec's list-of-tickets body" line no longer describes a difference. The run-spec review is now six axes with an executing Acceptance axis, not two.
+
 > **Status: study, not a plan.** This document compares four sources, derives design principles, and sketches one way to combine them. It ends in **open questions**. No implementation plan exists yet, and none should be written before those questions are answered.
 >
 > **Inputs.** [01 ZazenCodes](01-zazencodes-software-factory.md) · [02 Austin Marchese](02-austin-marchese-harness-engineering.md) · [03 Matt Pocock](03-matt-pocock-skills-v1-3.md) · [04 `/run-spec`](04-run-spec-flow.md) · [06 Prototyping evidence](06-prototyping-evidence.md) · [07 Wayfinder assessment](07-wayfinder-assessment.md) · [08 Guardrails](08-guardrails.md) · [Claude 5.5 model selection](../models/claude-5-5-model-selection.md) · [State of practice, October 2026](../analysis/state-of-practice-2026-10.md).

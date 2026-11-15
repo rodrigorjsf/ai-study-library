@@ -1,5 +1,7 @@
 # Plan: Security, UX/AIX and Design axes in `/run-spec`, then import run-spec into this repo
 
+> **Superseded 2026-11-15:** this is the executed plan of PR #3. The kit has changed since then: no code-review skill spawns, no `readonly`, and no mattpocock prerequisite. See [README.md](README.md) revision (2) and [`ai/skills/run-spec/README.md`](../../skills/run-spec/README.md).
+
 Decisions and sources: [README.md](README.md) (pt-BR study). This plan is the execution order.
 
 ## Part A — add the three axes (edited in the repo copy, after a verbatim import commit; see B3)
