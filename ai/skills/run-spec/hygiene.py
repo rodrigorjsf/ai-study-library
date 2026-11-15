@@ -3,8 +3,8 @@
 
 Usage, from inside the repository: hygiene.py <base> <head> [--allow <path>]...
 
-Checks only what <base>...<head> adds. An added comment whose text equals a removed line's in the same file, or
-in its rename source, only moved or was re-indented and is not reported; n removed copies offset n added ones.
+Checks only what <base>...<head> adds. Every comment on an added or changed line is reported, whether the range
+wrote it or it existed before: a moved, re-indented or copied comment counts as added.
 Prints `<path>:<line>: comment: <text>` or `<path>: markdown: added Markdown file` per violation and exits 1;
 exits 0 and prints nothing when clean; exits 2 with one stderr line on a usage or git error.
 """
@@ -16,7 +16,6 @@ import subprocess
 import sys
 import tokenize
 import warnings
-from collections import Counter
 from pathlib import PurePosixPath
 
 C_LIKE = "js jsx ts tsx mjs cjs mts cts java kt kts scala groovy go rs c h cc cpp hpp cs swift dart php scss less astro"
@@ -111,7 +110,7 @@ def git(*args):
 
 
 def added_lines(patch):
-    files, removed, path, n, old_left, new_left = {}, {}, None, 0, 0, 0
+    files, path, n, old_left, new_left = {}, None, 0, 0, 0
     for line in patch.split("\n"):
         if old_left > 0 or new_left > 0:
             tag = line[:1]
@@ -119,7 +118,6 @@ def added_lines(patch):
                 files[path].append((n, line[1:].rstrip("\r")))
                 n, new_left = n + 1, new_left - 1
             elif tag == "-":
-                removed[path].append(line[1:].rstrip("\r"))
                 old_left -= 1
             elif tag == " ":
                 n, old_left, new_left = n + 1, old_left - 1, new_left - 1
@@ -129,10 +127,9 @@ def added_lines(patch):
             name = line[4:].rstrip("\t")
             path = (ast.literal_eval(name) if name.startswith('"') else name)[2:]
             files.setdefault(path, [])
-            removed.setdefault(path, [])
         elif path is not None and (m := HUNK.match(line)):
             old_left, n, new_left = int(m[1] or 1), int(m[2]), int(m[3] or 1)
-    return files, removed
+    return files
 
 
 def created(fields):
@@ -228,31 +225,11 @@ def header(text, markers):
     return top
 
 
-def unmatched(old, key):
-    if old[key] > 0:
-        old[key] -= 1
-        return False
-    return True
+def marker_hits(markers, lines):
+    return {n: s for n, text in lines if (s := text.strip()).startswith(markers) and not exempt(n, s)}
 
 
-def marker_hits(markers, lines, removed):
-    old = Counter(s.strip() for s in removed)
-    return {n: s for n, text in lines
-            if (s := text.strip()).startswith(markers) and not exempt(n, s) and unmatched(old, s)}
-
-
-def comment_tokens(line):
-    found = []
-    try:
-        for t in tokenize.generate_tokens(io.StringIO(line).readline):
-            if t.type == tokenize.COMMENT:
-                found.append(t.string.strip())
-    except (SyntaxError, ValueError, tokenize.TokenError, RecursionError):
-        pass
-    return found
-
-
-def python_hits(head, path, lines, removed):
+def python_hits(head, path, lines):
     text = git("show", f"{head}:{path}")
     src = [s.rstrip("\r") for s in text.split("\n")]
     added = {n for n, _ in lines}
@@ -262,21 +239,15 @@ def python_hits(head, path, lines, removed):
             tree = ast.parse(text)
             tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
     except (SyntaxError, ValueError, tokenize.TokenError, RecursionError):
-        return marker_hits(("#",), lines, removed)
-    old, old_lines = Counter(c for line in removed for c in comment_tokens(line)), Counter(s.strip() for s in removed)
+        return marker_hits(("#",), lines)
     hits = {t.start[0]: src[t.start[0] - 1] for t in tokens
-            if t.type == tokenize.COMMENT and t.start[0] in added and not exempt(t.start[0], t.string)
-            and unmatched(old, t.string.strip())}
+            if t.type == tokenize.COMMENT and t.start[0] in added and not exempt(t.start[0], t.string)}
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.body:
             doc = node.body[0]
-            span = range(doc.lineno, doc.end_lineno + 1)
             if (isinstance(doc, ast.Expr) and isinstance(doc.value, ast.Constant) and isinstance(doc.value.value, str)
-                    and (new := Counter(src[i - 1].strip() for i in span if i in added))):
-                if new - old_lines:
-                    hits[doc.lineno] = src[doc.lineno - 1]
-                else:
-                    old_lines -= new
+                    and added.intersection(range(doc.lineno, doc.end_lineno + 1))):
+                hits[doc.lineno] = src[doc.lineno - 1]
     return hits
 
 
@@ -288,8 +259,8 @@ def main():
     a = ap.parse_args()
     rng = f"{a.base}...{a.head}"
     new_files = created(git("diff", "--name-status", "-z", "-M", "--diff-filter=AR", rng, "--").split("\0"))
-    files, removed = added_lines(git("diff", "-U0", "-M", "--no-color", "--no-ext-diff", "--src-prefix=a/",
-                                     "--dst-prefix=b/", "--diff-filter=d", rng, "--"))
+    files = added_lines(git("diff", "-U0", "-M", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/",
+                            "--diff-filter=d", rng, "--"))
     out = []
     for path in sorted(new_files | set(files)):
         parts = path.split("/")
@@ -306,11 +277,11 @@ def main():
             continue
         if path.lower().endswith((".py", ".pyi")):
             m = ("#",)
-            hits = python_hits(a.head, path, lines, removed[path])
+            hits = python_hits(a.head, path, lines)
         else:
             p = PurePosixPath(path)
             m = ("#",) if p.name in HASH_NAMES else MARKERS.get(p.suffix.lower()[1:])
-            hits = marker_hits(m, lines, removed[path]) if m else {}
+            hits = marker_hits(m, lines) if m else {}
         if hits:
             text = git("show", f"{a.head}:{path}")
             skip = header(text, m)

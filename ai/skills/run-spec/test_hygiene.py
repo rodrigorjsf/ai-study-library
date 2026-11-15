@@ -210,6 +210,7 @@ MOVE_BASE = {
     "dup.ts": "  // shared note\nexport const x = 1;\n",
     "dup.py": "x = 1  # shared note\n",
     "old.ts": "  // kept through the rename\n" + BODY,
+    "b.ts": "/**\n * Legacy adder.\n */\nexport function add(a: number, b: number) {\n  return a + b;\n}\n" + BODY,
 }
 MOVE_HEAD = {
     "f.ts": "export function f() {\n  if (x) {\n    // retries because the API drops calls\n    g();\n  }\n}\n",
@@ -222,13 +223,24 @@ MOVE_HEAD = {
     "dup.ts": "// shared note\nexport const x = 1;\n// shared note\n",
     "dup.py": "x = 2  # shared note\ny = 3  # shared note\n",
     "new.ts": "// kept through the rename\n" + BODY,
+    "b.ts": BODY + "/**\n * Multiplies because the billing API rounds sums.\n */\n"
+                   "export function mul(a: number, b: number) {\n  return a * b;\n}\n",
 }
 MOVE_EXPECTED = [
+    "a.py:1: comment: timeout = 60  # seconds",
+    "b.ts:9: comment: /**",
+    "dup.py:1: comment: x = 2  # shared note",
     "dup.py:2: comment: y = 3  # shared note",
+    "dup.ts:1: comment: // shared note",
     "dup.ts:3: comment: // shared note",
     "e.py:1: comment: x = 1  # new wording",
     "e.ts:1: comment: // new wording",
+    "f.ts:3: comment: // retries because the API drops calls",
+    'k.py:3: comment: """Doc."""',
+    "k.py:4: comment: # why",
     'k.py:8: comment: """',
+    "m.ts:3: comment: // first",
+    "new.ts:1: comment: // kept through the rename",
 ]
 
 with tempfile.TemporaryDirectory() as tmp:
