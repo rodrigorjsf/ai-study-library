@@ -8,16 +8,19 @@ This folder is the **source of truth** for the flow. The copy under `~/.claude` 
 
 ```mermaid
 flowchart TB
-    IN(["/run-spec #N | .scratch/slug [more specs] [--merge] [notes]"]) --> S1
+    IN(["/run-spec spec-issue or .scratch/slug, more specs, --merge, notes"]) --> S1
     S1["1. Resolve input<br/>tracker, SPEC, wave size P<br/>(QUEUE.md if several specs, --merge, notes)"] --> S2
-    S2["2. Resolve branch<br/>clean tree, WORK = spec/slug"] --> S3
-    S3["3. Recover orphans<br/>same-conversation resume, or<br/>merged / finished / unfinished WORK--id branches"] --> S4
+    S2["2. Resolve branch<br/>clean tree, WORK = spec/slug"] --> S3CC
+    S2 --> S3CU
+    S3CC["3. Recover orphans, Claude Code<br/>ListAgents + SendMessage resume,<br/>then WORK--id branch recovery"] --> S4
+    S3CU["3. Recover orphans, Cursor<br/>resume by agent ID in the prompt,<br/>then WORK--id branch recovery<br/>(untested)"] -.-> S4
     S4{{"4. ORACLE<br/>tickets.py"}}
     S4 -- "ready: first P ids" --> S5A
     S4 -- "ready and remaining empty,<br/>or only stuck ids" --> S6
     subgraph WAVE ["5. One wave"]
         S5A["5a. worktree per ticket<br/>+ codegraph init + offline install"] --> S5B
-        S5B["5b. ticket-implementer × P, in parallel<br/>+ watchdog.sh in background"] --> S5C
+        S5B["5b. ticket-implementer × P, in parallel"] --> S5C
+        S5B --- WD["watchdog.sh + task notifications<br/>Claude Code only"]
         S5C["5c. collect status blocks<br/>FAILED → attempt file"] --> S5D
         S5D["5d. integrate<br/>one ticket: fast-forward<br/>several: wave-integrator"] --> S5E
         S5E["5e. followup-triager<br/>attaches in-scope follow-ups to SPEC"]
@@ -39,16 +42,20 @@ flowchart LR
     CR["code-review skill<br/>(mattpocock-skills, pinned 1.3.1)"]
     CR --> STD["ticket-reviewer<br/>Standards"]
     CR --> SPC["ticket-reviewer<br/>Spec"]
-    D["run-spec dispatcher"] --> SEC["ticket-reviewer<br/>Security · axes/security.md"]
+    D["run-spec dispatcher"] --> CR
+    D --> SEC["ticket-reviewer<br/>Security · axes/security.md"]
     D --> G
     G -- match --> UX["ticket-reviewer<br/>UX/AIX · axes/ux-aix.md"]
     G -- no match --> SKIP["UX/AIX: skipped"]
     D --> DES["ticket-reviewer<br/>Design · axes/design.md"]
     STD & SPC & SEC & UX & SKIP & DES --> R["review-N.md"]
     R --> RT{"blocking axes clean?<br/>Standards, Spec,<br/>Security blocking"}
-    RT -- "no" --> FX["review-fixer → next round"]
-    RT -- "yes, advisory left" --> FX1["review-fixer once → step 7"]
+    RT -- "no" --> FX["review-fixer, then next round"]
+    RT -- "yes, advisory left" --> FX1["review-fixer once, then step 7"]
     RT -- "yes, nothing left" --> S7["step 7"]
+    subgraph CURSOR ["Cursor, outside run-spec"]
+        BB[".cursor/BUGBOT.md in the target repo<br/>links axes/*.md"] --> BOT["Bugbot on the PR,<br/>or /review-bugbot locally"]
+    end
 ```
 
 | Axis | Brief | Blocks the loop | Severity | Runs when |
@@ -89,6 +96,7 @@ Rounds 1 and 2 review the whole branch. Round 3 checks only round 2's fix commit
 | In the target repo, local tracker: the spec's `issues/` committed | Worktrees see only committed files. |
 | `git`, `python3`; `gh` for the GitHub tracker and for PRs | Branches, worktrees, the oracle, the tracker |
 | Optional: `codegraph`, `pnpm` | Step 5a indexes each worktree and installs offline. Both are skipped when absent. |
+| A permission mode that does not prompt (for example `"defaultMode": "auto"` in `~/.claude/settings.json`) | The run is AFK: a permission prompt for `git`, `gh`, `python3`, `pnpm`, `codegraph` or a test command stalls a subagent until the watchdog fires. |
 
 No hook, MCP server or `settings.json` entry is specific to this flow.
 
@@ -125,7 +133,7 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 | Install path | `~/.claude/skills/run-spec/`, `~/.claude/agents/` | Loads skills from `~/.claude/skills/` and subagents from `~/.claude/agents/` for compatibility ([skills](../../docs/cursor/skills/agent-skills-guide.md), [subagents](../../docs/cursor/subagents/subagents-guide.md)) | Same files, no second copy |
 | Invocation | `/run-spec` (`disable-model-invocation: true`) | `/` in Agent chat, then the skill name; attaches to one message | Not tested in Cursor |
 | How context reaches each agent | `KEY: value` prompts; `skills:` preloads `tdd` and `code-review` | Subagent prompt; `skills:` preloading is not documented for Cursor subagents | Implementers in Cursor may lack the preloaded skills |
-| Read-only reviewer | `tools: Read, Grep, Glob, Bash` | `readonly: true` (Cursor has no `tools:` field) | Both fields set in `ticket-reviewer.md`; Cursor's `readonly` also blocks state-changing shell commands |
+| Read-only reviewer | `tools: Read, Grep, Glob, Bash` | `readonly: true` (Cursor has no `tools:` field) | Both fields set in `ticket-reviewer.md`; Cursor's `readonly` also blocks state-changing shell commands. `readonly` is not a Claude Code field, and its docs do not say whether file-based subagents ignore unknown keys: check the first run's agent list |
 | Models | `claude-opus-5-5`, `claude-sonnet-5-5` with `effort:` | `inherit` or a Cursor model id (`claude-opus-5[effort=high]` form) | Claude Code model ids may not resolve in Cursor |
 | Resume, stall probe | `ListAgents`, `SendMessage`, background task notifications | A subagent is resumed by its agent ID in the parent's prompt ("Resume agent abc123 …"); no listing of running agents or message-to-running-agent tool is documented | Step 3's same-conversation resume (`ListAgents`) and the stall probe (`SendMessage` mid-run) are Claude Code-only |
 | Hooks | none used | none used | — |

@@ -201,14 +201,14 @@ Rounds 1 and 2 review the whole branch. Round 3 is a **verification round**: it 
      - `COMMITS`: `git log F..WORK --oneline`
      - `SPEC`
      - `ROUND`
-     - `KNOWN_DISMISSALS`: a path, or `none`
+     - `KNOWN_DISMISSALS`: the `dismissed` lines of every `review-*-fix.md`, inline, or `none`
      - in round 3, `VERIFY_ONLY` with the round-3 sentence above
 
    Take the reports as-is; the diff itself stays with the reviewers.
 2. Write the report verbatim to `$STATE/review-<r>.md`: the skill's aggregated report, then `## Security`, `## UX/AIX` (or its `skipped` line) and `## Design`, each as its reviewer returned it. In chat, print only `review <r>: Standards <x>, Spec <y>, Security <z>, UX/AIX <w|skipped>, Design <v>`, taking `z`, `w` and `v` from each section's `COUNT:` line. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
 3. Route by what the round found:
    - Every section reports zero findings → go to step 7.
-   - The blocking axes report zero findings (the skill's closing summary for Standards and Spec, plus `COUNT: 0 blocking` for Security), but advisory findings remain → run item 4 once, and item 5's triage if it applies. Then go to step 7 without a new round.
+   - The blocking axes report zero findings (the skill's closing summary for Standards and Spec, plus `COUNT: 0 blocking` for Security), but advisory findings remain → run item 4 once, and item 5's triage if it applies. Then go to step 7 without a new round, unless item 5's triage attached tickets: then item 5's route back to step 4 applies.
    - Otherwise → item 4.
 4. Run `git rev-parse WORK > $STATE/review-<r>-base`, spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `ROUND: <r>`, `FINDINGS: $STATE/review-<r>.md`, and write its status block to `$STATE/review-<r>-fix.md`.
 5. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves, and the next pass through step 6 reviews the branch as round `r` + 1. This holds after an advisory-only round too.

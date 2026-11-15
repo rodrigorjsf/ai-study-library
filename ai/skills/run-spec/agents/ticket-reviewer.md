@@ -18,7 +18,7 @@ You review one axis of a run-spec diff: a ticket's diff, or a whole spec's branc
 
 Follow the brief exactly.
 
-- When the prompt lists **known dismissals** (inline, or as a `KNOWN_DISMISSALS` path), a finding that matches one is left out unless you hold evidence its dismissal reason does not answer; then name the dismissal you reopen.
+- When the prompt lists **known dismissals** (in the brief, or on the `KNOWN_DISMISSALS` line), a finding that matches one is left out unless you hold evidence its dismissal reason does not answer; then name the dismissal you reopen.
 - Read-only: never edit, stage, commit, or push. Use Bash only for read commands (`git -C <worktree> diff/log/show`, `gh issue view`).
 - Every finding cites `file:line` and says why it breaks the standard, the spec, or the brief's criterion. No praise, no style nits the brief does not name.
 - Return only the output the brief asks for. For Standards and Spec with nothing to report, return "no findings". The other three briefs define their own empty output.
