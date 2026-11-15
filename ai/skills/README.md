@@ -14,6 +14,8 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 | [`verified-research`](verified-research/SKILL.md) | model-invoked | Primary-source research where every quote is confirmed against a saved copy of its source. |
 | [`html-presentation`](html-presentation/SKILL.md) | model-invoked | Standalone HTML deck from a study, following `DESIGN.md` when present; persists a claude.ai Design canvas as HTML. |
 | [`gauntlet-loop-claude-code`](gauntlet-loop-claude-code/SKILL.md) | model-invoked | Runs work through a gauntlet loop under Claude Code's ultracode: a separate critic grades every piece against a named bar each round, fix waves close what it finds, and a whole-repository read closes the loop. Claude Code only. |
+| [`run-spec`](run-spec/README.md) | user-invoked (`/run-spec`) | AFK execution of a `mattpocock-skills` spec's tickets: parallel waves in worktrees, follow-up triage, a five-axis final review (Standards, Spec, Security, UX/AIX, Design), PR. Ships its five agents and an `install.sh`. |
+| [`follow-up-issue`](follow-up-issue/SKILL.md) | model-invoked | Files a follow-up issue only for a suspicion or an owned external defect; everything else is absorbed into the running task. Used by `run-spec`'s agents. |
 
 The rest of this page documents `coding-standards`, `test-suite-review`, the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`) and `gauntlet-loop-claude-code`.
 
