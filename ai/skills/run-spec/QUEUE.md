@@ -12,11 +12,11 @@ Read this file when `$ARGUMENTS` names more than one spec, carries `--merge`, or
 - When the file exists and its spec lines name the same specs in the same order, this run resumes that queue. A `merging` line whose `gh pr view <PR URL> --json state -q .state` prints `MERGED` becomes `done`; any other `merging` spec runs again. Skip every spec marked `done`, and keep those lines as they are. When the current branch is the WORK of a `done` line, run `git switch DEFAULT` first. Then, when MERGE is true and the current branch is DEFAULT, run `git pull --ff-only`: a merge cut off before its cleanup left DEFAULT behind.
 - Otherwise write it anew, every spec `pending`.
 
-Then run steps 2–7 for the first spec not marked `done`. Each spec gets its own SPEC, slug, STATE and WORK. After each spec's step 7, rewrite its line: `done <PR URL> <WORK>` when MERGE is false, `held <PR URL> <WORK>` when its merge was held, so a later run retries it. A merge rewrites its own line (merge item 3).
+Then run steps 2–7 for the first spec not marked `done`. Each spec gets its own SPEC, slug, STATE and WORK. After each spec's step 7, rewrite its line: `held <PR URL> <WORK>` when the run has a halt reason or its merge was held, so a later run resumes it, else `done <PR URL> <WORK>` when MERGE is false. A merge rewrites its own line (merge item 3).
 
 ## Merge a spec's PR (step 7, MERGE true)
 
-A merge is **held** when any gate below fails. A held merge leaves the PR open, adds `merge held: <reason>` to the report, and stops the queue, because a later spec may build on this one. The rest of QUEUE goes into the report as `not started`.
+A merge is **held** when any gate below fails. A held merge leaves the PR open, adds `merge held: <reason>` to the report, and stops the queue (next section).
 
 1. **Run gate.** The run has no halt reason (a RED halt, `agent <label> lost`, or `paused by owner`), no skipped tickets, and no stuck ids. The newest Acceptance (step 7) exists and holds no FAIL or UNVERIFIED line, and the last `review-<N>-fix.md`, when one exists, does not read `STATUS: RED`. Otherwise hold: a spec merges only when every criterion passed on a green branch.
 2. **CI gate.** Run this from MAIN with `run_in_background`, then end the turn: its completion notification carries the exit code and the output. A `no checks reported` answer right after the PR opens can mean the checks have not registered yet, so the command retries it every 30 s for up to 2 minutes when `.github/workflows/` exists:
@@ -31,10 +31,10 @@ The merge closes the tickets through their `Closes #N` lines. The spec issue sta
 
 ## Next spec in the queue
 
-After the report for one spec, take the next spec of QUEUE that `queue.md` does not mark `done`. If MERGE was false, first run `git switch DEFAULT`, so the next spec branches from DEFAULT and not from the last spec's WORK. Then go back to step 1's SPEC rules and run steps 2–7 for it. A ticket blocked by an earlier spec's ticket that is still open (its PR was not merged) waits in the oracle as blocked, and the report lists it as stuck.
+After the report for one spec whose line reads `held`, stop the queue, because a later spec may build on this one: the rest of QUEUE goes into the report as `not started`. Otherwise take the next spec of QUEUE that `queue.md` does not mark `done`. If MERGE was false, first run `git switch DEFAULT`, so the next spec branches from DEFAULT and not from the last spec's WORK. Then go back to step 1's SPEC rules and run steps 2–7 for it. A ticket blocked by an earlier spec's ticket that is still open (its PR was not merged) waits in the oracle as blocked, and the report lists it as stuck.
 
 ## After the queue
 
 Once every spec in QUEUE has been reported, print one line listing each spec with its PR and merge outcome.
 
-If OWNER_NOTES ask for a skill or command to run after the queue (for example `/gauntlet-loop-claude-code`), invoke it with the Skill tool and pass OWNER_NOTES verbatim as its arguments. The dispatcher contract ends when that skill starts, and its own instructions take over. Without such a request, later turns fall under the contract's "After the report" rule.
+A stopped queue runs no skill after it. If OWNER_NOTES ask for a skill or command to run after the queue (for example `/gauntlet-loop-claude-code`), invoke it with the Skill tool and pass OWNER_NOTES verbatim as its arguments. The dispatcher contract ends when that skill starts, and its own instructions take over. Without such a request, later turns fall under the contract's "After the report" rule.

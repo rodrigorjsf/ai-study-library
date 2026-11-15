@@ -41,7 +41,7 @@ flowchart TB
     S5D -- "STATUS: RED: halt" --> S7
     S6["6. Final review, up to 3 rounds"] -- "a fixer's follow-ups attached" --> S4
     S6 --> S7
-    S7["7. Closing acceptance in its own verify-final-m<br/>when WORK moved past the newest Acceptance HEAD<br/>(skipped on a halt)<br/>PR body: Summary · Evidence · Merge Danger<br/>push, open PR; merge only with --merge, via QUEUE.md gates"] --> Q{more specs<br/>in QUEUE?}
+    S7["7. Closing acceptance in its own verify-final-m<br/>when WORK moved past the newest Acceptance HEAD<br/>(skipped on a halt)<br/>PR body: Summary · Evidence · Merge Danger<br/>push, open PR; merge only with --merge, via QUEUE.md gates"] --> Q{"more specs in QUEUE,<br/>and this spec not held<br/>(no halt, no held merge)?"}
     Q -- yes --> S1
     Q -- no --> END([report])
 ```
@@ -53,7 +53,7 @@ Every agent except `ticket-implementer` gets a `$STATE/running/<label>` marker a
 ```mermaid
 flowchart TB
     TOP["top of step 6<br/>round r-1's fixer cut off: re-run it<br/>then owed triage (5e)"] -- "triage attached tickets" --> S4["step 4"]
-    TOP --> SQ{"r > 3, or no commit since review-(r-1)-base,<br/>or round r-1 clean or its advisory fixes done?"}
+    TOP --> SQ{"r > 3, or no commit since review-(r-1)-base,<br/>or round r-1 clean, or its advisory fixes done<br/>and no attached ticket merged since?"}
     SQ -- yes --> S7["step 7"]
     SQ -- no --> D["run-spec dispatcher<br/>F, VERIFY_ONLY in rounds 2-3,<br/>KNOWN_DISMISSALS, TICKETS, NOT_DONE"]
     D --> ACC["acceptance-verifier<br/>Acceptance · runs every criterion"]
@@ -63,7 +63,7 @@ flowchart TB
     G -- match --> UX["ticket-reviewer<br/>UX/AIX · axes/ux-aix.md"]
     G -- no match --> SKIP["UX/AIX: skipped"]
     D --> DES["ticket-reviewer<br/>Design · axes/design.md"]
-    D --> HY["hygiene.py F WORK<br/>run by the dispatcher,<br/>--allow from ALLOWED: lines"]
+    D --> HY["hygiene.py, round 1's F to WORK<br/>whole branch, every round, run by the dispatcher,<br/>--allow from ALLOWED: lines"]
     ACC & STD & SEC & UX & SKIP & DES & HY --> R["review-r.md<br/>one COUNT: line per section"]
     R --> RT{"blocking count?<br/>Acceptance FAIL + scope creep,<br/>Standards, Security, Hygiene"}
     RT -- "zero, no advisory" --> S7
@@ -87,7 +87,7 @@ flowchart TB
 | Design | `ticket-reviewer` | [`axes/design.md`](axes/design.md) | no | Strong / Worth exploring / Speculative | always |
 | Hygiene | the dispatcher | [`hygiene.py`](hygiene.py) | yes | one line per comment line or Markdown file the range adds | always |
 
-Round 1 reviews the whole branch. Rounds 2 and 3 are verification rounds: the code-reading axes and Hygiene read only the commits since the previous fixer started (`VERIFY_ONLY`), and Acceptance re-runs every criterion. A fixer's follow-ups go through 5e's triage. When it attaches tickets, the run goes back to step 4, and the next pass reviews them as round `r`+1, after an advisory-only round too. No code-reading axis reads round 3's fixes, an advisory-only round's fixes, or the tickets round 3's triage attaches: each fixer's hygiene gate, each ticket's own review, and step 7's closing acceptance cover them.
+Round 1 reviews the whole branch. Rounds 2 and 3 are verification rounds: the code-reading axes read only the commits since the previous fixer started (`VERIFY_ONLY`); Acceptance re-runs every criterion and Hygiene re-checks the whole branch. A fixer's follow-ups go through 5e's triage. When it attaches tickets, the run goes back to step 4, and the next pass reviews them as round `r`+1, after an advisory-only round too. No code-reading axis reads round 3's fixes, the tickets round 3's triage attaches, or an advisory-only round's fixes when its triage attaches nothing: each fixer's hygiene gate, each ticket's own review, and step 7's closing acceptance cover them.
 
 The per-ticket review inside `ticket-implementer` stays two-axis: it spawns two `ticket-reviewer` agents, one on [`axes/standards.md`](axes/standards.md) with `SCOPE: ticket` and one on [`axes/spec.md`](axes/spec.md), whose Spec reviewer re-runs the implementer's evidence commands and checks their tier: a criterion with no evidence line, or a command that does not run the code through its public entry point, is a finding.
 
@@ -106,8 +106,8 @@ The PR body uses the ticket report's sections, less Commits: `## Summary` (each 
 | [`SKILL.md`](SKILL.md) | `~/.claude/skills/run-spec/` | The dispatcher: a passive router bound by a contract (only listed commands, subagent spawns, and its own STATE files; never reads code) |
 | [`QUEUE.md`](QUEUE.md) | same | Several specs in one run, `--merge` gates (run, CI, merge), owner notes, a skill to run after the queue |
 | [`tickets.py`](tickets.py) | same | The **oracle**. It reads ticket metadata, `Ticket:` commit trailers and attempt files, and prints `ready`/`remaining` as JSON. A script, not the model, decides what runs next. A ticket is done when its tracker marks it done, or when a commit with its `Ticket:` trailer is on WORK and not on the default branch: a trailer already on the default branch belongs to an earlier, merged run. A `Ticket:` trailer counts only when the commit's `Spec:` trailer is absent (older commits) or equals this spec's slug, so a branch stacked on another spec's unmerged commits does not borrow its local ids. At most 2 attempts per ticket. |
-| [`hygiene.py`](hygiene.py) | same | The **hygiene gate**: `hygiene.py <base> <head> [--allow <path>]...` prints each comment line the range adds, and each Markdown file it adds, including one renamed from a non-Markdown file, and exits 1, or exits 0 silently. An added Markdown file is reported in any directory, except a local tracker file under `.scratch/**/issues/`. Comments are not checked under a `node_modules/`, `vendor/` or `dist/` directory, nor in lockfiles. Tool directives are code, matched by family (`eslint-`, `@ts-`, `noqa`, `//go:` and the like), and so is a notice at the top of a file: a copyright line, an SPDX, `@license` or `@copyright` tag, `All rights reserved.`, and verbatim MIT, BSD, Apache or Go notice text. Prose inside a header is still reported. Run by the implementer, the integrator, the fixer, and step 6's Hygiene axis, which passes `--allow` for each path on an implementer's or fixer's `ALLOWED:` line: a Markdown file its ticket or spec names. |
-| [`watchdog.sh`](watchdog.sh) | same | `watchdog.sh <STATE> [idle=120] [deadline=240] [interval-seconds=600]`. It sleeps one interval before each check, then exits with `stalled: <id>` for a ticket worktree with no `status-<id>.md`, no file change and no process for `idle` minutes, or with `overdue: <label>` for a `running/<label>` marker untouched for `deadline` minutes. A `stalled-<id>` marker the dispatcher writes mutes that id for `idle` minutes. A dead subagent sends no notification, so this exit is the only signal. |
+| [`hygiene.py`](hygiene.py) | same | The **hygiene gate**: `hygiene.py <base> <head> [--allow <path>]...` prints each comment line the range adds, and each Markdown file it adds, including one renamed from a non-Markdown file, and exits 1, or exits 0 silently. An added Markdown file is reported in any directory, except a local tracker file under `.scratch/**/issues/`. Comments are not checked under a `node_modules/`, `vendor/` or `dist/` directory, nor in lockfiles. Tool directives are code, matched by family (`eslint-`, `@ts-`, `noqa`, `//go:` and the like), and so is a notice at the top of a file: a copyright line, an SPDX, `@license` or `@copyright` tag, `All rights reserved.`, and verbatim MIT, BSD, Apache or Go notice text, or Meta's `This source code is licensed under the MIT license found in the LICENSE file in the root directory of this source tree.` A pragma line is code only when it holds nothing but pragma tokens, each with at most one argument (`@flow strict`, `@jest-environment jsdom`). Prose beside a directive or a notice, on its line or in its comment block, is still reported, and so is the opener of a block comment that holds a pragma plus prose. Run by the implementer, the integrator, the fixer, and step 6's Hygiene axis, which passes `--allow` for each path on an implementer's or fixer's `ALLOWED:` line: a Markdown file its ticket or spec names, or the owner asked for. |
+| [`watchdog.sh`](watchdog.sh) | same | `watchdog.sh <STATE> [idle=120] [deadline=240] [interval-seconds=600]`. It sleeps one interval before each check, then exits with `stalled: <id>` for a ticket worktree with no `status-<id>.md`, no file change and no process for `idle` minutes, or with `overdue: <label>` for a `running/<label>` marker untouched for `deadline` minutes. It also exits with `stalled: <id>` when every worktree has its `status-<id>.md`, none of those files or their `stalled-` markers changed for `idle` minutes, and `running/` is empty: implementers that wrote their status file and died before their final message, which the dispatcher then collects from those files. A `stalled-<id>` marker the dispatcher writes mutes that id for `idle` minutes. A dead subagent sends no notification, so this exit is the only signal. |
 | [`test_tickets.py`](test_tickets.py), [`test_hygiene.py`](test_hygiene.py) | not installed | Standard-library tests of the two scripts: `python3 -I ai/skills/run-spec/test_<name>.py` |
 | [`axes/`](axes/) | same | Review briefs: Standards (per ticket and final, with its own smell baseline), Spec (per ticket: missing, partial, wrong and out-of-scope behaviour, a re-run of the implementer's `EVIDENCE` commands, and their evidence tier), Security, UX/AIX and Design, plus the UX/AIX trigger patterns |
 | [`guides/tdd.md`](guides/tdd.md) | same | The test-first guide that `ticket-implementer` and `review-fixer` read: seams, vertical slices, good tests, anti-patterns, test doubles at system boundaries |
@@ -146,6 +146,8 @@ The kit defines the input it reads. Any process that writes this format can feed
 | A ticket is done when | it is closed, or a commit with its `Ticket: #M` trailer is on the work branch and not on the default branch | its `Status:` is `resolved`, `done` or `closed`, or a `Ticket: NN` commit is on the work branch and not on the default branch |
 | Blockers | native blocked-by links, and the `#refs` in a `## Blocked by` section or a `Blocked by:` line | one `Blocked by:` line with ticket numbers, or `Blocked by: none` |
 
+The oracle reads a `Status:` or `Blocked by:` line only at the start of a line (`**Status:**` bold allowed).
+
 The default branch is `origin/HEAD`, else `main`, else `master`. A `Ticket:` trailer counts only on a commit whose `Spec:` trailer is absent or names this spec's slug. A merged run's tickets count as done through the tracker: the PR's `Closes #N` closes them, and a local ticket reads `Status: resolved`.
 
 What the agents read from that input:
@@ -173,7 +175,7 @@ What the agents read from that input:
 | `acceptance-final.md` | step 7 | the newest closing acceptance; each closing run replaces it |
 | `owner-<k>.md`, `probes.md`, `learnings.md`, `pr-body.md` | dispatcher | the owner's mid-run messages, stall probes and respawns, learnings, the PR body |
 | `user-<k>.md`, `user-<k>-base`, `user-<k>-fix.md` | dispatcher, after the report | the owner's later request, WORK when its fixer first started, the fixer's status block |
-| `<git-common-dir>/run-spec/queue.md` | `QUEUE.md` | `MERGE: true\|false`, `OWNER_NOTES:`, then one line per spec: `<spec> pending`, `<spec> merging <PR URL> <WORK>` (set before `gh pr merge`, `done` right after it succeeds), `<spec> held <PR URL> <WORK>` or `<spec> done <PR URL> <WORK>`. A resumed queue marks a `merging` spec done when its PR reads `MERGED`, and runs it again otherwise |
+| `<git-common-dir>/run-spec/queue.md` | `QUEUE.md` | `MERGE: true\|false`, `OWNER_NOTES:`, then one line per spec: `<spec> pending`, `<spec> merging <PR URL> <WORK>` (set before `gh pr merge`, `done` right after it succeeds), `<spec> held <PR URL> <WORK>` (a halt or a held merge: the queue stops, and a later run resumes it) or `<spec> done <PR URL> <WORK>`. A resumed queue marks a `merging` spec done when its PR reads `MERGED`, and runs it again otherwise |
 
 ## Install
 
@@ -208,6 +210,7 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 
 ## Status
 
-- **Never run end to end since these changes**: the 2026-11-12 rules (review rounds, resume, queue), the 2026-11-15 axes, the 2026-11-15 (2) Acceptance axis, hygiene gate, ticket report and handoffs in STATE, the 2026-11-15 (3) self-contained kit (own test-first guide, Standards and Spec briefs, per-ticket reviewers spawned directly), the 2026-11-15 (4) resilience rules (closing acceptance, owed triage, `main-owner`, `running/` markers, the watchdog's grace interval), and the 2026-11-15 (5) fixes (`Spec:` trailer, `merging` queue state, unrecorded merges, one directory per closing run). A smoke run in a throwaway repo is planned before this work merges.
-- No code-reading axis reads the fixes of an advisory-only round (UX/AIX, Design, Security `needs-human`) or of round 3. The fixer's full suite and hygiene gate check them, and the closing acceptance re-runs every criterion on them.
+- **Smoke run** on a795fa1, in a throwaway repo with the local tracker and no remote: 2/2 tickets done, 7/7 criteria PASS at tier A, Hygiene clean. It found three defects, all fixed in c7dfe8a. It filed no follow-up and had no remote, so the local follow-up path, the GitHub tracker, push, PR and `--merge` have not run.
+- **Unmeasured:** the final fix wave after c7dfe8a (queue stop on a halt, whole-branch Hygiene, the narrower directive rule, local follow-up files, dismissal tiers) has had no critic round and no run.
+- No code-reading axis reads the fixes of round 3, or of an advisory-only round whose triage attaches nothing (UX/AIX, Design, Security `needs-human`). The fixer's full suite and hygiene gate check them, and the closing acceptance re-runs every criterion on them.
 - The UX/AIX gate looks only at file paths. A user-facing string changed in a backend file does not trigger it.

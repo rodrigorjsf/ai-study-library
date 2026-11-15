@@ -10,7 +10,7 @@ ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"
 
 ISSUES = {
     "01-parse-input.md": "# 01 — Parse input\n\n**Blocked by:** None (can start immediately)\n\n**Status:** ready-for-agent\n",
-    "02-render-output.md": "# 02 — Render output\n\nBlocked by: 01\n\nStatus: ready-for-agent\n",
+    "02-render-output.md": "# 02 — Render output, Blocked by: 05, Status: draft\n\nSee Status: ok below.\n\nBlocked by: 01\n\nStatus: ready-for-agent\n",
     "03-export-report.md": "# 03 — Export report\n\nBlocked by: 99\n\nStatus: ready-for-agent\n",
     "04-pick-a-format.md": "# 04 — Pick a format\n\nBlocked by: None\n\nStatus: needs-info\n",
     "05-ship-package.md": "# 05 — Ship package\n\nBlocked by: 02\n\nStatus: ready-for-agent\n",

@@ -26,16 +26,16 @@ HASH_NAMES = set("Dockerfile Makefile makefile Containerfile Gemfile Rakefile".s
 SKIP_DIRS = {"node_modules", "vendor", "dist"}
 LOCKFILE = re.compile(r"(?:\.lockb?|-lock\.(?:json|ya?ml)|^go\.sum|^npm-shrinkwrap\.json)$")
 CODING = re.compile(r"[ \t\f]*#.*?coding[:=]")
-PRAGMAS = r"@(?:\w+-environment|flow|noflow|generated|format|prettier|jsx\w*)\b"
+PRAGMAS = r"@(?:\w+-environment(?:-options)?|flow|noflow|generated|format|prettier|jsx\w*)\b"
 TAG = (r"(?:(?:pyright|pylint|mypy|ruff|flake8|fmt|isort|yapf|pytype|type|typed|rubocop|tslint|swiftlint|phpcs|jscs|"
        r"frozen_string_literal|shareable_constant_value|warn_indent|warn_past_scope|encoding):|"
        r"(?:eslint|stylelint|deno-lint|deno-fmt|ktlint|tflint|pyre)-|@ts-|syntax=|jshint\s+(?:ignore:|[\w-]+\s*:)|"
-       rf"{PRAGMAS}|(?:prettier-ignore|biome-ignore|(?:istanbul|c8|v8) ignore|clang-format (?:on|off)|@license|"
+       r"(?:prettier-ignore|biome-ignore|(?:istanbul|c8|v8) ignore|clang-format (?:on|off)|@license|"
        r"shellcheck|hadolint|yamllint|nolint(?:nextline|begin|end)?|nosonar|nosec|noqa|pragma|"
        r"spdx-license-identifier)\b)")
 DIRECTIVE = re.compile(rf"(?:#|//+|/\*+|\{{/\*|--|<!--)\s*{TAG}|/\*+\s*(?:eslint|globals?|exported)\s|//go:|/// <reference",
                        re.I)
-PRAGMA = re.compile(rf"^[\s*/{{]*{PRAGMAS}", re.I | re.M)
+PRAGMA_LINE = re.compile(rf"(?:\s*{PRAGMAS}(?:[ \t]+(?!@)(?:\{{.*\}}|\S+))?)+\s*", re.I)
 BSD_HEAD = ("Redistribution and use in source and binary forms, with or without modification, are permitted provided "
             "that the following conditions are met:\n\n1. Redistributions of source code must retain the above "
             "copyright notice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary "
@@ -70,6 +70,8 @@ LICENSES = {
                   'writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT '
                   "WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific "
                   "language governing permissions and limitations under the License.",
+    "Meta": "This source code is licensed under the MIT license found in the LICENSE file in the root directory of "
+            "this source tree.",
     "Go": "Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.",
     "reserved": "All rights reserved.",
 }
@@ -136,8 +138,15 @@ def created(fields):
     return paths
 
 
+def pragma(text):
+    return bool(PRAGMA_LINE.fullmatch(STRIP.sub("", text).strip()))
+
+
 def exempt(n, text):
-    return (n == 1 and text.startswith("#!")) or (n <= 2 and bool(CODING.match(text))) or bool(DIRECTIVE.match(text))
+    opener = next((o for o in CLOSERS if text.startswith(o)), None)
+    closed = opener is None or CLOSERS[opener] in text[len(opener):]
+    return ((n == 1 and text.startswith("#!")) or (n <= 2 and bool(CODING.match(text))) or bool(DIRECTIVE.match(text))
+            or (closed and pragma(text)))
 
 
 def words(text):
@@ -189,9 +198,8 @@ def header(text, markers):
     notice = notice_lines([(n, lines[n - 1]) for block in blocks for n in block])
     top = set()
     for block in blocks:
-        body = "\n".join(lines[n - 1] for n in block)
         content = [n for n in block if words(STRIP.sub("", lines[n - 1]))]
-        if PRAGMA.search(body) or (notice and all(n in notice for n in content)):
+        if (content or notice) and all(n in notice or pragma(lines[n - 1]) for n in content):
             top.update(block)
     return top
 

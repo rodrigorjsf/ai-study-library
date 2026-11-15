@@ -24,6 +24,8 @@ def notice(name, style, width):
 
 
 MIT_LINES = notice("MIT", "//", 70).split("\n")
+META = ("/**\n * Copyright (c) Acme, Inc. and its affiliates.\n *\n * This source code is licensed under the MIT license found"
+        " in the\n * LICENSE file in the root directory of this source tree.\n")
 MIT_PROSE = "\n".join(MIT_LINES[:4] + ["// retries because the API drops calls"] + MIT_LINES[4:])
 
 BASE = {
@@ -80,6 +82,14 @@ HEAD = {
     "node_modules/dep/README.md": "# Dep\n",
     "vendor/lib/x.go": "// vendored\npackage lib\n",
     "dist/index.js": "/******/ (() => {})();\n",
+    "src/meta.js": META + " *\n * @format\n * @flow strict\n */\nexport const m = 1;\n",
+    "src/card.js": META + " *\n * Renders the profile card and caches the avatar because it is slow.\n *\n * @format\n"
+                   " * @flow strict\n */\nexport const c = 1;\n",
+    "src/p.test.ts": "/**\n * @jest-environment jsdom\n * Uses jsdom because the component reads window.location on mount.\n"
+                     " */\ntest(\"p\", () => {});\n",
+    "src/one.test.ts": "/** @jest-environment jsdom — renders the login form */\ntest(\"o\", () => {});\n"
+                       "// @flow strict because the store is typed\n/* @jsx h */\n// @generated SignedSource<<abc>>\n",
+    "src/open.js": "/** @flow\n * explains the store\n */\nexport const o = 1;\n",
 }
 EXPECTED = sorted([
     "DECISIONS.md: markdown: added Markdown file",
@@ -98,6 +108,11 @@ EXPECTED = sorted([
     "src/a.ts:2: comment: // note",
     "src/a.ts:3: comment: /**",
     "src/blk.ts:1: comment: /*",
+    "src/card.js:1: comment: /**",
+    "src/one.test.ts:1: comment: /** @jest-environment jsdom — renders the login form */",
+    "src/one.test.ts:3: comment: // @flow strict because the store is typed",
+    "src/open.js:1: comment: /** @flow",
+    "src/p.test.ts:1: comment: /**",
     "src/d.test.ts:10: comment: // global state is shared",
     "src/d.test.ts:11: comment: // re-enable the cache",
     "src/j.test.js:4: comment: /**",

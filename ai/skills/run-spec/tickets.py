@@ -63,10 +63,10 @@ def local_tickets(spec):
         text = f.read_text()
         num = re.match(r"(\d+)", f.name).group(1)
         title = re.sub(r"^#\s*\d+\s*[—:-]\s*", "", text.splitlines()[0]).strip()
-        m = re.search(r"Blocked by:\**\s*(.*)", text)
+        m = re.search(r"^\**Blocked by:\**\s*(.*)", text, re.M)
         blocked = m.group(1) if m else ""
         tickets.append({"id": num, "ref": str(f.resolve().relative_to(top)), "title": title, "_blocked": blocked,
-                        "_status": (re.search(r"Status:\**\s*(\S+)", text) or [None, ""])[1]})
+                        "_status": (re.search(r"^\**Status:\**\s*(\S+)", text, re.M) or [None, ""])[1]})
     ids = {t["id"].lstrip("0"): t["id"] for t in tickets}
     for t in tickets:
         b = t.pop("_blocked")
