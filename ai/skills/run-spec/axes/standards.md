@@ -46,7 +46,7 @@ Each refactoring is the one Fowler's *Refactoring* catalogues for that smell.
 
 ## Output
 
-Every finding names its `file:line` (both sites for a cross-ticket finding) and the fix. A broken written rule is `hard` and names the file that states it; a smell is a `judgement` call. Report only this, under 400 words:
+Every finding names its `file:line` (both sites for a cross-ticket finding) and the fix. A broken written rule is `hard` and names the file that states it; a smell is a `judgement` call. Report only this. Keep the prose under 400 words; the cap never drops a finding: shorten each line instead.
 
 ```
 ## Standards

@@ -3,7 +3,8 @@
 # Defaults: 120, 240, 600. Started with run_in_background, its exit wakes the dispatcher, which a dead subagent never does.
 # It sleeps one interval before each check, then exits on the first of:
 #   stalled: <id>     a ticket worktree <STATE>/wt/<id> with no <STATE>/status-<id>.md, no file change for idle-minutes,
-#                     no process naming it, and no <STATE>/stalled-<id> marker touched within idle-minutes;
+#                     no process naming it (ignored once no file changed for 3 x idle-minutes: an orphan of a dead
+#                     implementer), and no <STATE>/stalled-<id> marker touched within idle-minutes;
 #                     or, naming the first worktree: every worktree has a status-<id>.md, none of those files and no
 #                     stalled-<id> marker of theirs was touched within idle-minutes, and <STATE>/running is empty.
 #                     The wave is then stuck: an implementer died after writing its status file, before its final message.
@@ -35,7 +36,8 @@ while :; do
     [ -n "$(find "$state/stalled-$id" -mmin "-$idle" 2>/dev/null)" ] && continue
     recent=$(find "$d" \( -name .git -o -name node_modules -o -name .codegraph \) -prune -o -mmin "-$idle" -print -quit 2>/dev/null)
     [ -n "$recent" ] && continue
-    pgrep -f "wt/${id}(/|\$|[[:space:]])" >/dev/null && continue
+    alive=$(find "$d" \( -name .git -o -name node_modules -o -name .codegraph \) -prune -o -mmin "-$((idle * 3))" -print -quit 2>/dev/null)
+    [ -n "$alive" ] && pgrep -f "wt/${id}(/|\$|[[:space:]])" >/dev/null && continue
     echo "stalled: $id"
     exit 0
   done

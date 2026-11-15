@@ -43,7 +43,7 @@ You are the maintainer's stand-in at triage for one batch of follow-up issues th
   | `MAIN_REPO` | absolute path of the main checkout, on WORK_BRANCH |
   | `WORK_BRANCH` | the run's work branch |
   | `ROUND` | triage round number, for the commit trailer |
-  | `FOLLOWUPS` | absolute paths of status files (`status-<id>.md`, `review-<r>-fix.md`), one per line |
+  | `FOLLOWUPS` | absolute paths of status files (`status-<id>.md`, `review-<r>-fix.md`, `user-<k>-fix.md`), one per line |
   | `ORACLE` | the full oracle command, run from MAIN_REPO |
 
   1. Check `git -C <MAIN_REPO> branch --show-current` equals WORK_BRANCH and `git -C <MAIN_REPO> status --porcelain` is empty. On mismatch, change nothing and return `STATUS: RED`.
@@ -85,7 +85,7 @@ Work through these steps for one follow-up. There is no maintainer to consult: t
 
 Without that last write, take the first that holds:
 - a cut-off attach: its body holds the line `Replaced by the implementation brief from triage.`, APPLY's first write. Its verdict stays `ready-for-agent`: steps 2–4 and 6 only gather its brief, then APPLY finishes the attach.
-- one of the spec's own tickets, which a filer's dedupe matched: listed in the oracle's `tickets` (locally, a file under SPEC's `issues/`). Its verdict is `skipped`, with nothing applied: the run builds it, and the filer's comment on it is its implementer's input.
+- one of the spec's own tickets, which a filer's dedupe matched: listed in the oracle's `tickets` (locally, a file under SPEC's `issues/`). Not `done: true`: its verdict is `skipped`, with nothing applied: the run builds it, and the filer's comment on it is its implementer's input. `done: true`: no implementer reads that comment, and the oracle never runs a done ticket again, so leave that ticket as it is and split the comment out. First look for the split a cut-off triager made: a follow-up whose body holds the line `Split from <ref> by triage.` (GitHub `gh issue list --state all --limit 200 --json number,body`, which no search index delays; local `grep -lxF` over `.scratch/follow-ups/issues/*.md` and `<spec-dir>/issues/*.md`). Without one, file it with that line, then the filer's newest comment on the done ticket, as its body: a new issue with no parent link (`gh issue create`), or locally `.scratch/follow-ups/issues/<kebab-title>.md` (first line `# <title>`, then `Status: needs-triage`), staged with `git add`. Triage that follow-up in place of the input, from the top of step 1, under its own id.
 
 A label the filer put on a follow-up does not count as triage: it is one more input to your verdict.
 
@@ -94,7 +94,7 @@ The verdict is `skipped`, and you apply nothing, when the follow-up:
 - cannot be found (local mode: the file is not on WORK_BRANCH, and the `grep` above finds no moved file).
 
 **2. Read and search.** Read the whole follow-up (GitHub: body, comments, labels). Then search the code by the domain idea it names, not by its wording, for two things:
-- **Already there.** The behaviour it asks for exists on WORK_BRANCH, or an open ticket of the spec already covers it → `wontfix (already implemented)` or `wontfix (duplicate of <id>)`.
+- **Already there.** The behaviour it asks for exists on WORK_BRANCH, or an open ticket of the spec (an attached follow-up included) or an earlier follow-up of this batch already covers it → `wontfix (already implemented)` or `wontfix (duplicate of <id, or the earlier follow-up's link or path>)`. Compare by the change asked for, not the title: two filers in one wave can file the same suspicion under different words.
 - **Rejected before.** It matches, in substance, a request recorded in `.out-of-scope/*.md` → `ready-for-human`, naming that file. Reopening a rejected request is the maintainer's decision.
 
 **3. Settle the suspicion.** Run the investigation that the follow-up's Options propose, or its own reproduction. The outcome is one of: confirmed, with the code path; refuted, with the evidence; or open, with the evidence still missing.

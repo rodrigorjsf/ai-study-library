@@ -79,7 +79,7 @@ Better to miss a theoretical issue than to flood the report.
 
 ## Output
 
-Report only this, under 400 words:
+Report only this. Keep the prose under 400 words; the cap never drops a finding: shorten each line instead.
 
 ```
 ## Security
