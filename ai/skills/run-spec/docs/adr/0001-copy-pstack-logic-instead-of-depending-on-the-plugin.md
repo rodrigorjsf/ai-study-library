@@ -9,6 +9,7 @@ run-spec adopts four practices from Lauren Tan's pstack: the TLA+ formal-verific
 
 ## Consequences
 
-- The copied `statechart` scripts are development tools. `install.sh` does not install them.
+- The `statechart` skill is copied verbatim, test corpus included, into `ai/skills/run-spec-dev/formal/statechart/`. That folder sits outside the installed run-spec folder, so `install.sh` never copies it. The copy is committed by hand, outside any `/run-spec` run. Otherwise the hygiene gate would strip its upstream comments, and every review would read about 4 MB of third-party code.
+- The procedures adapted from pstack (formal checks, `/correct`) are written by the run that needs them, and are not verbatim.
 - The scripts need a Node that runs TypeScript directly, 22.18 or later. The machine default is now Node 26.13.1, the current LTS.
 - An upstream fix reaches this kit only when someone copies it again. The notice records the source commit so that drift can be measured.
