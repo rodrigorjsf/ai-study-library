@@ -138,22 +138,19 @@ def asides(metrics):
     return sorted(metrics.parent.glob("metrics.tsv.corrupt-*"))
 
 
-CORRUPT_FILES = {
-    "not a record": b"not a record\n",
-    "missing fields": b"at=2026-11-15T10:00:00Z\tslug=x\n",
-    "non-numeric count": None,
-    "binary": b"\xff\xfe\x00\x01\n",
-    "no final newline": None,
-}
-
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
     head = git(repo, "rev-parse", "HEAD")
     metrics = repo / ".git/run-spec/metrics.tsv"
     assert runlog(repo, "record", "--slug", "good", "--head", head).returncode == 0
     good = metrics.read_text()
-    CORRUPT_FILES["non-numeric count"] = good.replace("rounds=0", "rounds=many").encode()
-    CORRUPT_FILES["no final newline"] = good.rstrip("\n").encode()
+    CORRUPT_FILES = {
+        "not a record": b"not a record\n",
+        "missing fields": b"at=2026-11-15T10:00:00Z\tslug=x\n",
+        "non-numeric count": good.replace("rounds=0", "rounds=many").encode(),
+        "binary": b"\xff\xfe\x00\x01\n",
+        "no final newline": good.rstrip("\n").encode(),
+    }
 
     for kind, content in CORRUPT_FILES.items():
         metrics.write_bytes(content)

@@ -9,9 +9,9 @@ import sys
 AXES = ("acceptance", "standards", "security", "uxaix", "design", "hygiene")
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
-HEAD = re.compile(r"[0-9a-f]{7,40}")
+COMMIT_ID = re.compile(r"[0-9a-f]{7,40}")
 DIGITS = re.compile(r"[0-9]+")
-REVERT = re.compile(r"This reverts commit ([0-9a-f]{7,40})")
+REVERT = re.compile(rf"This reverts commit ({COMMIT_ID.pattern})")
 
 
 class Corrupt(Exception):
@@ -39,7 +39,7 @@ def parse(line):
         fields[key] = value
     if any(key not in fields for key in REQUIRED):
         raise Corrupt(line)
-    if not HEAD.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in COUNTS):
+    if not COMMIT_ID.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in COUNTS):
         raise Corrupt(line)
     return fields
 
@@ -53,10 +53,7 @@ def load(path):
         raise Corrupt(path.name)
     if text and not text.endswith("\n"):
         raise Corrupt(path.name)
-    lines = text.splitlines()
-    for line in lines:
-        parse(line)
-    return lines
+    return [(line, parse(line)) for line in text.splitlines()]
 
 
 def start_fresh(path):
@@ -71,7 +68,7 @@ def start_fresh(path):
     print(f"{path.name} was corrupt: moved to {aside}, started a new file")
 
 
-def valid_records(path):
+def load_or_start_fresh(path):
     try:
         return load(path)
     except Corrupt:
@@ -79,14 +76,14 @@ def valid_records(path):
         return []
 
 
-def text_without_tabs(value):
+def single_line_text(value):
     if re.search(r"[\t\r\n]", value):
         raise argparse.ArgumentTypeError("must not contain a tab or a newline")
     return value
 
 
 def head_sha(value):
-    if not HEAD.fullmatch(value):
+    if not COMMIT_ID.fullmatch(value):
         raise argparse.ArgumentTypeError("must be a 7 to 40 character lowercase hex commit id")
     return value
 
@@ -106,7 +103,7 @@ def axis_count(value):
 
 def record(args):
     path = metrics_path()
-    valid_records(path)
+    load_or_start_fresh(path)
     findings = dict.fromkeys(AXES, 0)
     findings.update(args.findings)
     fields = [("at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
@@ -150,25 +147,25 @@ def merge_commits_by_parent(refs):
 
 def reverts(args):
     path = metrics_path()
-    lines = valid_records(path)
+    records = load_or_start_fresh(path)
     refs = default_refs()
-    pending = [i for i, line in enumerate(lines) if "reverted" not in parse(line)]
+    pending = [i for i, (_, fields) in enumerate(records) if "reverted" not in fields]
     if not pending or not refs:
         return
     reverting = reverting_commits(refs)
     merged = merge_commits_by_parent(refs)
     marked = []
     for i in pending:
-        fields = parse(lines[i])
+        line, fields = records[i]
         landed = {fields["head"]} | {merge for parent, merges in merged.items()
                                      if same_commit(parent, fields["head"]) for merge in merges}
         reverted_by = next((sha for sha, target in reverting if any(same_commit(c, target) for c in landed)), None)
         if reverted_by:
-            lines[i] += f"\treverted={reverted_by[:7]}"
+            records[i] = (f"{line}\treverted={reverted_by[:7]}", fields)
             marked.append(f"{fields['slug']} by {reverted_by[:7]}")
     if marked:
         temporary = path.with_name(path.name + ".tmp")
-        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        temporary.write_text("".join(f"{line}\n" for line, _ in records), encoding="utf-8")
         temporary.replace(path)
         print(f"marked reverted: {'; '.join(marked)}")
 
@@ -177,9 +174,9 @@ def main():
     ap = argparse.ArgumentParser(prog="runlog.py")
     sub = ap.add_subparsers(dest="command", required=True)
     rec = sub.add_parser("record")
-    rec.add_argument("--slug", required=True, type=text_without_tabs)
+    rec.add_argument("--slug", required=True, type=single_line_text)
     rec.add_argument("--head", required=True, type=head_sha)
-    rec.add_argument("--pr", default="none", type=text_without_tabs)
+    rec.add_argument("--pr", default="none", type=single_line_text)
     for name in ("rounds", "dismissals", "unverified", "done", "skipped", "stuck"):
         rec.add_argument(f"--{name}", default=0, type=count)
     rec.add_argument("--findings", nargs="*", default=[], type=axis_count)
