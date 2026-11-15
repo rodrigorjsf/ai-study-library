@@ -8,10 +8,14 @@ ticket bodies, code, or handoffs itself; it asks this script.
 
 A ticket is done when a commit carrying its `Ticket:` trailer reaches the work
 branch and is not on the default branch, or when the tracker already marks it
-closed. The trailer alone counts: no other commit marks a ticket done. Trailers
-already on the default branch belong to merged runs, whose tickets the tracker
-records (`Closes #N`, or the local `Status: resolved`); local ids restart at 01
-in every spec, so an earlier spec's `Ticket: 01` must not mark this spec's 01.
+closed. The trailer alone counts: no other commit marks a ticket done. Local ids
+restart at 01 in every spec, so an earlier spec's `Ticket: 01` must not mark
+this spec's 01. Two rules keep them apart. A `Ticket:` trailer counts only on a
+commit whose `Spec:` trailer is absent (commits older than that trailer) or
+equals this spec's slug, the `slug` this script prints; this covers a work
+branch stacked on an earlier spec's unmerged commits. Trailers already on the
+default branch belong to merged runs, whose tickets the tracker records
+(`Closes #N`, or the local `Status: resolved`), so they never count.
 The default branch is `refs/remotes/origin/HEAD`, else `main`, else `master`.
 
 Usage:
@@ -136,8 +140,15 @@ def main():
 
     slug, spec, tickets = (github_tickets if a.tracker == "github" else local_tickets)(a.spec)
     refs = default_refs()
-    trailers = set(sh("git", "log", a.work_branch, *(["--not", *refs] if refs else []),
-                      "--format=%(trailers:key=Ticket,valueonly)", check=False).split())
+    log = sh("git", "log", a.work_branch, *(["--not", *refs] if refs else []),
+             "--format=%x1e%(trailers:only,unfold)", check=False)
+    trailers = set()
+    for record in log.split("\x1e"):
+        pairs = [(k.strip().lower(), v.strip()) for k, _, v in
+                 (line.partition(":") for line in record.splitlines() if ":" in line)]
+        specs = {v for k, v in pairs if k == "spec"}
+        if not specs or slug in specs:
+            trailers |= {t for k, v in pairs if k == "ticket" for t in v.split()}
     fdir = pathlib.Path(a.failures_dir)
     by_id = {t["id"]: t for t in tickets}
     for t in tickets:

@@ -58,7 +58,9 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   </PHASE>
 
   <PHASE id="2" name="merge">
-  A MERGE line whose branch is already an ancestor of WORK_BRANCH (`git -C <MAIN_REPO> merge-base --is-ancestor <branch> <WORK_BRANCH>`) needs no merge: list it on MERGED, and verify and clean it up like the others.
+  A MERGE line whose branch is gone (`git -C <MAIN_REPO> rev-parse -q --verify refs/heads/<branch>` fails) was cleaned up by an integrator that died in phase 4. It is merged when the `Head:` commit of its handoff, which carries its `Ticket:` trailer, is an ancestor of WORK_BRANCH: list it on MERGED. Otherwise record it as `MERGE_FAILED` (`branch gone, never merged`).
+
+  A MERGE line whose branch exists and is already an ancestor of WORK_BRANCH (`git -C <MAIN_REPO> merge-base --is-ancestor <branch> <WORK_BRANCH>`) needs no merge: list it on MERGED, and verify and clean it up like the others.
 
   For each other MERGE line, in order:
 
@@ -80,7 +82,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   </PHASE>
 
   <PHASE id="4" name="cleanup">
-  Remove each merged ticket's worktree right after its merge, so later test runs never scan it. After phase 3, for every remaining MERGE and DISCARD worktree (skip `-`):
+  Remove each merged ticket's worktree right after its merge, so later test runs never scan it. After phase 3, for every remaining MERGE and DISCARD worktree (skip a worktree that is `-` or no longer exists, and a branch that is gone):
 
   ```
   git -C <MAIN_REPO> worktree remove --force <worktree-path>

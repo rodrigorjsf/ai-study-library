@@ -23,7 +23,7 @@ MARKERS = {**{e: ("//", "/*", "{/*") for e in C_LIKE.split()}, "vue": ("//", "/*
            **{e: ("<!--",) for e in "html htm xml svg".split()},
            **{e: ("#",) for e in "sh bash zsh fish rb yml yaml toml pl r ex exs tf hcl ps1 conf ini cfg".split()}}
 HASH_NAMES = set("Dockerfile Makefile makefile Containerfile Gemfile Rakefile".split())
-SKIP_DIRS = {"node_modules", "vendor", "dist", "build", ".git"}
+SKIP_DIRS = {"node_modules", "vendor", "dist"}
 LOCKFILE = re.compile(r"(?:\.lockb?|-lock\.(?:json|ya?ml)|^go\.sum|^npm-shrinkwrap\.json)$")
 CODING = re.compile(r"[ \t\f]*#.*?coding[:=]")
 PRAGMAS = r"@(?:\w+-environment|flow|noflow|generated|format|prettier|jsx\w*)\b"
@@ -36,7 +36,46 @@ TAG = (r"(?:(?:pyright|pylint|mypy|ruff|flake8|fmt|isort|yapf|pytype|type|typed|
 DIRECTIVE = re.compile(rf"(?:#|//+|/\*+|\{{/\*|--|<!--)\s*{TAG}|/\*+\s*(?:eslint|globals?|exported)\s|//go:|/// <reference",
                        re.I)
 PRAGMA = re.compile(rf"^[\s*/{{]*{PRAGMAS}", re.I | re.M)
-NOTICE = re.compile(r"license|copyright", re.I)
+BSD_HEAD = ("Redistribution and use in source and binary forms, with or without modification, are permitted provided "
+            "that the following conditions are met:\n\n1. Redistributions of source code must retain the above "
+            "copyright notice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary "
+            "form must reproduce the above copyright notice, this list of conditions and the following disclaimer in "
+            "the documentation and/or other materials provided with the distribution.\n\n")
+BSD_TAIL = ('THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED '
+            "WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A "
+            "PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR "
+            "ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT "
+            "LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS "
+            "INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR "
+            "TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF "
+            "ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.")
+LICENSES = {
+    "MIT": "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and "
+           'associated documentation files (the "Software"), to deal in the Software without restriction, including '
+           "without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell "
+           "copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the "
+           "following conditions:\n\nThe above copyright notice and this permission notice shall be included in all "
+           'copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF '
+           "ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR "
+           "A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR "
+           "ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, "
+           "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+    "BSD-2-Clause": BSD_HEAD + BSD_TAIL,
+    "BSD-3-Clause": BSD_HEAD + "3. Neither the name of the copyright holder nor the names of its contributors may be "
+                    "used to endorse or promote products derived from this software without specific prior written "
+                    "permission.\n\n" + BSD_TAIL,
+    "Apache-2.0": 'Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in '
+                  "compliance with the License. You may obtain a copy of the License at\n\n"
+                  "http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in "
+                  'writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT '
+                  "WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific "
+                  "language governing permissions and limitations under the License.",
+    "Go": "Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.",
+    "reserved": "All rights reserved.",
+}
+OWNER = re.compile(r"(?:copyright\s*(?:\(c\)|©|\d{4}|the\s)|@copyright\b|(?:\(c\)|©)\s*\d{4}|@license\b|"
+                   r"spdx-license-identifier\s*:)", re.I)
+STRIP = re.compile(r"^\s*(?:<!--|\{/\*|/\*+!?|//+!?|#+|--+|\*+(?!/))?|(?:\*+/\}?|-->)\s*$")
 CLOSERS = {"/*": "*/", "{/*": "*/", "<!--": "-->"}
 HUNK = re.compile(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
@@ -101,6 +140,38 @@ def exempt(n, text):
     return (n == 1 and text.startswith("#!")) or (n <= 2 and bool(CODING.match(text))) or bool(DIRECTIVE.match(text))
 
 
+def words(text):
+    return ["http" if w == "https" else w for w in re.findall(r"[a-z0-9]+", text.lower())]
+
+
+CORPUS = " " + " | ".join(" ".join(words(t)) for t in LICENSES.values()) + " "
+
+
+def notice_lines(entries):
+    found, span = set(), []
+
+    def close():
+        if sum(len(w) for _, w in span) >= 3:
+            found.update(n for n, _ in span)
+
+    for n, line in entries:
+        text = STRIP.sub("", line).strip()
+        w = words(text)
+        if not w:
+            continue
+        if OWNER.match(text):
+            close()
+            found.add(n)
+            span = []
+        elif f" {' '.join([x for _, ws in span for x in ws] + w)} " in CORPUS:
+            span.append((n, w))
+        else:
+            close()
+            span = [(n, w)] if f" {' '.join(w)} " in CORPUS else []
+    close()
+    return found
+
+
 def header(text, markers):
     lines = text.split("\n")
     i = 1 if lines[0].startswith(("#!", "<?")) else 0
@@ -113,11 +184,16 @@ def header(text, markers):
             j += 1
             while j < len(lines) and close not in lines[j]:
                 j += 1
-        blocks.append((i + 1, min(j, len(lines) - 1) + 1, "\n".join(lines[i:j + 1])))
+        blocks.append(range(i + 1, min(j, len(lines) - 1) + 2))
         i = j + 1
-    if any(NOTICE.search(body) for _, _, body in blocks):
-        return set(range(blocks[0][0], blocks[-1][1] + 1))
-    return {n for first, last, body in blocks if PRAGMA.search(body) for n in range(first, last + 1)}
+    notice = notice_lines([(n, lines[n - 1]) for block in blocks for n in block])
+    top = set()
+    for block in blocks:
+        body = "\n".join(lines[n - 1] for n in block)
+        content = [n for n in block if words(STRIP.sub("", lines[n - 1]))]
+        if PRAGMA.search(body) or (notice and all(n in notice for n in content)):
+            top.update(block)
+    return top
 
 
 def marker_hits(markers, lines):
@@ -159,11 +235,13 @@ def main():
     out = []
     for path in sorted(new_files | set(files)):
         parts = path.split("/")
-        if path in a.allow or SKIP_DIRS.intersection(parts[:-1]) or LOCKFILE.search(parts[-1]):
+        if path in a.allow:
             continue
         if path.lower().endswith((".md", ".mdx")):
             if path in new_files and not (parts[0] == ".scratch" and "issues" in parts[1:-1]):
                 out.append(f"{path}: markdown: added Markdown file")
+            continue
+        if SKIP_DIRS.intersection(parts[:-1]) or LOCKFILE.search(parts[-1]):
             continue
         lines = files.get(path)
         if not lines:

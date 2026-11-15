@@ -8,11 +8,11 @@ Read this file when `$ARGUMENTS` names more than one spec, carries `--merge`, or
 - **OWNER_NOTES**: the rest of `$ARGUMENTS`, verbatim, with `--merge` removed.
 - **MERGE**: true when `--merge` appears, or when OWNER_NOTES explicitly asks for the PRs to be merged ("merge the PRs", "faça o merge dos PRs"). Anything less explicit leaves it false.
 
-`$GITDIR/run-spec/queue.md` records the queue: a `MERGE: true|false` line, an `OWNER_NOTES:` line, then one line per spec in QUEUE order, `<spec> pending`, `<spec> held <PR URL> <WORK>` or `<spec> done <PR URL> <WORK>`.
-- When the file exists and its spec lines name the same specs in the same order, this run resumes that queue: skip every spec it marks `done`, and keep those lines as they are. When the current branch is the WORK of a `done` line, run `git switch DEFAULT` first.
+`$GITDIR/run-spec/queue.md` records the queue: a `MERGE: true|false` line, an `OWNER_NOTES:` line, then one line per spec in QUEUE order, `<spec> pending`, `<spec> merging <PR URL> <WORK>`, `<spec> held <PR URL> <WORK>` or `<spec> done <PR URL> <WORK>`.
+- When the file exists and its spec lines name the same specs in the same order, this run resumes that queue. A `merging` line whose `gh pr view <PR URL> --json state -q .state` prints `MERGED` becomes `done`; any other `merging` spec runs again. Skip every spec marked `done`, and keep those lines as they are. When the current branch is the WORK of a `done` line, run `git switch DEFAULT` first. Then, when MERGE is true and the current branch is DEFAULT, run `git pull --ff-only`: a merge cut off before its cleanup left DEFAULT behind.
 - Otherwise write it anew, every spec `pending`.
 
-Then run steps 2–7 for the first spec not marked `done`. Each spec gets its own SPEC, slug, STATE and WORK. After each spec's step 7, rewrite its line: `done <PR URL> <WORK>` when its PR merged or MERGE is false, `held <PR URL> <WORK>` when its merge was held, so a later run retries it.
+Then run steps 2–7 for the first spec not marked `done`. Each spec gets its own SPEC, slug, STATE and WORK. After each spec's step 7, rewrite its line: `done <PR URL> <WORK>` when MERGE is false, `held <PR URL> <WORK>` when its merge was held, so a later run retries it. A merge rewrites its own line (merge item 3).
 
 ## Merge a spec's PR (step 7, MERGE true)
 
@@ -24,7 +24,7 @@ A merge is **held** when any gate below fails. A held merge leaves the PR open, 
    timeout 1800 bash -c 'for try in 1 2 3 4 5; do out=$(gh pr checks <n> --watch --interval 30 2>&1); code=$?; case $out in *"no checks reported"*) if [ -d .github/workflows ] && [ $try -lt 5 ]; then sleep 30; continue; fi; echo "no checks"; exit 0;; esac; printf "%s\n" "$out" | tail -n 5; exit $code; done'
    ```
    Exit 0 passes. Any other exit holds the merge: a failed check, or 124 for the 30-minute timeout. A final `no checks` passes.
-3. **Merge.** `gh pr merge <n> --merge`. If it fails (branch protection, a conflict, a required review), hold the merge with gh's one-line error. On success, run `git switch DEFAULT`, `git pull --ff-only`, `git branch -d WORK`, and `git push origin --delete WORK`.
+3. **Merge.** Rewrite the spec's line to `merging <PR URL> <WORK>`, then run `gh pr merge <n> --merge`. If it fails (branch protection, a conflict, a required review), hold the merge with gh's one-line error. On success, rewrite the line to `done <PR URL> <WORK>` at once, then run `git switch DEFAULT`, `git pull --ff-only`, `git branch -d WORK`, and `git push origin --delete WORK`.
 4. Print one line: `spec <SPEC>: PR #<n> merged`.
 
 The merge closes the tickets through their `Closes #N` lines. The spec issue stays open for the owner to close.

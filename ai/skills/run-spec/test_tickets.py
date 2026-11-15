@@ -23,9 +23,9 @@ def git(repo, *args):
                    cwd=repo, env=ENV, capture_output=True, text=True, check=True)
 
 
-def oracle(repo, failures):
-    r = subprocess.run([sys.executable, "-I", str(TICKETS), "--tracker", "local", "--spec", ".scratch/demo",
-                        "--work-branch", "spec/demo", "--failures-dir", str(failures)],
+def oracle(repo, failures, spec=".scratch/demo", work="spec/demo"):
+    r = subprocess.run([sys.executable, "-I", str(TICKETS), "--tracker", "local", "--spec", spec,
+                        "--work-branch", work, "--failures-dir", str(failures)],
                        cwd=repo, env=ENV, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout)
@@ -86,5 +86,27 @@ with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fail
     assert "02" not in out["ready"] and "05" not in out["ready"], out["ready"]
     assert out["ready"] == [] and out["remaining"] == ["03"], out
     assert t["03"]["ready"] is False
+
+with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as failures:
+    repo = Path(tmp)
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "root")
+    git(repo, "switch", "-q", "-c", "feature/x")
+    for slug in ("a", "b"):
+        (repo / f".scratch/{slug}/issues").mkdir(parents=True)
+        (repo / f".scratch/{slug}/spec.md").write_text(f"# {slug}\n")
+        (repo / f".scratch/{slug}/issues/01-work.md").write_text("# 01 — Work\n\nBlocked by: none\n\nStatus: ready-for-agent\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "specs a and b")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "feat: a work", "--trailer", "Spec: a", "--trailer", "Ticket: 01")
+
+    out, t = oracle(repo, failures, ".scratch/b", "feature/x")
+    assert out["slug"] == "b" and t["01"]["done"] is False and out["ready"] == ["01"], out
+    out, t = oracle(repo, failures, ".scratch/a", "feature/x")
+    assert out["slug"] == "a" and t["01"]["done"] is True and out["remaining"] == [], out
+
+    git(repo, "commit", "-q", "--allow-empty", "-m", "feat: b work", "--trailer", "spec: b", "--trailer", "ticket: 01")
+    out, t = oracle(repo, failures, ".scratch/b", "feature/x")
+    assert t["01"]["done"] is True and out["remaining"] == [], out
 
 print("ok")

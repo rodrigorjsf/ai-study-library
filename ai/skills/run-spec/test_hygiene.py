@@ -1,20 +1,39 @@
+import importlib.util
 import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
 
 HYGIENE = Path(__file__).resolve().parent / "hygiene.py"
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+SPEC = importlib.util.spec_from_file_location("hygiene", HYGIENE)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+def notice(name, style, width):
+    body = ["Copyright (c) 2026 Acme Corp", ""]
+    for para in MODULE.LICENSES[name].split("\n\n"):
+        body += textwrap.wrap(para, width) + [""]
+    body = body[:-1]
+    if style == "block":
+        return "/*\n" + "".join(f" * {line}".rstrip() + "\n" for line in body) + " */\n"
+    return "".join(f"{style} {line}".rstrip() + "\n" for line in body)
+
+
+MIT_LINES = notice("MIT", "//", 70).split("\n")
+MIT_PROSE = "\n".join(MIT_LINES[:4] + ["// retries because the API drops calls"] + MIT_LINES[4:])
 
 BASE = {
-    "src/old.ts": "// kept from base\nexport const a = 1;\n",
+    "src/old.ts": "// Copyright 2026 Acme\nexport const a = 1;\n",
     "src/gone.ts": "// deleted with its file\nexport const g = 1;\n",
     "notes.txt": "line one of notes\nline two\nline three\nline four\n",
     "docs/old.md": "# Old\n\nline one\nline two\nline three\n",
 }
 HEAD = {
-    "src/old.ts": "// kept from base\nexport const a = 2;\n",
+    "src/old.ts": "// Copyright 2026 Acme\n// Inserted explanation of a\nexport const a = 2;\n",
     "src/a.ts": 'const u = "http://x";\n// note\n/**\n * jsdoc\n */\n'
                 "// eslint-disable-next-line no-console\nconsole.log(u);\n",
     "src/A.java": "/** Javadoc */\npublic class A {}\n",
@@ -36,15 +55,33 @@ HEAD = {
                      "/* jshint undef: true */\n// tslint:disable\n// @flow\n// @generated\n\nexport const d = 1;\n"
                      "// global state is shared\n// re-enable the cache\n",
     "src/j.test.js": "/**\n * @jest-environment jsdom\n */\n/**\n * explains the setup\n */\ntest(\"x\", () => {});\n",
-    "src/lic.ts": "// Copyright (c) 2026 Acme Corp. All rights reserved.\n// Use of this code is governed by a"
-                  " license.\n\n// explains the retry loop below\nexport const r = 1;\n// Copyright moved here\n",
+    "src/lic.ts": "// Copyright (c) 2026 Acme Corp. All rights reserved.\n// Use of this source code is governed by a"
+                  " BSD-style license that can be found in the LICENSE file.\n\n// explains the retry loop below\nexport const r = 1;\n// Copyright moved here\n",
     "src/apache.java": "/*\n * Licensed under the Apache License, Version 2.0.\n */\npackage p;\n",
     "DECISIONS.md": "line one of notes\nline two\nline three\nline four\nextra\n",
     "docs/moved.md": "# Old\n\nline one\nline two\nline three\n",
     "prag.py": "x = 1  # Pragmatic shortcut until v2\ny = 2  # noqa\n",
     "hdr.py": "#!/usr/bin/env python3\n# Copyright 2026 Acme\n# All rights reserved.\nv = 1\n",
+    "src/key.ts": "// Validates the license key before activation\nexport const v = 1;\n",
+    "src/retry.ts": "// Copyright 2026 Acme\n// This module retries because the upstream API drops requests\n"
+                    "export const r = 1;\n",
+    "src/blk.ts": "/*\n * Copyright 2026 Acme\n * This module retries because the upstream API drops requests\n */\n"
+                  "export const b = 1;\n",
+    "src/mit.ts": notice("MIT", "//", 76) + "export const m = 1;\n",
+    "src/mit.css": notice("MIT", "block", 60) + "a {}\n",
+    "src/bsd.c": notice("BSD-3-Clause", "block", 78) + "int x;\n",
+    "src/bsd2.go": notice("BSD-2-Clause", "//", 64) + "package b\n",
+    "src/apache.go": notice("Apache-2.0", "//", 72) + "package a\n",
+    "src/Apache.kt": notice("Apache-2.0", "block", 80).replace("http://", "https://") + "val a = 1\n",
+    "deploy.sh": "#!/bin/sh\n" + notice("Apache-2.0", "#", 66) + "echo ok\n",
+    "src/prose.ts": MIT_PROSE + "export const p = 1;\n",
+    "tools/build/NOTES.md": "# Build notes\n",
+    "tools/build/step.ts": "// explains the bundler step\nexport const s = 1;\n",
+    "node_modules/dep/README.md": "# Dep\n",
+    "vendor/lib/x.go": "// vendored\npackage lib\n",
+    "dist/index.js": "/******/ (() => {})();\n",
 }
-EXPECTED = [
+EXPECTED = sorted([
     "DECISIONS.md: markdown: added Markdown file",
     "a.rb:6: comment: # explains",
     "allowed.ts:1: comment: // allowed",
@@ -52,6 +89,7 @@ EXPECTED = [
     "app.py:5: comment: # comment",
     'app.py:9: comment: """Docstring."""',
     "docs/notes.md: markdown: added Markdown file",
+    "node_modules/dep/README.md: markdown: added Markdown file",
     "page.html:2: comment: <!-- c -->",
     "prag.py:1: comment: x = 1  # Pragmatic shortcut until v2",
     "q.sql:1: comment: -- comment",
@@ -59,12 +97,19 @@ EXPECTED = [
     "src/A.java:1: comment: /** Javadoc */",
     "src/a.ts:2: comment: // note",
     "src/a.ts:3: comment: /**",
+    "src/blk.ts:1: comment: /*",
     "src/d.test.ts:10: comment: // global state is shared",
     "src/d.test.ts:11: comment: // re-enable the cache",
     "src/j.test.js:4: comment: /**",
+    "src/key.ts:1: comment: // Validates the license key before activation",
     "src/lic.ts:4: comment: // explains the retry loop below",
     "src/lic.ts:6: comment: // Copyright moved here",
-]
+    "src/old.ts:2: comment: // Inserted explanation of a",
+    "src/prose.ts:5: comment: // retries because the API drops calls",
+    "src/retry.ts:2: comment: // This module retries because the upstream API drops requests",
+    "tools/build/NOTES.md: markdown: added Markdown file",
+    "tools/build/step.ts:1: comment: // explains the bundler step",
+])
 
 
 def git(repo, *args):

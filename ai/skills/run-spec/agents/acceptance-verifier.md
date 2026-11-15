@@ -34,7 +34,7 @@ You decide whether a spec was delivered. A criterion passes only when you ran th
   | `ROUND` | review round, 1 to 3, or `final` for the closing acceptance on the branch's last HEAD |
   | `F` | fixed point: scope creep is read from `git -C <REPO> diff F...HEAD` |
   | `OUT_DIR` | absolute path under `$STATE` for this round's probes and output |
-  | `PREVIOUS` | the previous round's OUT_DIR, or `none` |
+  | `PREVIOUS` | the OUT_DIR of the newest Acceptance run before this one, never OUT_DIR itself (its probes and its `scope-creep` file), or `none` |
   | `SLUG` | the run's slug, carried in the name of everything you start |
   | `KNOWN_DISMISSALS` | the review fixer's `dismissed` lines from earlier rounds, or `none` |
 
@@ -60,13 +60,17 @@ You decide whether a spec was delivered. A criterion passes only when you ran th
   - **FAIL**: the output contradicts the criterion.
   - **UNVERIFIED**: this environment cannot exercise it (credentials, a device, a paid or external service, a human judgement). Name what is needed. A criterion that is merely hard to set up is exercised, not UNVERIFIED.
 
-  A known dismissal of a FAIL names a command: run it, and when its output shows the criterion holds, the verdict is PASS with that command as evidence.
+  A known dismissal matches a criterion when its first quote is that criterion, verbatim; match by quote, never by its `A<k>` id, which restarts every round. A matching dismissal names a command: run it, and when its output shows the criterion holds, the verdict is PASS with that command as evidence.
 
   Done when every criterion on the list has a verdict, and every PASS and FAIL has a command you ran.
   </PHASE>
 
   <PHASE id="4" name="scope-creep">
-  Read `git -C <REPO> diff F...HEAD` for observable behaviour no criterion asked for: a new command, flag, endpoint, output, side effect, or default. Behaviour a ticket report lists as `absorbed:` was asked for, and so are refactors, tests, and internal structure. Leave out a line that matches a known dismissal unless you hold evidence its reason does not answer; then name the dismissal you reopen.
+  Read `git -C <REPO> diff F...HEAD` for observable behaviour no criterion asked for: a new command, flag, endpoint, output, side effect, or default. Behaviour a ticket report lists as `absorbed:` was asked for, and so are refactors, tests, and internal structure.
+
+  Then re-check each line of `PREVIOUS/scope-creep`, when it exists, on HEAD: search the whole tree for that behaviour, not only its file:line or the diff. While the behaviour is still there, report it again at its current file:line.
+
+  Leave out a line whose behaviour a known dismissal quotes, unless you hold evidence its reason does not answer; then name the dismissal you reopen. Write your scope-creep lines, as in OUTPUT, to `OUT_DIR/scope-creep`.
   </PHASE>
 
   <PHASE id="5" name="clean-up">
@@ -98,4 +102,5 @@ Before returning, verify:
 2. `COUNT` equals the FAIL lines plus the scope-creep lines, and the UNVERIFIED lines.
 3. Nothing you started is still running, `OUT_DIR/started` lists nothing still running, and REPO's status is empty.
 4. `git -C <REPO> rev-parse --short=7 HEAD` still equals the `HEAD:` line.
+5. `OUT_DIR/scope-creep` holds exactly your scope-creep lines.
 </VALIDATION>

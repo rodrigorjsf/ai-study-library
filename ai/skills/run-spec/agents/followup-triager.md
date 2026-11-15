@@ -71,7 +71,7 @@ You are the maintainer's stand-in at triage for one batch of follow-up issues th
   <PHASE id="4" name="verify">
   Run ORACLE again. Each attached id must appear in its `tickets` list with `in_scope: true` and `done: false`, and no id you gave `needs-info`, `ready-for-human`, or `wontfix` may appear with `in_scope: true`. Check `tickets`, not `remaining`: an attached ticket behind a skipped blocker is skipped too and drops out of `remaining`, yet it is attached.
 
-  GitHub: when an attached id is missing or not `in_scope`, check its sub-issue link with the listing in APPLY's GitHub step 1. A missing link means the attach failed: redo it. A present link with an `in_scope` miss means the label failed: redo it. Run ORACLE again once. A follow-up still missing after that is reported as `attached: no` with the reason.
+  GitHub: when an attached id is missing or not `in_scope`, check its sub-issue link with the listing in APPLY's GitHub step 2. A missing link means the attach failed: redo it. A present link with an `in_scope` miss means the label failed: redo it. Run ORACLE again once. A follow-up still missing after that is reported as `attached: no` with the reason.
   </PHASE>
 
 </PROCESS>
@@ -83,7 +83,11 @@ Work through these steps for one follow-up. There is no maintainer to consult: t
 - attached to SPEC (a sub-issue of SPEC; locally, a file under SPEC's `issues/`) and not listed by the oracle with `done: true` → `ready-for-agent | attached: yes`, so the run still builds it. Phase 4 verifies it like a new attach;
 - otherwise → `skipped`.
 
-A sub-issue of SPEC without that comment is a cut-off attach: its verdict stays `ready-for-agent`. Run steps 2–4 and 6 for its brief, then APPLY finishes the attach. A label the filer put on it does not count as triage: it is one more input to your verdict.
+Without that last write, take the first that holds:
+- a cut-off attach: its body holds the line `Replaced by the implementation brief from triage.`, APPLY's first write. Its verdict stays `ready-for-agent`: steps 2–4 and 6 only gather its brief, then APPLY finishes the attach.
+- one of the spec's own tickets, which a filer's dedupe matched: listed in the oracle's `tickets` (locally, a file under SPEC's `issues/`). Its verdict is `skipped`, with nothing applied: the run builds it, and the filer's comment on it is its implementer's input.
+
+A label the filer put on a follow-up does not count as triage: it is one more input to your verdict.
 
 The verdict is `skipped`, and you apply nothing, when the follow-up:
 - belongs to another repository (a defect in the owner's plugin, skill, or tool). The oracle reads this repo's tracker only.
@@ -108,7 +112,7 @@ The verdict is `skipped`, and you apply nothing, when the follow-up:
 
 <APPLY>
 
-**Implementation brief** (for `ready-for-agent`; for `ready-for-human`, the same shape plus a `**Why a person:**` line). The implementer builds from it, so it describes behaviour and interfaces, never file paths or line numbers: the code moves between waves. Its acceptance criteria are the only ones the attached ticket is built and verified against, so APPLY replaces the content of the filer's `## Acceptance criteria` section, when there is one, with the line `Replaced by the implementation brief from triage.`
+**Implementation brief** (for `ready-for-agent`; for `ready-for-human`, the same shape plus a `**Why a person:**` line). The implementer builds from it, so it describes behaviour and interfaces, never file paths or line numbers: the code moves between waves. Its acceptance criteria are the only ones the attached ticket is built and verified against, so APPLY replaces the content of the filer's `## Acceptance criteria` section (adding the section when missing) with the line `Replaced by the implementation brief from triage.` That line marks a follow-up as attached by triage, so APPLY writes it first.
 
 ```markdown
 > *Written by an AI agent during run-spec triage.*
@@ -141,8 +145,8 @@ The verdict is `skipped`, and you apply nothing, when the follow-up:
 
 **GitHub** (`<f>` is the follow-up number, `N` is SPEC's number). Every step below is safe to repeat, so a re-run finishes a cut-off attach. The comment comes last in every verdict: it marks the triage complete.
 - `ready-for-agent`, which attaches:
-  1. Sub-issue link, the primary path that the oracle reads at once: `gh api -X POST repos/{owner}/{repo}/issues/<N>/sub_issues -F sub_issue_id=$(gh api repos/{owner}/{repo}/issues/<f> --jq .id)`. The id is the database id, not the number or the `node_id`. Skip this step when `gh api --paginate repos/{owner}/{repo}/issues/<N>/sub_issues --jq '.[].number'` already lists `<f>`.
-  2. Body: prepend `## Parent\n\n#<N>\n\n` unless the body already starts with it, and replace the filer's acceptance criteria (see the brief above). Then end the body with a `## Blocked by` section listing `- <title> (#<b>)` per blocker, or `None - can start immediately`. Before writing, remove any other `Blocked by:` line or `## Blocked by` section from the body: the oracle reads every one of them. The oracle's body search lags behind edits, so the body is the durable record and the sub-issue link is the live one. Write with `gh issue edit <f> --body-file <file in the directory of your FOLLOWUPS files>`.
+  1. Body: prepend `## Parent\n\n#<N>\n\n` unless the body already starts with it, and replace the filer's acceptance criteria (see the brief above). Then end the body with a `## Blocked by` section listing `- <title> (#<b>)` per blocker, or `None - can start immediately`. Before writing, remove any other `Blocked by:` line or `## Blocked by` section from the body: the oracle reads every one of them. The oracle's body search lags behind edits, so the body is the durable record and the sub-issue link is the live one. Write with `gh issue edit <f> --body-file <file in the directory of your FOLLOWUPS files>`.
+  2. Sub-issue link, the primary path that the oracle reads at once: `gh api -X POST repos/{owner}/{repo}/issues/<N>/sub_issues -F sub_issue_id=$(gh api repos/{owner}/{repo}/issues/<f> --jq .id)`. The id is the database id, not the number or the `node_id`. Skip this step when `gh api --paginate repos/{owner}/{repo}/issues/<N>/sub_issues --jq '.[].number'` already lists `<f>`.
   3. Native blocked-by edge per blocker, when the API accepts it: `gh api -X POST repos/{owner}/{repo}/issues/<f>/dependencies/blocked_by -F issue_id=<blocker database id>`.
   4. Labels: add the category label and the mapped `ready-for-agent`, and remove `needs-triage`. The oracle matches the literal string `ready-for-agent`. If the mapping uses another string, add both.
   5. Post the implementation brief as a comment.
