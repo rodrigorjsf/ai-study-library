@@ -150,6 +150,8 @@ Report template (REPORT_OUT):
 ## Evidence
 - <criterion> — `<command>` → `<decisive output>` (<tier>, PASS | UNVERIFIED: <what is needed>)
 
+<each command as a person types it from the repo root; for a probe script, the commands it runs, never a scratchpad path>
+
 ## Merge Danger
 **Door:** one-way | two-way — <why>
 **Blast Radius:** <one word> — <what could break>
