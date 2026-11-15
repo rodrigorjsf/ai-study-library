@@ -214,6 +214,27 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 - No code-reading axis reads the fixes of round 3, or of an advisory-only round whose triage attaches nothing (UX/AIX, Design, Security `needs-human`). The fixer's full suite and hygiene gate check them, and the closing acceptance re-runs every criterion on them.
 - The UX/AIX gate looks only at file paths. A user-facing string changed in a backend file does not trigger it.
 
+### Open findings at release (2026-11-15)
+
+The gauntlet loop that hardened this kit stopped after round 10 by the owner's decision. Its critics still reported these defects. Each one names the path that triggers it and what to do until it is fixed.
+
+- **Malformed block from a non-ticket agent.** Only `ticket-implementer` has a "missing or malformed status block" rule (SKILL.md 5c). A wave-integrator, triager, fixer, verifier or reviewer that returns without its status or `COUNT:` line is recorded as is. Check the record, and rerun `/run-spec` if it is incomplete.
+- **Merge gate and Acceptance blocking disagree.** The `--merge` gate holds only on FAIL or UNVERIFIED. Scope-creep lines in the newest Acceptance are blocking for rounds, but they neither hold the merge nor appear in the remaining findings. Read the PR's Evidence before merging.
+- **Owner fix and a RED halt.** An owner's `user-<k>` fix that dies after a RED integration halt is not re-run, because step 3 halts on the red repair first. Ask for the fix again after the next `/run-spec`.
+- **"Continue" while the CI gate runs.** A mid-run "continue" while the `--merge` CI gate waits (no subagent running) is read as a dropped session and re-enters step 3. Wait for the gate instead of typing "continue".
+- **`--merge` with no `origin` remote.** The spec's queue line never leaves `pending`, so the queue repeats the first spec. Do not combine `--merge` with a repo that has no remote.
+- **Reviewer and implementer coordination.** A per-ticket reviewer that runs a long evidence command in the background ends its turn, and the implementer has no rule for that interim notification. The stall-probe re-spawn of a missing reviewer also cannot tell a dead reviewer from a live one. Expect an occasional duplicate reviewer.
+- **Known-dismissal ids.** Known dismissals on the code-reading axes are matched by per-round ids (`S1`, `SEC1`), which restart every round, so a dismissal can be applied to the wrong finding in a later round.
+- **Triager.**
+  - A split whose triage is already complete gets no ISSUES line.
+  - The triager runs reproductions with no wait-by-notification and no cleanup rule.
+- **Verifier.**
+  - Its cleanup can delete a tracked file that a build rewrote.
+  - It has no wait-by-notification rule for commands longer than the Bash timeout.
+- **README and the mid-run "continue" rule.** This README's step-3 node and its Cursor "Resume" row predate that rule.
+
+The full verdicts are kept with the loop's handoff, outside this repository.
+
 ### Known limitations
 
 These need a subagent to die at one instant inside its own work; generic detection and step 3's re-run do not cover them.
