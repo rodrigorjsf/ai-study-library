@@ -1,3 +1,4 @@
+import collections
 import importlib.util
 import os
 import random
@@ -264,53 +265,101 @@ PROPERTY_CASES = 300
 WORDS = ("retries cache because upstream drops calls timeout queue parser backoff flaky renders avatar slow billing "
          "rounds sums bundler widget gadget ledger socket").split()
 HOLDERS = ("Acme Corp", "Widget Works Ltd", "Gadget Labs", "Ledger Socket Inc", "Parser Guild")
-
-
-class Lang:
-    def __init__(self, ext, statements, comments, notices, strings=(), markers=()):
-        self.ext, self.statements, self.comments = ext, statements, comments
-        self.notices, self.strings, self.markers = notices, strings, markers
-
+Lang = collections.namedtuple("Lang", "ext statements comments notices strings markers", defaults=((), ()))
 
 LANGS = (
-    Lang("ts", ("const {a} = {n};", 'let {a}: string = "{t}";',
-                "export function {a}({b}: number) {{\n  return {b} / {n};\n}}", "if ({a} > {n}) {{\n  {b}();\n}}",
-                "const {a} = `{t} ${{{b}}}`;", "{a}.push({b}, {n});", "import {{ {a} }} from './{b}';"),
-         ("// {t}", "/* {t} */", "/** {t} */"), ("//", "block"),
-         ('const {a} = "{p}{m}{s}";', "const {a} = '{p}{m}{s}';", "const {a} = `{p}{m}{s} ${{{b}}} {p}{m}`;",
-          'const {a} = "{p}\\"{m}{s}";', "export default {{ {a}: '{p}{m}{s}', {b}: {n} }};",
-          'console.log("{p}{m}{s}", {n});'), ("//", "/*")),
-    Lang("java", ("int {a} = {n};", 'String {a} = "{t}";', "public void {a}() {{\n  {b}({n});\n}}",
-                  "if ({a} > {n}) {{\n  {b}();\n}}"),
-         ("// {t}", "/* {t} */", "/** {t} */"), ("//", "block")),
-    Lang("go", ("package {a}", "func {a}({b} int) int {{\n\treturn {b} / {n}\n}}", "var {a} = {n}",
-                'fmt.Println("{t}")', "if {a} > {n} {{\n\t{b}()\n}}"), ("// {t}", "/* {t} */"), ("//",)),
-    Lang("css", (".{a} {{\n  margin: {n}px;\n}}", "#{b} .{a} {{ color: red; }}",
-                 "@media (min-width: {n}px) {{\n  .{a} {{ display: none; }}\n}}"), ("/* {t} */",), ("block",)),
-    Lang("html", ("<p>{t}</p>", '<div class="{a}">', "</div>", '<a href="/{a}">{t}</a>',
-                  "<ul>\n  <li>{t}</li>\n</ul>"), ("<!-- {t} -->",), ("html",)),
-    Lang("sh", ("{a}={n}", 'echo "{t}"', 'if [ "$1" = "{a}" ]; then\n  {b} {n}\nfi', "{a}() {{\n  echo {n}\n}}",
-                "export {a}={b}"), ("# {t}",), ("#",),
-         ('echo "{p}{m}{s}"', "echo '{p}{m}{s}'", '{a}="{p}{m}{s}"', "printf '%s\\n' \"{p}{m}{s}\"",
-          'if [ "$1" = "{p}{m}{s}" ]; then'), ("#", "//")),
-    Lang("sql", ("SELECT {a}, {b} FROM {a} WHERE {a} > {n};", "INSERT INTO {a} VALUES ({n}, '{t}');",
-                 "UPDATE {a} SET {b} = {n} WHERE id = {n};", "SELECT\n  {a},\n  {b}\nFROM {a};"),
-         ("-- {t}",), ("--",),
-         ("SELECT '{p}{m}{s}' AS {a};", "INSERT INTO {a} VALUES ('{p}{m}{s}', {n});",
-          "UPDATE {a} SET {b} = '{p}''{m}{s}' WHERE id = {n};", "SELECT {a} FROM {b} WHERE {a} LIKE '%{m}%';"),
-         ("--",)),
-    Lang("py", ("{a} = {n}", '{a} = "{t}"', "def {a}({b}):\n    return {b} + {n}", "if {a} > {n}:\n    {b} = {a}",
-                "print({a}, {b})", "class {a}:\n    {b} = {n}"), ("# {t}",), ("#",),
-         ('{a} = "{p}{m}{s}"', "{a} = '{p}{m}{s}'", '{a} = f"{p}{m}{s} {{{b}}}"', '{a} = r"{p}{m}{s}"',
-          '{a} = b"{p}{m}{s}"', '{a} = """{p}{m}{s}"""', 'print("{p}{m}{s}", {n})', '{a} = "{p}\\"{m}{s}"',
-          '{a} = {{"{b}": "{p}{m}{s}"}}'), ("#", "--", "/*")),
-    Lang("rb", ("{a} = {n}", 'puts "{t}"', "def {a}({b})\n  {b} + {n}\nend", "if {a} > {n}\n  {b}\nend"),
-         ("# {t}",), ("#",)),
-    Lang("yaml", ("{a}: {n}", '{a}: "{t}"', "{a}:\n  {b}: {n}\n  items:\n    - {t}"), ("# {t}",), ("#",),
-         ('{a}: "{p}{m}{s}"', "{a}: '{p}{m}{s}'", '- "{p}{m}{s}"', '  {a}: "{p}{m}{s}"', '{a}: ["{p}{m}{s}", {n}]'),
-         ("#",)),
+    Lang(
+        "ts",
+        statements=("const {name} = {number};", 'let {name}: string = "{phrase}";',
+                    "export function {name}({other}: number) {{\n  return {other} / {number};\n}}",
+                    "if ({name} > {number}) {{\n  {other}();\n}}", "const {name} = `{phrase} ${{{other}}}`;",
+                    "{name}.push({other}, {number});", "import {{ {name} }} from './{other}';"),
+        comments=("// {phrase}", "/* {phrase} */", "/** {phrase} */"),
+        notices=("//", "block"),
+        strings=('const {name} = "{prefix}{marker}{suffix}";', "const {name} = '{prefix}{marker}{suffix}';",
+                 "const {name} = `{prefix}{marker}{suffix} ${{{other}}} {prefix}{marker}`;",
+                 'const {name} = "{prefix}\\"{marker}{suffix}";',
+                 "export default {{ {name}: '{prefix}{marker}{suffix}', {other}: {number} }};",
+                 'console.log("{prefix}{marker}{suffix}", {number});'),
+        markers=("//", "/*")),
+    Lang(
+        "java",
+        statements=("int {name} = {number};", 'String {name} = "{phrase}";',
+                    "public void {name}() {{\n  {other}({number});\n}}", "if ({name} > {number}) {{\n  {other}();\n}}"),
+        comments=("// {phrase}", "/* {phrase} */", "/** {phrase} */"),
+        notices=("//", "block")),
+    Lang(
+        "go",
+        statements=("package {name}", "func {name}({other} int) int {{\n\treturn {other} / {number}\n}}",
+                    "var {name} = {number}", 'fmt.Println("{phrase}")', "if {name} > {number} {{\n\t{other}()\n}}"),
+        comments=("// {phrase}", "/* {phrase} */"),
+        notices=("//",)),
+    Lang(
+        "css",
+        statements=(".{name} {{\n  margin: {number}px;\n}}", "#{other} .{name} {{ color: red; }}",
+                    "@media (min-width: {number}px) {{\n  .{name} {{ display: none; }}\n}}"),
+        comments=("/* {phrase} */",),
+        notices=("block",)),
+    Lang(
+        "html",
+        statements=("<p>{phrase}</p>", '<div class="{name}">', "</div>", '<a href="/{name}">{phrase}</a>',
+                    "<ul>\n  <li>{phrase}</li>\n</ul>"),
+        comments=("<!-- {phrase} -->",),
+        notices=("html",)),
+    Lang(
+        "sh",
+        statements=("{name}={number}", 'echo "{phrase}"', 'if [ "$1" = "{name}" ]; then\n  {other} {number}\nfi',
+                    "{name}() {{\n  echo {number}\n}}", "export {name}={other}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('echo "{prefix}{marker}{suffix}"', "echo '{prefix}{marker}{suffix}'",
+                 '{name}="{prefix}{marker}{suffix}"', "printf '%s\\n' \"{prefix}{marker}{suffix}\"",
+                 'if [ "$1" = "{prefix}{marker}{suffix}" ]; then'),
+        markers=("#", "//")),
+    Lang(
+        "sql",
+        statements=("SELECT {name}, {other} FROM {name} WHERE {name} > {number};",
+                    "INSERT INTO {name} VALUES ({number}, '{phrase}');",
+                    "UPDATE {name} SET {other} = {number} WHERE id = {number};",
+                    "SELECT\n  {name},\n  {other}\nFROM {name};"),
+        comments=("-- {phrase}",),
+        notices=("--",),
+        strings=("SELECT '{prefix}{marker}{suffix}' AS {name};",
+                 "INSERT INTO {name} VALUES ('{prefix}{marker}{suffix}', {number});",
+                 "UPDATE {name} SET {other} = '{prefix}''{marker}{suffix}' WHERE id = {number};",
+                 "SELECT {name} FROM {other} WHERE {name} LIKE '%{marker}%';"),
+        markers=("--",)),
+    Lang(
+        "py",
+        statements=("{name} = {number}", '{name} = "{phrase}"', "def {name}({other}):\n    return {other} + {number}",
+                    "if {name} > {number}:\n    {other} = {name}", "print({name}, {other})",
+                    "class {name}:\n    {other} = {number}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('{name} = "{prefix}{marker}{suffix}"', "{name} = '{prefix}{marker}{suffix}'",
+                 '{name} = f"{prefix}{marker}{suffix} {{{other}}}"', '{name} = r"{prefix}{marker}{suffix}"',
+                 '{name} = b"{prefix}{marker}{suffix}"', '{name} = """{prefix}{marker}{suffix}"""',
+                 'print("{prefix}{marker}{suffix}", {number})', '{name} = "{prefix}\\"{marker}{suffix}"',
+                 '{name} = {{"{other}": "{prefix}{marker}{suffix}"}}'),
+        markers=("#", "--", "/*")),
+    Lang(
+        "rb",
+        statements=("{name} = {number}", 'puts "{phrase}"', "def {name}({other})\n  {other} + {number}\nend",
+                    "if {name} > {number}\n  {other}\nend"),
+        comments=("# {phrase}",),
+        notices=("#",)),
+    Lang(
+        "yaml",
+        statements=("{name}: {number}", '{name}: "{phrase}"', "{name}:\n  {other}: {number}\n  items:\n    - {phrase}"),
+        comments=("# {phrase}",),
+        notices=("#",),
+        strings=('{name}: "{prefix}{marker}{suffix}"', "{name}: '{prefix}{marker}{suffix}'",
+                 '- "{prefix}{marker}{suffix}"', '  {name}: "{prefix}{marker}{suffix}"',
+                 '{name}: ["{prefix}{marker}{suffix}", {number}]'),
+        markers=("#",)),
 )
 STRING_LANGS = tuple(lang for lang in LANGS if lang.strings)
+NOTICE_LANGS = tuple(lang for lang in LANGS if lang.notices)
 
 
 def ident(rng):
@@ -322,9 +371,10 @@ def phrase(rng):
 
 
 def fill(rng, template, markers=()):
-    return template.format(a=ident(rng), b=ident(rng), n=rng.randint(0, 999), t=phrase(rng),
-                           m=rng.choice(markers or ("",)), p=rng.choice(("", phrase(rng) + " ", ident(rng) + ":")),
-                           s=rng.choice(("", " " + phrase(rng), ident(rng))))
+    return template.format(name=ident(rng), other=ident(rng), number=rng.randint(0, 999), phrase=phrase(rng),
+                           marker=rng.choice(markers or ("",)),
+                           prefix=rng.choice(("", phrase(rng) + " ", ident(rng) + ":")),
+                           suffix=rng.choice(("", " " + phrase(rng), ident(rng))))
 
 
 def source_lines(rng, lang, templates):
@@ -338,6 +388,22 @@ def source_lines(rng, lang, templates):
 
 def source(rng, lang, templates=None):
     return "\n".join(source_lines(rng, lang, templates or lang.statements)) + "\n"
+
+
+def licensed_source(rng, lang):
+    text = notice(rng.choice(sorted(MODULE.LICENSES)), rng.choice(lang.notices), rng.randint(1, 200),
+                  rng.choice(HOLDERS), rng.randint(1990, 2026))
+    if rng.random() < 0.5:
+        text = text.replace("http://", "https://")
+    return text + source(rng, lang)
+
+
+def generated_files(rng, languages, make_text):
+    files = {}
+    for i in range(PROPERTY_CASES):
+        lang = rng.choice(languages)
+        files[f"case{i:03d}.{lang.ext}"] = make_text(lang)
+    return files
 
 
 def reported_in_repo(script, files, base_files=None):
@@ -356,31 +422,16 @@ def unexpected_output(script, files):
 
 
 def no_comment_tokens(rng, script):
-    files = {}
-    for i in range(PROPERTY_CASES):
-        lang = rng.choice(LANGS)
-        files[f"case{i:03d}.{lang.ext}"] = source(rng, lang)
-    return unexpected_output(script, files)
+    return unexpected_output(script, generated_files(rng, LANGS, lambda lang: source(rng, lang)))
 
 
 def marker_inside_string(rng, script):
-    files = {}
-    for i in range(PROPERTY_CASES):
-        lang = rng.choice(STRING_LANGS)
-        files[f"case{i:03d}.{lang.ext}"] = source(rng, lang, lang.statements + lang.strings * 3)
+    files = generated_files(rng, STRING_LANGS, lambda lang: source(rng, lang, lang.statements + lang.strings * 3))
     return unexpected_output(script, files)
 
 
 def licence_notice_any_width(rng, script):
-    files = {}
-    for i in range(PROPERTY_CASES):
-        lang = rng.choice([x for x in LANGS if x.notices])
-        text = notice(rng.choice(sorted(MODULE.LICENSES)), rng.choice(lang.notices), rng.randint(1, 200),
-                      rng.choice(HOLDERS), rng.randint(1990, 2026))
-        if rng.random() < 0.5:
-            text = text.replace("http://", "https://")
-        files[f"case{i:03d}.{lang.ext}"] = text + source(rng, lang)
-    return unexpected_output(script, files)
+    return unexpected_output(script, generated_files(rng, NOTICE_LANGS, lambda lang: licensed_source(rng, lang)))
 
 
 def added_comment_reported(rng, script):
@@ -414,7 +465,8 @@ def failure_report(results, seed):
 
 REPORTS_EVERY_FILE = (
     "import subprocess, sys\n"
-    "diff = subprocess.run(['git', 'diff', '--name-only', f'{sys.argv[1]}...{sys.argv[2]}'], capture_output=True, text=True)\n"
+    "diff = subprocess.run(['git', 'diff', '--name-only', f'{sys.argv[1]}...{sys.argv[2]}'],\n"
+    "                      capture_output=True, text=True)\n"
     "print('\\n'.join(f'{path}:1: comment: x' for path in diff.stdout.split()))\n"
     "sys.exit(1)\n"
 )
