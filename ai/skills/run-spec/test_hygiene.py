@@ -116,6 +116,16 @@ HEAD = {
                    "  return 1;\n})()}`;\n",
     "src/raw.go": "package raw\n\nconst s = `\n// not a comment\n`\n",
     "src/unterm.ts": "const u = `abc\n// later comment\n",
+    "src/reply.ts": "export const parse = (raw: string) =>\n  return raw.replace(/^```\\w*\\n?/, \"\").trim();\n\n"
+                    "// parses the model reply because the provider wraps JSON in fences\n\n"
+                    "// builds the prompt sent to the model\nexport const prompt = (q: string) => `Answer: ${q}`;\n"
+                    "// trailing explanation after the template\n",
+    "src/fence.ts": "export const strip = (raw: string) => raw\n  .replace(/^```\\w*\\n?/, \"\")\n"
+                    "  // strips the closing fence too\n  .replace(/```$/, \"\")\n  .replace(/[/]`/g, \"\")\n"
+                    "  // drops slash-backtick pairs\n  .replace(/[/]`/g, \"\");\nexport const half = (n: number) => n / 2;\n",
+    "src/kbd.tsx": "export const K = () => <kbd>`</kbd>;\n// explains the shortcut key\nexport const t = `x`;\n",
+    "usage.sh": "#!/bin/sh\necho \"usage: feed input with <<EOF\"\nprintf '%s\\n' 'then <<EOF'\n"
+                "true # feeds <<EOF too\n# explains the setup below\ncat <<EOF\nbody\nEOF\n",
 }
 EXPECTED = sorted([
     "DECISIONS.md: markdown: added Markdown file",
@@ -167,6 +177,13 @@ EXPECTED = sorted([
     "src/tick.ts:6: comment: // after the template",
     "src/tick.ts:8: comment: // code inside the expression",
     "src/unterm.ts:2: comment: // later comment",
+    "src/reply.ts:4: comment: // parses the model reply because the provider wraps JSON in fences",
+    "src/reply.ts:6: comment: // builds the prompt sent to the model",
+    "src/reply.ts:8: comment: // trailing explanation after the template",
+    "src/fence.ts:3: comment: // strips the closing fence too",
+    "src/fence.ts:6: comment: // drops slash-backtick pairs",
+    "src/kbd.tsx:2: comment: // explains the shortcut key",
+    "usage.sh:5: comment: # explains the setup below",
 ])
 
 

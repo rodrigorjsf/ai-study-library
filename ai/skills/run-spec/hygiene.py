@@ -41,11 +41,12 @@ CLOSER = re.compile(r"(?:\*+/\}?|-->)\s*$")
 PLAIN = re.compile(r"[A-Za-z][a-z]*[.!?]?")
 SEPS = {"--", "-", "\u2013", "\u2014", "//", "#"}
 SENTENCE = re.compile(r"(?<=\w\w[.!?])\s+(?=[A-Z])")
-HEREDOC = re.compile(r"(?<![<\w])<<(?!<)[-~]?([ \t]*)(['\"]?)([A-Za-z_]\w*)\2")
+HEREDOC = re.compile(r"(?<![<\w])<<(?!<)[-~]?([ \t]*)(['\"]?)([A-Za-z_]\w*)\2|'[^']*'|\"(?:\\.|[^\"\\])*\"|(?<!\S)#.*")
 HEREDOC_LANGS = set("sh bash zsh rb pl tf hcl".split())
 SHELLS = set("sh bash zsh".split())
 BACKTICK = set("js jsx ts tsx mjs cjs mts cts go vue svelte astro".split())
 TRIPLE = set("java kt kts scala groovy swift dart cs".split())
+OPERAND = re.compile(r"(?:^|[(,=:\[!&|?{;]|=>|\b(?:return|typeof|case|in|of|throw|yield|await|void|delete))$")
 PRAGMA_LINE = re.compile(rf"(?:\s*{PRAGMAS}(?:[ \t]+(?!@)(?:\{{.*\}}|\S+))?)+\s*", re.I)
 BSD_HEAD = ("Redistribution and use in source and binary forms, with or without modification, are permitted provided "
             "that the following conditions are met:\n\n1. Redistributions of source code must retain the above "
@@ -237,8 +238,8 @@ def heredoc_lines(src, shell):
                 inside.update(range(pending.pop(0)[1], n + 1))
                 if pending:
                     pending[0] = (pending[0][0], n + 1)
-        elif not line.lstrip().startswith("#"):
-            pending = [(m[3], n + 1) for m in HEREDOC.finditer(line) if shell or m[2] or not m[1]]
+        else:
+            pending = [(m[3], n + 1) for m in HEREDOC.finditer(line) if m[3] and (shell or m[2] or not m[1])]
     return inside
 
 
@@ -248,13 +249,15 @@ def literal_lines(text, ext):
         c, two = text[i], text[i:i + 2]
         if c == "\n":
             line += 1
-            state = "code" if state in ("'", '"', "line") else state
+            state = "code" if state in ("'", '"', "line", "/", "[") else state
         elif state == "code":
             if two in ("//", "/*"):
                 state, i = ("line" if two == "//" else "block"), i + 1
             elif ext in TRIPLE and text.startswith(('"""', "'''"), i):
                 state, quote, start, i = "multi", text[i:i + 3], line, i + 2
             elif c in "'\"":
+                state = c
+            elif c == "/" and ext in BACKTICK - {"go"} and OPERAND.search(text[text.rfind("\n", 0, i) + 1:i].rstrip()):
                 state = c
             elif c == "`" and ext in BACKTICK:
                 state, quote, start = "multi", c, line
@@ -268,6 +271,8 @@ def literal_lines(text, ext):
                 state, i = "code", i + 1
         elif c == "\\" and not (ext == "go" and state == "multi") and text[i + 1:i + 2] not in ("", "\n"):
             i += 1
+        elif state == "[" or (state == "/" and c == "["):
+            state = "/" if c == "]" else "["
         elif state != "multi":
             state = "code" if c == state else state
         elif text.startswith(quote, i):
@@ -278,7 +283,7 @@ def literal_lines(text, ext):
             braces.append(0)
             state, i = "code", i + 1
         i += 1
-    return inside
+    return inside if state != "multi" and not braces else set()
 
 
 def string_lines(text, path):

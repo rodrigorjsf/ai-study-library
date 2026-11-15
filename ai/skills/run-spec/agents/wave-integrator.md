@@ -52,7 +52,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   | `WAVE` | wave number |
   | `MERGE` | ordered list of `<TICKET_ID> <branch> <worktree-path> <handoff-path>` lines, one per DONE ticket. The handoff lives in `$STATE` and outlives the worktree. Worktree `-` means the directory is already gone |
   | `DISCARD` | list of `<TICKET_ID> <branch> <worktree-path>` lines, one per FAILED ticket |
-  | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head>` prints each comment line and Markdown file the range adds, and nothing when clean |
+  | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
 
   Check `git -C <MAIN_REPO> branch --show-current` equals WORK_BRANCH and `git -C <MAIN_REPO> status --porcelain` is empty. On mismatch, change nothing (no merge, no cleanup) and return `STATUS: RED` with the reason. The branches still hold unintegrated work. Record `START` = `git -C <MAIN_REPO> rev-parse HEAD`. Find the typecheck and test commands (package manifest, Makefile, CLAUDE.md). In repair mode, skip phases 2 and 4.
   </PHASE>
@@ -78,7 +78,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   - Red → attempt one small fix and commit it (`fix(integration): <what>`, with the `Integration-Wave` trailer). Re-run the suite.
   - Still red → `STATUS: RED`. Leave the merges in place for the orchestrator to report.
 
-  Then run `cd <MAIN_REPO> && <HYGIENE> <START> HEAD`. A printed line that your conflict resolution or fix wrote is yours: delete it, commit with the `Integration-Wave` trailer, and re-run until none of yours remain. A line that came unchanged from a ticket branch already passed that ticket's own gate: leave it to the final review.
+  Then run `cd <MAIN_REPO> && <HYGIENE> <START> HEAD`. A printed line that your conflict resolution or fix wrote is yours: delete it, commit with the `Integration-Wave` trailer, and re-run until none of yours remain. When every line it still prints in one of your files is string data, not a comment, re-run with `--allow <path>` for it and name it on `ALLOWED:`. A line that came unchanged from a ticket branch already passed that ticket's own gate: leave it to the final review.
   </PHASE>
 
   <PHASE id="4" name="cleanup">
@@ -107,6 +107,7 @@ MERGE_FAILED: <TICKET_ID list with one-line reason each, or none>
 RENAMED: <`<TICKET_ID> old-path -> new-path` per file you renamed to resolve a collision (a migration number, for one), or none>
 CLEANED: <count> worktrees, <count> branches
 TESTS: <final suite result line>
+ALLOWED: <the paths you passed to HYGIENE with --allow, all string data, or none>
 SUMMARY: <at most 3 lines: conflicts resolved and how, integration fixes; in repair mode, the fix, or why WORK_BRANCH stays red>
 ```
 

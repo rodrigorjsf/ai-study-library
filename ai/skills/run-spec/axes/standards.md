@@ -40,7 +40,7 @@ Each refactoring is the one Fowler's *Refactoring* catalogues for that smell.
 
 ## Do not report
 
-- Behaviour (Acceptance, Spec), security (Security), module shape: depth, pass-through layers, seams, unused extension points (Design), user and agent experience (UX/AIX).
+- Behaviour (Acceptance, Spec), security (Security), module shape: depth, pass-through layers, seams, unused extension points (Design), user and agent experience, including the names an agent reads (UX/AIX).
 - Anything the linter, the code-style tool, or the type checker already enforces.
 - Code the diff did not touch.
 

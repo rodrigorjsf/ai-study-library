@@ -64,7 +64,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   | `RESUME` | optional; `true` when an earlier run of this same ticket was cut off by a session drop |
 
   1. When the registry exists, an earlier run of this ticket left it: stop each entry by the registry rule (HARD_RULES), then delete the file. Check `git -C <WORKTREE> branch --show-current` equals BRANCH, and, unless RESUME is `true`, that `git -C <WORKTREE> rev-parse HEAD` equals BASE_SHA. On mismatch, go to phase 7 with the failure reason.
-     **Resume.** With `RESUME: true`, the worktree holds the cut-off run's work: commits after BASE_SHA, and maybe uncommitted edits, a REPORT_OUT, or a partial HANDOFF_OUT. Keep all of it. Read `git -C <WORKTREE> log --format='%h %s' BASE_SHA..HEAD`, `git -C <WORKTREE> status --porcelain`, and those files. Then finish steps 2–5 below and continue from the first phase whose work is not yet in the worktree. Whichever phase that is, run phase 3 on the current HEAD before phase 4 or phase 6: the cut-off run may have committed after its last phase 3 run. The review still diffs against BASE_SHA. Uncommitted edits you cannot account for are reverted with `git -C <WORKTREE> restore`.
+     **Resume.** With `RESUME: true`, the worktree holds the cut-off run's work: commits after BASE_SHA, and maybe uncommitted edits, a REPORT_OUT, or a partial HANDOFF_OUT. Keep all of it. Read `git -C <WORKTREE> log --format='%h %s' BASE_SHA..HEAD`, `git -C <WORKTREE> status --porcelain`, and those files. Then finish steps 2–5 below and continue from the first phase whose work is not yet in the worktree. Whichever phase that is, run phase 3 on the current HEAD before phase 4 or phase 6: the cut-off run may have committed after its last phase 3 run. The review still diffs against BASE_SHA. A leftover you keep counts as your own edit in phase 3. Drop each one you cannot account for, naming its paths: a tracked edit with `git -C <WORKTREE> restore --staged --worktree -- <paths>`, an untracked file or directory with `git -C <WORKTREE> clean -fd -- <paths>`.
   2. Read the ticket: GitHub `gh issue view <n> --json title,body,comments` (text mode prints nothing on repos that still use Projects classic); local: `<WORKTREE>/<TICKET_REF>`.
   3. Read the spec the same way. Note its `Testing Decisions` section.
   4. Read every CONTEXT_HANDOFFS file. A prior failed attempt of this ticket tells you what not to repeat.
@@ -87,7 +87,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
      ```
 
      Commit before the review: the reviewers diff `BASE_SHA...HEAD`, so they cannot see uncommitted work, and an empty diff leaves them nothing to review. A DONE ticket lands at least one commit with the `Ticket:` trailer, because the oracle marks a ticket done only through that trailer: when the criteria already hold and nothing changes, commit `git -C <WORKTREE> commit --allow-empty -m "chore(<scope>): <ticket title> already holds"` with the same trailers, skip phase 4, and prove the criteria in step 4.
-  2. Run `cd <WORKTREE> && <HYGIENE> <BASE_SHA> HEAD`, with `--allow <path>` only for a Markdown file the ticket or spec names. Fix every other line it prints: delete the comment, or delete the file and carry what it said into the report. Commit, and re-run until it prints nothing.
+  2. Run `cd <WORKTREE> && <HYGIENE> <BASE_SHA> HEAD`, with `--allow <path>` only for a Markdown file the ticket or spec names, or for a file whose every line it still prints is string data, not a comment (a line deletion cannot fix). Fix every other line it prints: delete the comment, or delete the file and carry what it said into the report. Commit, and re-run until it prints nothing.
   3. Run typecheck and the full test suite on HEAD. Both must be green. When you change anything to get there, commit and return to step 2. Record `GATED` = `git -C <WORKTREE> rev-parse --short=7 HEAD`.
   4. Prove every acceptance criterion through the public entry point: tier A at least, B only when the criterion has no observable surface. Each criterion's evidence is one command that stands alone, so a reviewer can re-run it after you stopped everything: it builds or starts what it needs, probes under `timeout`, and stops what it started. When it needs a running server, that command is a probe script under `<scratchpad>/t<id>/`. Keep each command with its decisive output. A criterion you cannot exercise here is UNVERIFIED, naming what it needs. A criterion that fails is a bug: return to phase 2 for it.
 
@@ -96,7 +96,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
 
   <PHASE id="4" name="review-and-fix">
   Spawn two reviewers in one message, each with `subagent_type: ticket-reviewer`, which pins them to Opus 5.5 at medium effort. Never use a general-purpose agent or a `model` override for them. Each prompt is only `KEY: value` lines:
-  - Standards: `AXIS: Standards`, `AXIS_BRIEF: <KIT>/axes/standards.md`.
+  - Standards: `AXIS: Standards`, `AXIS_BRIEF: <KIT>/axes/standards.md`, `ALLOWED: <your --allow paths, or none>`.
   - Spec: `AXIS: Spec`, `AXIS_BRIEF: <KIT>/axes/spec.md`, and one `EVIDENCE: <criterion> — <command> → <decisive output>` line per criterion from phase 3's step 4. The reviewer re-runs them.
   - Both: `SCOPE: ticket`, `REPO: <WORKTREE>`, `DIFF: git diff <BASE_SHA>...HEAD`, `COMMITS: git log <BASE_SHA>..HEAD --oneline`, `TICKET: <TICKET_REF>`, `SPEC: <SPEC>`.
 
@@ -114,7 +114,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   </PHASE>
 
   <PHASE id="5" name="follow-ups">
-  File each item phase 4 queued, through the rest of the `follow-up-issue` skill. This phase writes no code, so phase 3's last run still speaks for the code. File it outside the current spec's ticket set: a follow-up filed as a ticket of this spec would be picked up and built by this same run. GitHub: no `## Parent` or sub-issue link to SPEC; write its body file in the directory of REPORT_OUT. Local: write it under `.scratch/follow-ups/issues/`, never under SPEC's `issues/` directory; phase 6 commits it. Collect the links for FOLLOWUPS. Skip this phase when nothing is queued.
+  File each item phase 4 queued, through the rest of the `follow-up-issue` skill. This phase writes no code, so phase 3's last run still speaks for the code. File it outside the current spec's ticket set: a follow-up filed as a ticket of this spec would be picked up and built by this same run. The first line of its body's Context section is `Filed by run-spec <SLUG>.`: the triager takes up only follow-ups that carry it. GitHub: no `## Parent` or sub-issue link to SPEC; write its body file in the directory of REPORT_OUT. Local: write it under `.scratch/follow-ups/issues/`, never under SPEC's `issues/` directory; phase 6 commits it. Collect the links for FOLLOWUPS. Skip this phase when nothing is queued.
   </PHASE>
 
   <PHASE id="6" name="report-and-handoff">
@@ -129,7 +129,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   <PHASE id="7" name="failure-path">
   Enter this phase only when the ticket cannot be finished, for example: the suite stays red after a genuine fix attempt, an acceptance criterion contradicts the spec or code, or a blocker is missing from the code.
 
-  Write FAILURE_OUT from the handoff template with `Status: FAILED`, filling in "Why it failed / What the next attempt should try". Then write STATUS_OUT, as your last file action. Do not commit anything further. The orchestrator discards the branch; FAILURE_OUT survives in STATE.
+  Write FAILURE_OUT from the handoff template with `Status: FAILED`, filling in "Why it failed / What the next attempt should try". Then run VALIDATION, which writes STATUS_OUT last. Do not commit anything further. The orchestrator discards the branch; FAILURE_OUT survives in STATE.
   </PHASE>
 
 </PROCESS>
@@ -184,7 +184,7 @@ Branch: <BRANCH>   Base: <short BASE_SHA>   Head: <git rev-parse --short=7 HEAD>
 <FAILED only>
 ```
 
-Final message to the orchestrator (nothing else), also written to STATUS_OUT (VALIDATION 6):
+Final message to the orchestrator (nothing else), also written to STATUS_OUT (VALIDATION):
 
 ```
 STATUS: DONE | FAILED
@@ -193,7 +193,7 @@ HANDOFF: <absolute path of HANDOFF_OUT or FAILURE_OUT>
 BRANCH: <BRANCH> @ <head-sha>
 FOLLOWUPS: <issue links or repo-relative follow-up paths, or none>
 LEARNINGS: <the handoff's "Learnings" section in one line each, `;`-separated, or none>
-ALLOWED: <the Markdown paths you passed to HYGIENE with --allow, space-separated, or none>
+ALLOWED: <the paths you passed to HYGIENE with --allow, space-separated, or none; a non-Markdown one is string data>
 DOOR: one-way | two-way — <why>, or none when FAILED
 BLAST: <one word> — <what could break>, or none when FAILED
 REPORT: <comment URL, or ticket file path>, or none when FAILED
@@ -203,11 +203,19 @@ SUMMARY: <at most 3 lines>
 </OUTPUT>
 
 <VALIDATION>
-Before returning, verify:
-1. DONE only if phase 3's last run was green on the last code commit: `git -C <WORKTREE> diff --name-only GATED HEAD` lists only tracker files. Then run HYGIENE for `BASE_SHA HEAD` with your ALLOWED paths as the last gate, after your last commit: it prints nothing. The worktree status is empty, and nothing you started is still running.
+Before writing STATUS_OUT, verify the checks of your path. A DONE check that fails is fixed and checked again, or the ticket goes to phase 7.
+
+DONE:
+1. Phase 3's last run was green on the last code commit: `git -C <WORKTREE> diff --name-only GATED HEAD` lists only tracker files. Then run HYGIENE for `BASE_SHA HEAD` with your ALLOWED paths as the last gate, after your last commit: it prints nothing. The worktree status is empty.
 2. Every commit since BASE_SHA carries both trailers: `git -C <WORKTREE> log BASE_SHA..HEAD --format="%(trailers:key=Ticket,valueonly)" | grep -c .` and `git -C <WORKTREE> log BASE_SHA..HEAD --format="%(trailers:key=Spec,valueonly)" | grep -cxF '<SLUG>'` each equal the commit count, and that count is at least 1.
 3. Every acceptance criterion has an Evidence line in the posted report.
 4. HANDOFF_OUT has every template section, and its `Head:` equals `git -C <WORKTREE> rev-parse --short=7 HEAD`.
-5. `git -C <MAIN_REPO> status --porcelain` shows nothing you created.
-6. The final message is exactly the status block. Once checks 1–5 hold, write it to STATUS_OUT as your last file action: the watchdog stops watching a ticket whose STATUS_OUT exists.
+
+FAILED:
+1. FAILURE_OUT has every template section, reads `Status: FAILED`, and fills in "Why it failed / What the next attempt should try".
+
+Both paths:
+1. Nothing you started is still running: every registry entry is stopped.
+2. `git -C <MAIN_REPO> status --porcelain` shows nothing you created.
+3. The final message is exactly the status block. Write it to STATUS_OUT as your last file action, on either path: the watchdog stops watching a ticket whose STATUS_OUT exists.
 </VALIDATION>
