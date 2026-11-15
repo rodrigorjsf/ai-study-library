@@ -6,12 +6,16 @@ mattpocock-skills tracker plus the work branch's `Ticket:` commit trailers and
 failure records, and prints one JSON object. The orchestrator never reads
 ticket bodies, code, or handoffs itself; it asks this script.
 
+A ticket is done when a commit carrying its `Ticket:` trailer reaches the work
+branch, or when the tracker already marks it closed. The trailer alone counts:
+no other commit marks a ticket done.
+
 Usage:
   tickets.py --tracker github|local --spec <#N|path> --work-branch <branch> --failures-dir <dir>
 
-Output keys: slug, spec, tickets[{id, ref, title, blockers, done, attempts,
-skipped, ready}], ready (ids ready now, in order), remaining (ids neither
-done nor skipped).
+Output keys: slug, spec, tickets[{id, ref, title, blockers, in_scope, done,
+attempts, skipped, ready}], ready (ids ready now, in order), remaining (ids
+neither done nor skipped). `ready` appears only on in-scope tickets.
 """
 import argparse
 import json
@@ -119,9 +123,8 @@ def main():
     slug, spec, tickets = (github_tickets if a.tracker == "github" else local_tickets)(a.spec)
     def log(fmt):
         return sh("git", "log", a.work_branch, f"--format={fmt}", check=False)
-    # a ticket is done once its commits (Ticket: trailer) or its handoff commit reach WORK
+    # a ticket is done once a commit carrying its Ticket: trailer reaches WORK
     trailers = set(log("%(trailers:key=Ticket,valueonly)").split())
-    trailers |= set(re.findall(r"^chore\(handoff\): (\S+)$", log("%s"), re.M))
     fdir = pathlib.Path(a.failures_dir)
     by_id = {t["id"]: t for t in tickets}
     for t in tickets:

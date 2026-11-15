@@ -2,6 +2,8 @@
 
 > **Revision 2026-11-15:** superseded as the description of the current flow by [`ai/skills/run-spec/README.md`](../../skills/run-spec/README.md), which now holds the flow's source files, a five-axis final review, the queue and resume rules. This page stays as the 2026-10-11 snapshot and its assessment.
 
+> **Revision 2026-11-15 (2):** handoffs now live in the run's untracked `$STATE/handoffs/`, never in the branch: the `.handoffs/` folder, its cleanup step and `chore(handoff)` commits are gone, and the oracle marks a ticket done only by its `Ticket:` trailer. The final review's Spec axis is replaced by Acceptance, which executes every criterion. Both supersede what this page says about handoffs, done detection and the review; the current flow is in [`ai/skills/run-spec/README.md`](../../skills/run-spec/README.md).
+
 > **Sources (read 2026-10-11, on this machine)**
 > - `~/.claude/skills/run-spec/SKILL.md` and `tickets.py`
 > - `~/.claude/agents/ticket-implementer.md`, `ticket-reviewer.md`, `wave-integrator.md`, `review-fixer.md`

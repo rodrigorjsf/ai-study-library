@@ -13,7 +13,7 @@ while :; do
     id=$(basename "$d")
     recent=$(find "$d" \( -name .git -o -name node_modules -o -name .codegraph \) -prune -o -type f -mmin "-$idle" -print -quit 2>/dev/null)
     [ -n "$recent" ] && continue
-    pgrep -f "wt/$id" >/dev/null && continue
+    pgrep -f "wt/${id}(/|\$|[[:space:]])" >/dev/null && continue
     echo "stalled: $id"
     exit 0
   done

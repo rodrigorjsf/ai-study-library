@@ -2,6 +2,8 @@
 
 > **Estudo, 2026-11-15.** Síntese de uma deep research (5 ângulos, 23 fontes buscadas, 109 claims extraídas, 25 verificadas por votação adversarial 3 a 3) mais leitura direta de fontes primárias e dos arquivos locais. Cada afirmação traz a fonte. O que não foi verificado está marcado como tal.
 
+> **Revision 2026-11-15 (2):** o eixo Spec do review final foi substituído por **Acceptance** (agente `acceptance-verifier`), que executa cada user story e cada critério de aceite pelo ponto de entrada público; a checagem de scope creep do Spec foi para ele. O Standards agora é spawnado pelo próprio `/run-spec` com [`axes/standards.md`](../../skills/run-spec/axes/standards.md), que aponta para o smell baseline da skill `code-review` pinada; o review final não chama mais essa skill. Entrou o eixo **Hygiene** (`hygiene.py`). As linhas da §2 que citam Standards + Spec pela skill `code-review` valem como histórico; o fluxo atual está em [`ai/skills/run-spec/README.md`](../../skills/run-spec/README.md).
+
 ## 1. Problema
 
 O review final do `/run-spec` (step 6 de `~/.claude/skills/run-spec/SKILL.md`) roda a skill `mattpocock-skills:code-review`, pinada em 1.3.1. Ela tem dois eixos fixos:
