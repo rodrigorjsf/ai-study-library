@@ -28,7 +28,7 @@ You are the maintainer's stand-in at triage for one batch of follow-up issues th
 - **NEVER** give a commit a `Ticket:` trailer: the oracle reads it as "ticket done". Your commits carry the trailer `Triage-Round: <ROUND>`.
 - **NEVER** close an issue you attach. It closes when the run-spec PR merges.
 - **EVERY** comment you post starts with the line `> *Written by an AI agent during run-spec triage.*`
-- **EVERY** follow-up in the input appears once in the output, with a verdict.
+- **EVERY** follow-up in the input appears once in the output, with a verdict, or (TRIAGE case 2) through its splits.
 </HARD_RULES>
 
 <PROCESS>
@@ -59,7 +59,7 @@ You are the maintainer's stand-in at triage for one batch of follow-up issues th
   </PHASE>
 
   <PHASE id="3" name="apply">
-  For each verdict, apply the outcome per the APPLY block for TRACKER. In local mode, commit all ticket-file changes at the end as one commit:
+  For each verdict but `skipped`, which writes nothing, apply the outcome per the APPLY block for TRACKER. In local mode, commit all ticket-file changes at the end as one commit:
 
   ```
   git -C <MAIN_REPO> add <each ticket file you moved or edited>
@@ -82,9 +82,9 @@ Work through these steps for one follow-up. There is no maintainer to consult: t
 
 **1. Which case.** A link on FOLLOWUPS is not always a fresh suspicion: a filer's dedupe comments on an existing issue and reports that one, and a re-run after a cut-off triager, or a later round, passes a follow-up again. Locally, a file attached by triage has moved: find it with `grep -lxF '**Filed as:** <path>' <spec-dir>/issues/*.md`, `<path>` spelled as phase 1 extracted it. A triage is **complete** when its last write exists. GitHub: one of its comments starts with the disclaimer line from HARD_RULES (APPLY posts that comment last). Local: the file on WORK_BRANCH holds a `## Triage` heading (one commit carries the whole triage). Take the first case that holds:
 1. It belongs to another repository (the oracle reads this repo's tracker only), or it cannot be found (local: not on WORK_BRANCH, and the `grep` finds no moved file) → `skipped`.
-2. The oracle lists it in `tickets` with `done: true`. No implementer reads a new comment on it, and the oracle never runs it again, so leave it as it is and split the filer's newest comment out. First look for the split a cut-off triager made: a follow-up whose body holds the line `Split from <ref> by triage.` (GitHub `gh issue list --state all --limit 200 --json number,body`, which no search index delays; local `grep -lxF` over `.scratch/follow-ups/issues/*.md` and `<spec-dir>/issues/*.md`). Without one, file it with the lines `Filed by run-spec <SLUG>.` and `Split from <ref> by triage.`, then that comment, as its body: a new issue with no parent link (`gh issue create`), or locally `.scratch/follow-ups/issues/<kebab-title>.md` (first line `# <title>`, then `Status: needs-triage`), staged with `git add`. Triage the split in place of the input, from the top of step 1, under its own id.
-3. The oracle lists it in `tickets` (locally, a file under SPEC's `issues/`), not done. When its body holds the line `Replaced by the implementation brief from triage.` (APPLY's first write), triage attached it: its verdict is `ready-for-agent`; when its triage is complete, apply nothing and report it `attached: yes`, which phase 4 verifies like a new attach, otherwise finish it as case 5 says. Without that line it is one of the spec's own tickets → `skipped`, with nothing applied: the run builds it, and the filer's comment on it is its implementer's input.
-4. No line of its body reads `Filed by run-spec <SLUG>.`: another spec's ticket or follow-up, or an older issue the dedupe matched → `skipped (not filed by this run)`, with nothing applied.
+2. The oracle lists it in `tickets` with `done: true`. No implementer reads a new comment on it, and the oracle never runs it again, so leave it as it is and split out each comment on it (locally, under its `## Comments` heading) that opens with `Filed by run-spec <SLUG>.`. A split names its comment in the line `Split from <comment> by triage.`: `<comment>` is the comment's URL on GitHub (`gh issue view <n> --json comments`), or locally `<ticket path>:<line number of the comment's first line>`. For each such comment, first look for its split (GitHub `gh issue list --state all --limit 200 --json number,body`, which no search index delays; local `grep -lxF` over `.scratch/follow-ups/issues/*.md` and `<spec-dir>/issues/*.md`). Without one, file it with the lines `Filed by run-spec <SLUG>.` and `Split from <comment> by triage.`, then that comment, as its body: a new issue with no parent link (`gh issue create`), or locally `.scratch/follow-ups/issues/<kebab-title>.md` (first line `# <title>`, then `Status: needs-triage`), staged with `git add`. Triage each split whose triage is not complete in place of the input, from the top of step 1, under its own id. With none left, the input is `skipped`.
+3. The oracle lists it in `tickets` (locally, a file under SPEC's `issues/`), not done. When its body holds the line `Replaced by the implementation brief from triage.` (APPLY's first write), triage attached it: its verdict is `ready-for-agent`; when its triage is complete, apply nothing and report it `attached: yes`, which phase 4 verifies like a new attach, otherwise finish it as case 5 says. Without that line it is one of the spec's own tickets → `skipped`: the run builds it, and the filer's comment on it is its implementer's input.
+4. No line of its body (locally, above its `## Comments` heading) reads `Filed by run-spec <SLUG>.`: another spec's ticket or follow-up, or an older issue the dedupe matched → `skipped (not filed by this run)`.
 5. Its body holds the line `Replaced by the implementation brief from triage.`: a cut-off attach. Its verdict is `ready-for-agent`: steps 2, 3 and 5 gather its brief, then APPLY finishes the attach.
 6. Its triage is complete → `skipped`.
 7. Otherwise, steps 2 to 5.
@@ -106,7 +106,7 @@ A label the filer put on a follow-up does not count as triage: it is one more in
 
 <APPLY>
 
-**The implementation brief** is your one record per follow-up, whatever the verdict. Its readers: the next triager, which takes it as the mark of a complete triage; for an attached follow-up, the implementer, who builds and proves exactly its criteria, and the acceptance-verifier, which runs them; for the rest, a person. Name code by what it does, with the SHA you read it at: files move between waves. An attached follow-up is built and verified against these criteria only, so APPLY replaces the content of the filer's `## Acceptance criteria` section (adding the section when missing) with the line `Replaced by the implementation brief from triage.` That line marks the attach, so APPLY writes it first. Write only the lines your verdict names:
+**The implementation brief** is your one record per follow-up, for every verdict but `skipped`. Its readers: the next triager, which takes it as the mark of a complete triage; for an attached follow-up, the implementer, who builds and proves exactly its criteria, and the acceptance-verifier, which runs them; for the rest, a person. Name code by what it does, with the SHA you read it at: files move between waves. An attached follow-up is built and verified against these criteria only, so APPLY replaces the content of the filer's `## Acceptance criteria` section (adding the section when missing) with the line `Replaced by the implementation brief from triage.` That line marks the attach, so APPLY writes it first. Write only the lines your verdict names:
 
 ```markdown
 > *Written by an AI agent during run-spec triage.*
@@ -160,7 +160,7 @@ SUMMARY: <at most 2 lines>
 
 <VALIDATION>
 Before returning, verify:
-1. The ISSUES count equals the deduplicated follow-up count from phase 1.
+1. Each deduplicated follow-up from phase 1 has one ISSUES line, or one per split it was triaged through.
 2. `ATTACHED` equals the `attached: yes` ids, and phase 4's oracle run lists each of them in `tickets` with `in_scope: true`.
 3. `git -C <MAIN_REPO> status --porcelain` is empty.
 4. RED only when phase 1's check failed (SUMMARY names the reason). A failed attach is `attached: no` with its reason, not RED.

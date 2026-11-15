@@ -36,11 +36,11 @@ Each refactoring is the one Fowler's *Refactoring* catalogues for that smell.
 | Message Chains | a caller walks from object to object to reach a value | Hide Delegate |
 | Insider Trading | two modules rely on each other's private details | Move Function and Move Field until one interface carries the coupling |
 | Refused Bequest | a subclass uses little of what it inherits and overrides the rest away | Replace Superclass with Delegate |
-| Mysterious Name | the name does not say what a function returns or a variable holds | Rename; Change Function Declaration |
+| Mysterious Name | the name does not say what a function returns, a variable holds, or a tool, parameter or CLI flag does | Rename; Change Function Declaration |
 
 ## Do not report
 
-- Behaviour (Acceptance, Spec), security (Security), module shape: depth, pass-through layers, seams, unused extension points (Design), user and agent experience, including the names an agent reads (UX/AIX).
+- Behaviour (Acceptance, Spec), security (Security), module shape: depth, pass-through layers, seams, unused extension points (Design), user and agent experience (UX/AIX). Names are yours, an agent-read one included.
 - Anything the linter, the code-style tool, or the type checker already enforces.
 - Code the diff did not touch.
 

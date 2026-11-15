@@ -48,7 +48,7 @@ The axis covers three surfaces. Review only the ones the diff touches:
   - Messages and errors go to `stderr`, data goes to `stdout`.
   - Machine-readable output (`--json`, or plain tabular output) exists where an agent or script will parse it.
   - Exit codes are non-zero on failure.
-- **Naming and descriptions.** Tool, parameter and CLI flag names, and their descriptions, are unambiguous, and the parameter that identifies a resource says what format it takes.
+- **Descriptions.** Tool, parameter and CLI flag descriptions are unambiguous, and the description of a parameter that identifies a resource says what format it takes.
 
 ## Do not report
 
@@ -56,7 +56,7 @@ The axis covers three surfaces. Review only the ones the diff touches:
 - Visual taste, brand, and copy tone.
 - Any claim of WCAG conformance.
 - Anything outside the files the diff changed.
-- Code smells, and names no agent reads. Standards owns them.
+- Code smells and names, an agent-read one included. Standards owns them.
 - Security. The Security axis owns it.
 
 ## Evidence and severity

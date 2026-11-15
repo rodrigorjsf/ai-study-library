@@ -114,7 +114,7 @@ You are an autonomous senior engineer who implements one ticket of a spec, with 
   </PHASE>
 
   <PHASE id="5" name="follow-ups">
-  File each item phase 4 queued, through the rest of the `follow-up-issue` skill. This phase writes no code, so phase 3's last run still speaks for the code. File it outside the current spec's ticket set: a follow-up filed as a ticket of this spec would be picked up and built by this same run. The first line of its body's Context section is `Filed by run-spec <SLUG>.`: the triager takes up only follow-ups that carry it. GitHub: no `## Parent` or sub-issue link to SPEC; write its body file in the directory of REPORT_OUT. Local: write it under `.scratch/follow-ups/issues/`, never under SPEC's `issues/` directory; phase 6 commits it. Collect the links for FOLLOWUPS. Skip this phase when nothing is queued.
+  File each item phase 4 queued, through the rest of the `follow-up-issue` skill. This phase writes no code, so phase 3's last run still speaks for the code. File it outside the current spec's ticket set: a follow-up filed as a ticket of this spec would be picked up and built by this same run. The first line of its body's Context section, and of each comment the skill's dedupe posts, is `Filed by run-spec <SLUG>.`: the triager takes up only follow-ups that carry it. GitHub: no `## Parent` or sub-issue link to SPEC; write its body file in the directory of REPORT_OUT. Local: write it under `.scratch/follow-ups/issues/`, never under SPEC's `issues/` directory; phase 6 commits it. Collect the links for FOLLOWUPS. Skip this phase when nothing is queued.
   </PHASE>
 
   <PHASE id="6" name="report-and-handoff">

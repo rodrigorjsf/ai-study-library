@@ -41,12 +41,6 @@ CLOSER = re.compile(r"(?:\*+/\}?|-->)\s*$")
 PLAIN = re.compile(r"[A-Za-z][a-z]*[.!?]?")
 SEPS = {"--", "-", "\u2013", "\u2014", "//", "#"}
 SENTENCE = re.compile(r"(?<=\w\w[.!?])\s+(?=[A-Z])")
-HEREDOC = re.compile(r"(?<![<\w])<<(?!<)[-~]?([ \t]*)(['\"]?)([A-Za-z_]\w*)\2|'[^']*'|\"(?:\\.|[^\"\\])*\"|(?<!\S)#.*")
-HEREDOC_LANGS = set("sh bash zsh rb pl tf hcl".split())
-SHELLS = set("sh bash zsh".split())
-BACKTICK = set("js jsx ts tsx mjs cjs mts cts go vue svelte astro".split())
-TRIPLE = set("java kt kts scala groovy swift dart cs".split())
-OPERAND = re.compile(r"(?:^|[(,=:\[!&|?{;]|=>|\b(?:return|typeof|case|in|of|throw|yield|await|void|delete))$")
 PRAGMA_LINE = re.compile(rf"(?:\s*{PRAGMAS}(?:[ \t]+(?!@)(?:\{{.*\}}|\S+))?)+\s*", re.I)
 BSD_HEAD = ("Redistribution and use in source and binary forms, with or without modification, are permitted provided "
             "that the following conditions are met:\n\n1. Redistributions of source code must retain the above "
@@ -230,70 +224,6 @@ def header(text, markers):
     return top
 
 
-def heredoc_lines(src, shell):
-    inside, pending = set(), []
-    for n, line in enumerate(src, 1):
-        if pending:
-            if line.strip() == pending[0][0]:
-                inside.update(range(pending.pop(0)[1], n + 1))
-                if pending:
-                    pending[0] = (pending[0][0], n + 1)
-        else:
-            pending = [(m[3], n + 1) for m in HEREDOC.finditer(line) if m[3] and (shell or m[2] or not m[1])]
-    return inside
-
-
-def literal_lines(text, ext):
-    inside, pend, braces, state, quote, start, line, i = set(), set(), [], "code", "", 0, 1, 0
-    while i < len(text):
-        c, two = text[i], text[i:i + 2]
-        if c == "\n":
-            line += 1
-            state = "code" if state in ("'", '"', "line", "/", "[") else state
-        elif state == "code":
-            if two in ("//", "/*"):
-                state, i = ("line" if two == "//" else "block"), i + 1
-            elif ext in TRIPLE and text.startswith(('"""', "'''"), i):
-                state, quote, start, i = "multi", text[i:i + 3], line, i + 2
-            elif c in "'\"":
-                state = c
-            elif c == "/" and ext in BACKTICK - {"go"} and OPERAND.search(text[text.rfind("\n", 0, i) + 1:i].rstrip()):
-                state = c
-            elif c == "`" and ext in BACKTICK:
-                state, quote, start = "multi", c, line
-            elif c in "{}" and braces:
-                braces[-1] += 1 if c == "{" else -1
-                if braces[-1] < 0:
-                    braces.pop()
-                    state, quote, start = "multi", "`", line
-        elif state == "block":
-            if two == "*/":
-                state, i = "code", i + 1
-        elif c == "\\" and not (ext == "go" and state == "multi") and text[i + 1:i + 2] not in ("", "\n"):
-            i += 1
-        elif state == "[" or (state == "/" and c == "["):
-            state = "/" if c == "]" else "["
-        elif state != "multi":
-            state = "code" if c == state else state
-        elif text.startswith(quote, i):
-            inside |= pend | set(range(start + 1, line + 1))
-            pend, state, i = set(), "code", i + len(quote) - 1
-        elif two == "${" and quote == "`" and ext != "go":
-            pend |= set(range(start + 1, line + 1))
-            braces.append(0)
-            state, i = "code", i + 1
-        i += 1
-    return inside if state != "multi" and not braces else set()
-
-
-def string_lines(text, path):
-    p = PurePosixPath(path)
-    ext = p.suffix.lower()[1:]
-    if ext in HEREDOC_LANGS or p.name in ("Dockerfile", "Containerfile"):
-        return heredoc_lines([s.rstrip("\r") for s in text.split("\n")], ext in SHELLS or "." not in p.name)
-    return literal_lines(text, ext) if ext in BACKTICK | TRIPLE else set()
-
-
 def marker_hits(markers, lines):
     return {n: s for n, text in lines if (s := text.strip()).startswith(markers) and not exempt(n, s)}
 
@@ -353,7 +283,7 @@ def main():
             hits = marker_hits(m, lines) if m else {}
         if hits:
             text = git("show", f"{a.head}:{path}")
-            skip = header(text, m) | string_lines(text, path)
+            skip = header(text, m)
             hits = {n: line for n, line in hits.items() if n not in skip}
         out += [f"{path}:{n}: comment: {text.strip()[:120]}" for n, text in sorted(hits.items())]
     if out:
