@@ -2,16 +2,28 @@
 """Ticket-state oracle for the run-spec skill.
 
 Reads only ticket metadata (ids, titles, blocking edges, state) from the
-mattpocock-skills tracker plus the work branch's `Ticket:` commit trailers and
+spec's tracker plus the work branch's `Ticket:` commit trailers and
 failure records, and prints one JSON object. The orchestrator never reads
 ticket bodies, code, or handoffs itself; it asks this script.
+
+A ticket is done when a commit carrying its `Ticket:` trailer reaches the work
+branch and is not on the default branch, or when the tracker already marks it
+closed. The trailer alone counts: no other commit marks a ticket done. Local ids
+restart at 01 in every spec, so an earlier spec's `Ticket: 01` must not mark
+this spec's 01. Two rules keep them apart. A `Ticket:` trailer counts only on a
+commit whose `Spec:` trailer is absent (commits older than that trailer) or
+equals this spec's slug, the `slug` this script prints; this covers a work
+branch stacked on an earlier spec's unmerged commits. Trailers already on the
+default branch belong to merged runs, whose tickets the tracker records
+(`Closes #N`, or the local `Status: resolved`), so they never count.
+The default branch is `refs/remotes/origin/HEAD`, else `main`, else `master`.
 
 Usage:
   tickets.py --tracker github|local --spec <#N|path> --work-branch <branch> --failures-dir <dir>
 
-Output keys: slug, spec, tickets[{id, ref, title, blockers, done, attempts,
-skipped, ready}], ready (ids ready now, in order), remaining (ids neither
-done nor skipped).
+Output keys: slug, spec, tickets[{id, ref, title, blockers, in_scope, done,
+attempts, skipped, ready}], ready (ids ready now, in order), remaining (ids
+neither done nor skipped). `ready` appears only on in-scope tickets.
 """
 import argparse
 import json
@@ -51,10 +63,10 @@ def local_tickets(spec):
         text = f.read_text()
         num = re.match(r"(\d+)", f.name).group(1)
         title = re.sub(r"^#\s*\d+\s*[—:-]\s*", "", text.splitlines()[0]).strip()
-        m = re.search(r"Blocked by:\**\s*(.*)", text)
+        m = re.search(r"^\**Blocked by:\**\s*(.*)", text, re.M)
         blocked = m.group(1) if m else ""
         tickets.append({"id": num, "ref": str(f.resolve().relative_to(top)), "title": title, "_blocked": blocked,
-                        "_status": (re.search(r"Status:\**\s*(\S+)", text) or [None, ""])[1]})
+                        "_status": (re.search(r"^\**Status:\**\s*(\S+)", text, re.M) or [None, ""])[1]})
     ids = {t["id"].lstrip("0"): t["id"] for t in tickets}
     for t in tickets:
         b = t.pop("_blocked")
@@ -108,6 +120,16 @@ def github_tickets(spec):
     return f"{n}-{kebab(title)}", f"#{n}", tickets
 
 
+def default_refs():
+    head = sh("git", "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD", check=False).strip()
+    for name in ([head.removeprefix("origin/")] if head else []) + ["main", "master"]:
+        refs = [r for r in (f"refs/heads/{name}", f"refs/remotes/origin/{name}")
+                if sh("git", "rev-parse", "-q", "--verify", f"{r}^{{commit}}", check=False).strip()]
+        if refs:
+            return refs
+    return []
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tracker", required=True, choices=["github", "local"])
@@ -117,11 +139,16 @@ def main():
     a = ap.parse_args()
 
     slug, spec, tickets = (github_tickets if a.tracker == "github" else local_tickets)(a.spec)
-    def log(fmt):
-        return sh("git", "log", a.work_branch, f"--format={fmt}", check=False)
-    # a ticket is done once its commits (Ticket: trailer) or its handoff commit reach WORK
-    trailers = set(log("%(trailers:key=Ticket,valueonly)").split())
-    trailers |= set(re.findall(r"^chore\(handoff\): (\S+)$", log("%s"), re.M))
+    refs = default_refs()
+    log = sh("git", "log", a.work_branch, *(["--not", *refs] if refs else []),
+             "--format=%x1e%(trailers:only,unfold)", check=False)
+    trailers = set()
+    for record in log.split("\x1e"):
+        pairs = [(k.strip().lower(), v.strip()) for k, _, v in
+                 (line.partition(":") for line in record.splitlines() if ":" in line)]
+        specs = {v for k, v in pairs if k == "spec"}
+        if not specs or slug in specs:
+            trailers |= {t for k, v in pairs if k == "ticket" for t in v.split()}
     fdir = pathlib.Path(a.failures_dir)
     by_id = {t["id"]: t for t in tickets}
     for t in tickets:

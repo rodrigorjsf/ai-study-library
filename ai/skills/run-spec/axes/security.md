@@ -36,7 +36,7 @@ These are hard exclusions:
 
 - denial of service and resource exhaustion
 - rate limiting
-- missing hardening without a concrete exploit
+- missing hardening without a concrete exploit, except a crypto, configuration, or security-policy gap: it goes under `needs-human` (see below)
 - outdated third-party dependencies
 - test-only files
 - documentation and markdown
@@ -79,13 +79,13 @@ Better to miss a theoretical issue than to flood the report.
 
 ## Output
 
-Report only this, under 400 words:
+Report only this. Keep the prose under 400 words; the cap never drops a finding: shorten each line instead.
 
 ```
 ## Security
 - [HIGH|MEDIUM] <file:line> <category> (confidence <n>/10) — <exploit path> → <impact>. Fix: <fix>
 needs-human:
-- <file:line> <category> (confidence <n>/10) — <why it may matter>. Fix: <fix>
+- <file:line> <category> (confidence <n>/10) — <why it may be a risk>. Fix: <fix>
 COUNT: <n> blocking, <m> needs-human
 ```
 

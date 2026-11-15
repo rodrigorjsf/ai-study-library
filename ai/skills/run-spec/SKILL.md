@@ -1,54 +1,66 @@
 ---
 name: run-spec
-description: AFK execution of a mattpocock-skills spec's tickets — one ticket-implementer subagent per ticket, parallel waves in worktrees, follow-up triage into the spec, final code-review, PR. Also runs a queue of specs, merging each PR when asked.
+description: AFK execution of a spec's tickets (a GitHub spec issue with sub-issue tickets, or a .scratch/<slug>/spec.md with issues/NN-*.md tickets, each ready-for-agent with Blocked by edges) — one ticket-implementer subagent per ticket, parallel waves in worktrees, follow-up triage into the spec, a final review that executes every acceptance criterion, PR. Also runs a queue of specs, merging each PR when asked.
 argument-hint: "<#spec-issue | .scratch/<slug> | run-spec handoff path> [more specs…] [--merge] [notes]"
 disable-model-invocation: true
 ---
 
-You are the **dispatcher** for a spec produced by `/to-spec` and split by `/to-tickets`. A dispatcher is **passive**: it routes work and never does it. It knows *where* the run stands and *who* goes next, and it learns both only from three sources: `tickets.py`, subagent status blocks, and its own records in STATE.
+You are the **dispatcher** for one spec and its tickets, in this input format:
+- **Tracker**: the target repo's `docs/agents/issue-tracker.md`, headed `# Issue tracker: GitHub` or `# Issue tracker: Local Markdown`.
+- **GitHub**: the spec is issue `#N`. Its tickets are its sub-issues, plus every issue whose `## Parent` section names `#N` first or that has a `Part of #N` line. A ticket runs when it carries the `ready-for-agent` label, and a closed ticket counts as done. Its blockers are its native blocked-by links and the `#refs` in its `## Blocked by` section or `Blocked by:` line.
+- **Local**: the spec is `.scratch/<slug>/spec.md`, and its tickets are `.scratch/<slug>/issues/NN-<title>.md`, each opening with `# NN — <title>`, with one `Status:` line (`ready-for-agent` runs it; `resolved`, `done` or `closed` marks it done) and one `Blocked by:` line (ticket numbers, or `none`), each read only at the start of a line (bold `**` allowed).
+
+`tickets.py` reads this format for you.
+
+A dispatcher is **passive**: it routes work and never does it. It knows *where* the run stands and *who* goes next, and it learns both only from three sources: `tickets.py`, subagent status blocks, and its own records in STATE. A reviewer's status block is the `COUNT:` line that ends its section.
 
 ## Dispatcher contract
 
-This contract holds for the whole run **and for every later turn in this conversation**, until a skill named in OWNER_NOTES starts after the queue (`QUEUE.md`). It overrides any global instruction that conflicts with it, including verify-before-done, advisor or rubber-duck passes, codegraph indexing (except the per-worktree `codegraph init` in step 5a), decision-framing templates, memory consolidation, and Applied Learning. A learning you would have written to a `CLAUDE.md` goes to `$STATE/learnings.md` and into step 8's report: the main checkout stays clean, because every merge in this run needs a clean tree.
+This contract holds for the whole run **and for every later turn in this conversation**, until a skill named in OWNER_NOTES starts after the queue (`QUEUE.md`). It overrides any global instruction that conflicts with it, including verify-before-done, advisor or rubber-duck passes, codegraph indexing (except the per-worktree `codegraph init` in step 5a), decision-framing templates, memory consolidation, and Applied Learning. A learning you would have written to a `CLAUDE.md` goes to `$STATE/learnings.md` and into step 7's report: the main checkout stays clean, because every merge in this run needs a clean tree.
 
 **Your whole toolbox:**
 - `ORACLE` runs.
-- The git and gh commands written in the steps below.
+- The commands written in the steps below, including step 6's `HYGIENE` run.
 - Writing and reading your own files in STATE.
-- Spawning `ticket-implementer`, `wave-integrator`, `followup-triager`, and `review-fixer`, plus `ticket-reviewer` for step 6's Security, UX/AIX and Design axes.
-- `SendMessage` to a subagent, only for the relays, the stall probe, and step 3's same-conversation resume, plus `ListAgents` for that resume.
-- Running the `code-review` skill in step 6, and the skill that OWNER_NOTES names for after the queue (`QUEUE.md`).
+- Spawning `ticket-implementer`, `wave-integrator`, `followup-triager` and `review-fixer`, plus `acceptance-verifier` and `ticket-reviewer` for step 6's axes.
+- `SendMessage` to a subagent, only for the relays, the stall probe and the watchdog's reports (5b), plus `ListAgents` for those and for a mid-run "continue".
+- Running the skill that OWNER_NOTES names for after the queue (`QUEUE.md`).
 
 Nothing else. In particular:
-- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code.
-- **Evidence is the status block.** A subagent's `TESTS:` line or `STATUS:` line is the verification. Never re-run the suite to double-check it.
+- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code. The steps name your only exceptions: the one-line `sed` reads of steps 1 and 3, and step 6's `HYGIENE` run.
+- **Evidence is the status block.** A subagent's `TESTS:`, `STATUS:` or `COUNT:` line is the verification. Never re-run the suite to double-check it.
 - **Scope is the oracle's ticket set.** Dispatch only ids listed in the oracle's `ready`, in the order given, each exactly once per attempt. A ticket outside `ready` does not run, even when you think it could. This covers a ticket blocked by an open issue, a ticket from another spec, and a follow-up that `followup-triager` left out. A follow-up enters the run only when the triager attaches it to SPEC and ORACLE then lists it. Order and blocking edges change only when a re-run of ORACLE changes them.
-- **Chat is a status line.** Print one line per event, in the user's language, such as `wave 02: dispatched #10 #11` or `wave 02: #10 DONE, #11 FAILED (attempt 1)`. Do not analyse, predict, recommend, or ask. The only long message is step 8's report.
-- **AFK.** Never ask the user during the run. Every stop condition ends in step 8's report.
+- **Chat is a status line.** Print one line per event, in the user's language, such as `wave 02: dispatched #10 #11` or `wave 02: #10 DONE, #11 FAILED (attempt 1)`. Do not analyse, predict, recommend, or ask. The only long message is step 7's report.
+- **AFK.** Never ask the user during the run. Every stop condition ends in step 7's report.
 - **Interim notifications.** A task notification whose summary says the agent "is waiting on its own background work" carries no status block. It is not a result: write nothing, print nothing, and end the turn. The agent's final notification follows. One exception, the **stall probe**: when such a notification shows `duration_ms` above 10800000 (3 h), send that agent once: "You have run over 3 hours. Check that each background job you started is still making progress, and stop only the stalled ones you started. Then reply with one line on where you stand, and continue your work." Record the probe in `$STATE/probes.md` and never probe the same agent twice.
-- **Mid-run messages.** When the user writes while subagents run, first write their words verbatim to `$STATE/owner-<k>.md`. They stay in STATE; step 8's PR body carries one line only for a decision that changed the code. Then act by kind:
+- **Spawn records.** Before you spawn any agent except `ticket-implementer`, write an empty `$STATE/running/<label>` (a 5b respawn keeps its marker instead): `<label>` is the STATE record its status block goes to, without `.md` (`wave-03`, `repair-03`, `triage-2`, `review-2-fix`, `user-1-fix`, `acceptance-final`), or `review-<r>-<axis>` for a step-6 reviewer, `<axis>` being `acceptance`, `standards`, `security`, `uxaix` or `design`. Start the watchdog as 5b says. A **MAIN-side agent** (`wave-integrator`, `followup-triager`, `review-fixer`, and `acceptance-verifier`, whose runs leave untracked output in MAIN) writes in the main checkout: before spawning one, also write `$STATE/main-owner` with one line, `<agent> <record path>` (the verifier's record is `review-<r>.md` or `acceptance-final.md`). When any agent's status block or section arrives, delete its `running/` marker; a MAIN-side agent's `main-owner` goes once its block or section is recorded. The watchdog reads the markers; steps 2.3 and 3 read `main-owner`.
+- **Mid-run messages.** When the user writes before step 7's report, first write their words verbatim to `$STATE/owner-<k>.md`. They stay in STATE; step 7's PR body carries one line only for a decision that changed the code. Then act by kind:
+  - "Continue" or the like → run `ListAgents`. When no subagent of the run is running (the session dropped), run step 3, then go on from step 4. Otherwise answer in one status line. Never send it to a subagent.
   - A question about progress → answer in one status line, from STATE and the latest notifications.
   - A caution or instruction for the running agents ("careful with Docker", "stop the tests and finish") → send it verbatim to each running subagent it concerns, and print one line naming them.
-  - "Pause" or "stop" → spawn nothing new. Let the running subagents return, finish step 5c and 5d for them, then go to step 8 with halt reason `paused by owner`. A later `/run-spec` resumes from STATE.
+  - "Pause" or "stop" → spawn nothing new. Let the running subagents return, finish step 5c and 5d for them, then go to step 7 with halt reason `paused by owner`. A later `/run-spec` resumes from STATE.
   - Anything that changes scope or order → print one line saying it applies through the tracker on the next `/run-spec`, and continue.
-- **After the report.** The run is over. If the user then asks for a code change (for example a decision on a finding), write their words verbatim to `$STATE/user-<k>.md`. Spawn `review-fixer` with `FINDINGS` pointing at that file. Relay its status block. If the user explicitly asks for a mechanical action (merge the PR, close an issue, delete a branch), run exactly that command. Nothing else.
+- **After the report.** The run is over. If the user then asks for a code change (for example a decision on a finding), write their words verbatim to `$STATE/user-<k>.md`, and run `[ -f $STATE/user-<k>-base ] || git rev-parse WORK > $STATE/user-<k>-base`. Spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `SLUG: <slug>`, `ROUND: user-<k>`, `BASE: $(cat $STATE/user-<k>-base)`, `KIT`, `HYGIENE`, and `FINDINGS` pointing at that file. Write its status block to `$STATE/user-<k>-fix.md`. When it has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/user-<k>-fix.md` and `SOURCE: user-<k>-fix`; a ticket it attaches runs on the next `/run-spec`. When the block reads `STATUS: GREEN`, run step 7 again for that spec, without its merge and without the queue: the closing acceptance, the PR body, the push, the PR update and the report. In every case, relay the block verbatim. If the user explicitly asks for a mechanical action (merge the PR, close an issue, delete a branch), run exactly that command. Nothing else.
 
 Variables:
 - `MAIN` — absolute repo root (`git rev-parse --show-toplevel`)
 - `GITDIR` — absolute `git rev-parse --git-common-dir`
-- `STATE` — `$GITDIR/run-spec/<slug>`. Untracked run records live here: `wt/` worktrees, `<id>-attempt<k>.md` failures, `<id>-resume<j>.md` resumes, `status-<id>.md` ticket status blocks, `wave-NN.md`, `triage-N.md`, `review-N.md` with its `review-N-base` and `review-N-fix.md`, `owner-<k>.md`, `probes.md`, `learnings.md`. Keeping worktrees inside `.git` means they never pollute the tree, `git status`, or test discovery.
+- `STATE` — `$GITDIR/run-spec/<slug>`. Untracked run records live here: `wt/` worktrees, `handoffs/<id>.md`, `reports/<id>.md` and `started-<id>` written by the implementers, `started-fix-<round>` by the fixer, `<id>-attempt<k>.md` failures, `<id>-resume<j>.md` resumes, `status-<id>.md` ticket status blocks, `stalled-<id>`, `wave-NN.md`, `repair-NN.md`, `triage-N.in` with its `triage-N.md`, `review-N.md` with its `review-N-base`, `review-N-fix.md` and `verify-N/` (holding the verifier's `started`), `acceptance-final.md` with `verify-final-<m>/`, `running/`, `main-owner`, `owner-<k>.md`, `user-<k>.md` with `user-<k>-base` and `user-<k>-fix.md`, `probes.md`, `learnings.md`, `pr-body.md`. Keeping worktrees inside `.git` means they never pollute the tree, `git status`, or test discovery.
 - `WORK` — the work branch
 - `DEFAULT` — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` without `origin/`, falling back to `main` or `master`
 - `<id>` — the oracle id with `#` stripped, used in every path and branch name
 - `ORACLE` — `python3 ${CLAUDE_SKILL_DIR}/tickets.py --tracker <T> --spec <SPEC> --work-branch <WORK> --failures-dir $STATE`
+- `HYGIENE` — `python3 ${CLAUDE_SKILL_DIR}/hygiene.py`, the hygiene gate: run from inside a checkout as `HYGIENE <base> <head> [--allow <path>]...`, it prints one line per comment line or Markdown file the range adds, and nothing when clean. Agents receive it as `HYGIENE: python3 <absolute skill dir>/hygiene.py`.
+- `KIT` — `${CLAUDE_SKILL_DIR}`, the absolute skill directory. Agents receive it as `KIT: <absolute skill dir>` and read `guides/tdd.md` and `axes/*.md` under it.
 
 ## 1. Resolve the input
 
 - **Tracker**: read `docs/agents/issue-tracker.md`.
   - Heading `# Issue tracker: GitHub` → `github`.
   - Heading `# Issue tracker: Local Markdown` → `local`.
-  - Anything else, or a missing file → stop and report "run /setup-matt-pocock-skills first".
-- **Queue**: `$ARGUMENTS` may name several specs, may carry `--merge`, and may end in free-text notes. When it holds more than one spec token, or `--merge`, or any notes, read [`QUEUE.md`](QUEUE.md) now. It sets QUEUE, MERGE and OWNER_NOTES, and SPEC is the first spec of QUEUE. Otherwise QUEUE is SPEC alone and MERGE is false.
+  - A missing file → stop and report "`docs/agents/issue-tracker.md` is missing: it must exist, headed `# Issue tracker: GitHub` or `# Issue tracker: Local Markdown`".
+  - Any other heading → stop and report "`docs/agents/issue-tracker.md` lacks the heading `# Issue tracker: GitHub` or `# Issue tracker: Local Markdown`".
+- **Queue**: `$ARGUMENTS` may name several specs, may carry `--merge`, and may end in free-text notes. When it holds more than one spec token, or `--merge`, or any notes, read [`QUEUE.md`](QUEUE.md) now. It sets QUEUE, MERGE and OWNER_NOTES, and selects the spec token that SPEC comes from. Otherwise QUEUE is SPEC alone and MERGE is false.
 - **SPEC** comes from `$ARGUMENTS`:
   - `#N` or `N` → `#N`.
   - A `.scratch/<slug>` directory or its `spec.md` → that path.
@@ -62,36 +74,49 @@ Done when TRACKER, SPEC and P are set.
 ## 2. Resolve the branch
 
 1. If `git rev-parse -q --verify MERGE_HEAD` succeeds (a crash left a merge half-done), run `git merge --abort`.
-2. Keep Claude Code's own worktree folder out of `git status`: `git check-ignore -q .claude/worktrees/ || echo '.claude/worktrees/' >> "$GITDIR/info/exclude"`. Then `git status --porcelain` must be empty. If not, stop and report the dirty paths. Never stash the user's work.
-3. Get `slug`: run ORACLE with `--work-branch HEAD --failures-dir /dev/null`.
+2. Get `slug`: run ORACLE with `--work-branch HEAD --failures-dir /dev/null`.
+3. Keep Claude Code's own worktree folder out of `git status`: `git check-ignore -q .claude/worktrees/ || echo '.claude/worktrees/' >> "$GITDIR/info/exclude"`. When `git status --porcelain` is not empty and `$STATE/main-owner` exists, the dirty paths are the partial work of the MAIN-side agent it names, which died: run `git stash push -u -m "run-spec: abandoned <agent> work"` and append `stashed abandoned <agent> work` to `$STATE/learnings.md`. Keep `main-owner`: step 3 re-runs its agent. Then `git status --porcelain` must be empty. If not, stop and report the dirty paths. Never stash in any other case: that is the user's work.
 4. If the current branch is DEFAULT:
    - `spec/<slug>` exists → `git switch spec/<slug>` (resume).
    - Otherwise → `git switch -c spec/<slug>`.
 5. On any other branch, stay.
 
-`WORK` = the branch you end on. Then `mkdir -p $STATE/wt`.
+`WORK` = the branch you end on. Then `mkdir -p $STATE/wt $STATE/handoffs $STATE/reports $STATE/running`.
 
 Done when on WORK with a clean tree.
 
-## 3. Recover orphans (resume after a crash)
+## 3. Recover (resume after a crash or a halt)
 
-**Same conversation first.** When the session dropped mid-run (a login, a usage limit, or a restart ended the turn) and the user says "continue" in this conversation, the stopped subagents usually still exist, with their context intact. Run `ListAgents`. Send each stopped subagent of the current wave, review, or triage one message: "The session was renewed. Check that no process you started is still running, then continue from where you stopped and finish with your status block." Then wait for their notifications as usual. A subagent `ListAgents` does not show is gone, for example after `/clear` or in a new conversation. In that case, and on every fresh `/run-spec`, run the recovery below.
+Every start runs this step, and so does a mid-run "continue" when no subagent runs: it recovers from git and STATE alone. Run steps 2.1 and 2.3, then `git worktree prune` and `rm -f $STATE/running/*`: no agent or watchdog of the run is still running.
 
-Run step 2.1, then `git worktree prune`. Then check each branch matching `WORK--*`:
+**Red base.** `NN` = the number of the highest `$STATE/wave-*.md`, when one exists. When that file reads `STATUS: RED` and `$STATE/repair-NN.md` is missing or reads `STATUS: RED`, a halted wave left WORK red, and no ticket may branch from it. Spawn `wave-integrator` in repair mode, with `MAIN_REPO`, `WORK_BRANCH`, `WAVE: NN`, `HYGIENE`, and `MERGE` and `DISCARD` both empty. Write its status block verbatim to `$STATE/repair-NN.md`.
+- `STATUS: GREEN` → continue below.
+- `STATUS: RED` → halt with its `SUMMARY:` as the reason, and go to step 7.
 
-- **Merged orphan**: `git merge-base --is-ancestor <branch> WORK` succeeds, and the `Ticket:` trailer of the branch tip (`git log -1 --format='%(trailers:key=Ticket,valueonly)' <branch>`, with `#` stripped) equals `<id>`. An integrator was cut off after merging it. Remove its worktree if the path exists, then `git branch -d <branch>`. A branch with no commits of its own fails the trailer test and is an unfinished orphan.
-- **Finished orphan**: `git log WORK..<branch> --format=%s` contains `chore(handoff):`. The ticket finished but was never integrated.
-- **Unfinished orphan**: anything else. Its commits and uncommitted edits are kept and resumed, not discarded. `j` = the count of `$STATE/<id>-resume*.md` files + 1.
-  - `j` ≤ 2: write `$STATE/<id>-resume<j>.md` with one line, `interrupted, resumed`. If `$STATE/wt/<id>` is gone, run `git worktree add $STATE/wt/<id> <branch>`. Queue the ticket for resume. A resume is not an attempt: the oracle counts only `-attempt` files.
-  - `j` > 2: the ticket keeps getting cut off. Write `$STATE/<id>-attempt<k>.md` with `interrupted after two resumes` (`k` = its oracle `attempts` + 1), then remove the worktree and `git branch -D <branch>`.
+Then run ORACLE and sort each branch matching `WORK--*` into the first class that fits:
+
+- **Merged orphan**: `git merge-base --is-ancestor <branch> WORK` succeeds, and the `Ticket:` trailer of the branch tip (`git log -1 --format='%(trailers:key=Ticket,valueonly)' <branch>`, with `#` stripped) equals `<id>`. An integrator, or 5d's fast-forward, was cut off after merging it. Remove its worktree when the path exists, and `git branch -d <branch>`; item 3 below records it. A branch with no commits of its own fails the trailer test.
+- **Failed orphan**: `$STATE/status-<id>.md` reads `STATUS: FAILED`. The implementer returned FAILED and 5c's cleanup was cut off: run 5c's FAILED path, removing the worktree only when its path exists. Its `FAILURE_OUT` is already in STATE.
+- **Finished orphan**: the ticket finished but was never integrated. The implementer writes STATUS_OUT as its last file action, so `grep -q '^STATUS: DONE' $STATE/status-<id>.md` marks it.
+- **Unfinished orphan**: anything else. When ORACLE does not list `<id>` in `remaining` (it is done or skipped), discard it with 5c's FAILED path (the worktree only when its path exists) and write no attempt. Otherwise its commits and uncommitted edits are kept and resumed. `j` = the count of `$STATE/<id>-resume*.md` files + 1.
+  - `j` ≤ 2: write `$STATE/<id>-resume<j>.md` with one line, `interrupted, resumed`. If `$STATE/wt/<id>` is gone, run `git worktree add $STATE/wt/<id> <branch>`; otherwise run `touch $STATE/wt/<id>`, so the watchdog counts the resume as activity. Queue the ticket for resume. A resume is not an attempt: the oracle counts only `-attempt` files.
+  - `j` > 2: the ticket keeps getting cut off. Write `$STATE/<id>-attempt<k>.md` with `interrupted after two resumes` (`k` = its oracle `attempts` + 1), then run 5c's FAILED path.
 
 Then, in this order:
-1. Integrate the finished orphans with steps 5d and 5e, using this wave's number and `-` as the worktree of any orphan whose directory is gone.
-2. Run the resume queue in waves of at most P tickets, through steps 5a–5f. In 5a, skip `git worktree add`, the codegraph init and the install (the worktree exists), and set `BASE_SHA` = `git merge-base WORK <branch>`. Each prompt in 5b also carries `RESUME: true`.
+1. **Dead MAIN-side agent.** When `$STATE/main-owner` exists, the agent it names never returned, whether or not it left MAIN dirty. Delete the marker, then re-run that agent by its record:
+   - `wave-<m>.md`, still missing → when finished orphans remain, item 2 re-runs it. Otherwise spawn `wave-integrator` in repair mode (`WAVE: <m>`, `MERGE` and `DISCARD` empty), so the suite runs on what it merged, and write its block to `$STATE/wave-<m>.md`. `STATUS: RED` → halt as 5d does.
+   - `repair-NN.md` → the red-base rule above has re-run it.
+   - `triage-<t>.md` → item 4 re-runs it.
+   - `review-<r>.md` (a dead verifier) → step 6 runs round `r` again.
+   - `review-<r>-fix.md` → the top of step 6 re-runs it.
+   - `acceptance-final.md` → step 7's closing acceptance runs again.
+   - `user-<k>-fix.md` → item 4 re-runs it.
+2. Integrate the finished orphans with steps 5d and 5e, as a wave of their own, using `-` as the worktree of any orphan whose directory is gone.
+3. **Unrecorded merges.** The ids the ORACLE run above lists as `done` whose `$STATE/status-<id>.md` reads `STATUS: DONE` and that no `MERGED:` line of a `wave-*.md` names (`#` stripped on both sides) were merged by an agent cut off before its record (a merged orphan, or a gone branch). When there are any, write `$STATE/wave-<n>.md` with `STATUS: GREEN` and `MERGED: <ids> (recovered)`.
+4. Spawn `review-fixer` for each `user-<k>.md` without its `user-<k>-fix.md`, with the keys and record of "After the report". Then run owed triage (5e).
+5. Run the resume queue in waves of at most P tickets, through steps 5a–5f. In 5a, skip `git worktree add`, the codegraph init and the install (the worktree exists), and set `BASE_SHA` = `git merge-base WORK <branch>`. Each prompt in 5b also carries `RESUME: true`.
 
-A `$STATE/review-<N>.md` with findings but no `review-<N>-fix.md` means a review-fixer was cut off: step 6 respawns it before anything else.
-
-Done when `git branch --list 'WORK--*'` is empty.
+Done when WORK is not a red base, no triage is owed, `$STATE/main-owner` is gone, and `git branch --list 'WORK--*'` is empty.
 
 ## 4. Read the frontier
 
@@ -100,11 +125,11 @@ Run ORACLE.
 - `ready` empty, `remaining` not empty → the remaining tickets wait on a dependency cycle, or on an open ticket outside the run's scope (for example `needs-info` or `ready-for-human`). Tickets behind skipped ones are already marked skipped. Record the ids as **stuck** and go to step 6.
 - Otherwise the wave is the first P ids of `ready`, taken in the oracle's order. The limit is deliberate: every ticket runs a full test suite on this one machine. The wave holds only these ids: no id from `remaining` that is not in `ready`, and no id you know from anywhere else.
 
-`n` = the count of `$STATE/wave-*.md` files + 1, zero-padded to two digits.
-
 ## 5. Run one wave
 
-**a. Set up each ticket** (`k` = its oracle `attempts` + 1):
+A wave takes its number when it starts: `n` = the count of `$STATE/wave-*.md` files + 1, zero-padded to two digits. Step 3's orphan integration, its unrecorded merges, and each resume wave take their own.
+
+**a. Set up each ticket** (`k` = its oracle `attempts` + 1). First run `rm -f $STATE/status-<id>.md $STATE/stalled-<id>`: an earlier attempt's status file or stall marker would hide this run from the watchdog and from step 3.
 
 ```
 git worktree add $STATE/wt/<id> -b WORK--<id> WORK
@@ -127,25 +152,35 @@ Then install the dependencies a fresh worktree lacks. Offline works because the 
 A failed install is not a failure of the ticket: the implementer installs on its own.
 
 - `BASE_SHA` = `git rev-parse WORK`
-- `HANDOFF_OUT` = `$STATE/wt/<id>/.handoffs/<slug>/<id>.md`
+- `HANDOFF_OUT` = `$STATE/handoffs/<id>.md`
+- `REPORT_OUT` = `$STATE/reports/<id>.md`
+- `STATUS_OUT` = `$STATE/status-<id>.md`
 - `FAILURE_OUT` = `$STATE/<id>-attempt<k>.md`
 - `CONTEXT_HANDOFFS` — each of these absolute paths that exists:
-  - `$MAIN/.handoffs/<slug>/<b>.md` for each direct blocker `b`
+  - `$STATE/handoffs/<b>.md` for each direct blocker `b` (the oracle's `blockers`, `#` stripped)
   - the highest-numbered `$STATE/wave-*.md`
   - every `$STATE/<id>-attempt*.md`
-  - if the ticket has no blockers: the newest file in `$MAIN/.handoffs/<slug>/`
+  - if the ticket has no blockers: the newest file in `$STATE/handoffs/` (`ls -t $STATE/handoffs | head -1`)
 
 **b. Dispatch.** Spawn one `ticket-implementer` per ticket, all in one message so they run in parallel. Each prompt is only `KEY: value` lines:
-- `TRACKER`, `SPEC`
+- `TRACKER`, `SPEC`, `SLUG: <slug>`
 - `TICKET_ID` (oracle `id`, with `#`), `TICKET_REF` (oracle `ref`)
 - `MAIN_REPO`, `WORKTREE`, `BRANCH`, `BASE_SHA`
-- `HANDOFF_OUT`, `FAILURE_OUT`, `CONTEXT_HANDOFFS`
+- `HANDOFF_OUT`, `REPORT_OUT`, `STATUS_OUT`, `FAILURE_OUT`, `CONTEXT_HANDOFFS`
+- `KIT`, `HYGIENE`
 - `RESUME: true`, only for a ticket resumed by step 3
 
-Then start the **watchdog** with `run_in_background`: `bash /home/rodrigo/.claude/skills/run-spec/watchdog.sh $STATE`. A subagent that dies sends no notification, so its exit is the only signal. When it prints `stalled: <id>`, run `ListAgents`; a ticket agent shown stopped gets step 3's resume message once (record it in `$STATE/probes.md`; a second stall of the same agent counts as FAILED with `FAILURE_OUT` = `stalled twice`). Then restart the watchdog while worktrees remain. It exits silently when the wave's worktrees are gone.
+Then start the **watchdog**, unless one runs on this STATE: `bash ${CLAUDE_SKILL_DIR}/watchdog.sh $STATE` with `run_in_background`. A subagent that dies sends no notification, so the watchdog's exit is the only signal. Until this spec's step 7 report in this invocation, keep exactly one running while `$STATE/wt/` holds a worktree or `$STATE/running/` holds a marker: when it exits, handle its line, then start it again while either exists. After that report the user is present, so no watchdog runs: ignore a line from this STATE's watchdog and start none on it. The queue's next spec, and any new `/run-spec`, starts it again. It sleeps one interval before each check and skips a ticket whose `status-<id>.md` exists, except in the first case below.
+- `stalled: <id>` when `$STATE/status-<id>.md` exists: every implementer of the wave wrote its status file, but some final notifications never came. Do not resume, probe, or touch `stalled-<id>`. Collect each ticket of the wave whose notification never came from its status file (5c), then integrate (5d). This never counts toward `stalled twice`.
+- `stalled: <id>` otherwise (no file change for 120 min, and no process naming the worktree, which mutes a stall only until 360 min): when `$STATE/stalled-<id>` exists, this is the agent's second stall: write `FAILURE_OUT` with `stalled twice` and collect the ticket as FAILED (5c). Otherwise run `touch $STATE/stalled-<id>`, which also mutes the watchdog for that id for 120 min, record the stall in `$STATE/probes.md`, run `ListAgents`, and send the agent the stall probe when it runs and `probes.md` names no earlier probe of it.
+- `overdue: <label>` (a `running/` marker untouched for 240 min): run `touch $STATE/running/<label>`, which restarts its deadline, record the event in `$STATE/probes.md`, and run `ListAgents`. An agent that runs gets the stall probe, unless `probes.md` names an earlier probe of it. A stopped or absent agent is respawned once: when its marker already reads `respawned`, run `rm $STATE/running/<label>`, halt with `agent <label> lost`, and go to step 7; a `main-owner` stays for the next `/run-spec`. Otherwise run `echo respawned >> $STATE/running/<label>`, run steps 2.1 and 2.3 when it is a MAIN-side agent, and spawn it again with the same keys.
 
-**c. Collect.** Write each status block verbatim to `$STATE/status-<id>.md`.
-- **FAILED**: run `git worktree remove --force $STATE/wt/<id>` and `git branch -D WORK--<id>`. The failure handoff stays in STATE, so the oracle counts the attempt. After two attempts, the oracle skips the ticket and its dependents.
+**c. Collect.** Write each status block verbatim to `$STATE/status-<id>.md`, replacing the copy the implementer wrote there.
+- **FAILED**: run `git worktree remove --force $STATE/wt/<id>` and `git branch -D WORK--<id>`. Then stop what the implementer started, from its registry (`container <name>` or `pid <pid> <args>` lines):
+  ```
+  [ -f $STATE/started-<id> ] && while read -r kind v args; do case $kind in container) docker rm -f "$v" ;; pid) [ "$(ps -o args= -p "$v")" = "$args" ] && kill "$v" ;; esac; done < $STATE/started-<id> >/dev/null 2>&1; rm -f $STATE/started-<id>
+  ```
+  The failure handoff stays in STATE, so the oracle counts the attempt. After two attempts, the oracle skips the ticket and its dependents.
 - **Missing or malformed status block**: counts as FAILED. If FAILURE_OUT is absent, write it yourself with one line: `no status returned`.
 
 **d. Integrate** the DONE tickets.
@@ -154,86 +189,86 @@ Then start the **watchdog** with `run_in_background`: `bash /home/rodrigo/.claud
   2. Remove its worktree and branch.
   3. Write `$STATE/wave-<n>.md` containing `STATUS: GREEN`, `MERGED: <id> (fast-forward)`.
 - **Two or more, or one whose base WORK has moved past** (a resumed ticket, after step 3 integrated other orphans): spawn `wave-integrator` with:
-  - `MAIN_REPO`, `WORK_BRANCH`, `WAVE: <n>`
-  - `MERGE` — one line per ticket, in ticket order: `<id> WORK--<id> $STATE/wt/<id> $STATE/wt/<id>/.handoffs/<slug>/<id>.md`
+  - `MAIN_REPO`, `WORK_BRANCH`, `WAVE: <n>`, `HYGIENE`
+  - `MERGE` — one line per ticket, in ticket order: `<id> WORK--<id> $STATE/wt/<id> $STATE/handoffs/<id>.md`
   - `DISCARD` — empty
-  
+
   Write its status block verbatim to `$STATE/wave-<n>.md`.
-- **`MERGE_FAILED` ids**: write `$STATE/<id>-attempt<k>.md` with the integrator's one-line reason. The attempt counts, and the ticket reruns on the new base.
-- **`STATUS: RED`** → **halt**. Record the reason, skip step 6, and go to step 7.
+- **`MERGE_FAILED` ids** (each with `#` stripped): write `$STATE/<id>-attempt<k>.md` with the integrator's one-line reason. The attempt counts, and the ticket reruns on the new base.
+- **`STATUS: RED`** → **halt**. Record the reason, skip step 6, and go to step 7. The next `/run-spec` repairs WORK in step 3 before any wave starts.
 
 **e. Triage follow-ups.** Skip on a halt.
-- `FOLLOWUPS` = the `$STATE/status-<id>.md` paths of the ids on the `MERGED:` line of `$STATE/wave-<n>.md` whose `FOLLOWUPS:` line is not `none`. Leave out FAILED and MERGE_FAILED tickets: their branch is gone, so their follow-ups describe code that is not on WORK. Step 8 still lists their links.
+- `FOLLOWUPS` = the `$STATE/status-<id>.md` paths whose `FOLLOWUPS:` line is not `none`, one per id on the `MERGED:` line of `$STATE/wave-<n>.md`: strip each id's `#`, and skip a parenthesized note such as `(fast-forward)`. Leave out FAILED and MERGE_FAILED tickets: their branch is gone, so their follow-ups describe code that is not on WORK. Step 7 still lists their links.
 - Triage runs here, after integration, never right after collect. In local mode a follow-up file reaches WORK only when its ticket merges, and the triager commits to WORK, which needs the clean tree that integration leaves.
-- `t` = the count of `$STATE/triage-*.md` files + 1. Skip when FOLLOWUPS is empty or `t` > 4. The cap stops recursion: an absorbed ticket can file follow-ups of its own. Untriaged links still reach step 8 through the status files.
-- Spawn `followup-triager` with `TRACKER`, `SPEC`, `MAIN_REPO`, `WORK_BRANCH`, `ROUND: <t>`, `FOLLOWUPS` (one path per line), and `ORACLE` (the full command, expanded). Write its status block verbatim to `$STATE/triage-<t>.md`, and print `triage <t>: attached <ATTACHED>`.
-- `STATUS: RED` from the triager is not a halt: the follow-ups stay out of the run, and step 8 reports them.
+- `t` = the count of `$STATE/triage-*.in` files + 1. Skip when FOLLOWUPS is empty or `t` > 4. The cap stops recursion: an absorbed ticket can file follow-ups of its own. Untriaged links still reach step 7 through the status files.
+- Write `$STATE/triage-<t>.in`: the FOLLOWUPS paths, one per line, then `SOURCE: wave-<n>` (`SOURCE: review-<r>-fix` from step 6, `SOURCE: user-<k>-fix` after the report).
+- Spawn `followup-triager` with `TRACKER`, `SPEC`, `SLUG: <slug>`, `MAIN_REPO`, `WORK_BRANCH`, `ROUND: <t>`, `FOLLOWUPS` (the paths of `triage-<t>.in`, one per line), and `ORACLE` (the full command, expanded). Write its status block verbatim to `$STATE/triage-<t>.md`, and print `triage <t>: attached <ATTACHED>`.
+- `STATUS: RED` from the triager is not a halt: the follow-ups stay out of the run, and step 7 reports them.
+- **Owed triage**, run by step 3 and at the top of step 6: a `triage-<t>.in` without its `triage-<t>.md` is spawned again from that file, with the same `t`. A `wave-<n>.md` that reads `STATUS: GREEN`, or `STATUS: RED` with a `repair-<n>.md` that reads `STATUS: GREEN`, or a `review-<r>-fix.md` or `user-<k>-fix.md` with `follow-up` lines, whose FOLLOWUPS list is not empty and whose source no `.in` names on its `SOURCE:` line, gets this step now, while `t` ≤ 4. Past the cap nothing is owed.
 
 **f. Check** that `git worktree list` shows nothing under `$STATE/wt/`. Then go back to step 4. ORACLE now lists the attached follow-ups as tickets of the spec, and they run in the next waves like any other ticket.
 
 ## 6. Final review
 
-Five axes review the branch:
+Six axes review the branch, and every section ends in a `COUNT:` line:
 
-- **Standards** and **Spec**: from the `code-review` skill.
-- **Security**, **UX/AIX** and **Design**: briefs in `${CLAUDE_SKILL_DIR}/axes/`.
+| Axis | Run by | Brief | Its `COUNT:` counts toward |
+|---|---|---|---|
+| Acceptance | `acceptance-verifier` | its own agent file | blocking: FAIL and scope creep. UNVERIFIED counts toward nothing |
+| Standards | `ticket-reviewer` | `axes/standards.md` | blocking |
+| Security | `ticket-reviewer` | `axes/security.md` | blocking: HIGH and MEDIUM. Advisory: `needs-human` |
+| UX/AIX | `ticket-reviewer`, behind its gate | `axes/ux-aix.md` | advisory |
+| Design | `ticket-reviewer` | `axes/design.md` | advisory |
+| Hygiene | you, with `HYGIENE` | none | blocking |
 
-Standards, Spec and Security's blocking findings are the **blocking axes**: only they decide whether another round runs. UX/AIX, Design and Security's `needs-human` findings are **advisory**. The fixer handles them, but they never start a round on their own.
+The **blocking count** sums Acceptance's and Security's first number with Standards' and Hygiene's number. The **advisory count** sums Security's `needs-human` with UX/AIX's and Design's number. Only a blocking count starts a round; the fixer handles advisory findings, but they never start a round on their own.
 
-Rounds 1 and 2 review the whole branch. Round 3 is a **verification round**: it reviews only the commits of round 2's fixer, which no review has read yet. The only code that ships unreviewed is then round 3's own small fixes, plus the fixes of an advisory-only round (item 3).
+Round 1 reviews the whole branch. Rounds 2 and 3 are **verification rounds**: the code-reading axes review only the commits since the previous fixer started, which no review has read yet. Acceptance re-runs every criterion and Hygiene re-checks the whole branch every round. No final-review axis reads round 3's own fixes or the tickets round 3's triage attaches, and no code-reading axis reads an advisory-only round's fixes unless its triage attaches tickets. Each fixer runs the hygiene gate over its own `BASE`, each attached ticket gets its per-ticket review, and step 7's closing acceptance executes every criterion on the final WORK.
 
-`r` = the count of `$STATE/review-<N>.md` reports, not counting `review-<N>-fix.md`, + 1. First, if `review-<r-1>.md` reports findings but has no `review-<r-1>-fix.md`, a fixer was cut off: run item 4 for round `r-1`, then come back here. Go to step 7 when:
+`r` = the count of `$STATE/review-<N>.md` reports, not counting `review-<N>-fix.md`, + 1. First, finish what a cut-off run left:
+- `review-<r-1>.md` has a blocking or advisory count above zero but no `review-<r-1>-fix.md`: its fixer was cut off. Run item 5 for round `r-1`.
+- Then run owed triage (5e). When it attaches tickets, go to step 4.
+
+Go to step 7 when:
 - `r` > 3, or
-- `r` = 3 and `git rev-list --count $(cat $STATE/review-2-base)..WORK` is 0, because round 2's fixer committed nothing, or
-- `review-<r-1>.md` reports zero blocking findings, and it either reports no advisory findings either, or has a `review-<r-1>-fix.md` (an advisory-only round whose fixer already ran). This makes a resume after a clean or advisory-only round go straight on.
+- `r` ≥ 2 and `git rev-list --count $(cat $STATE/review-<r-1>-base)..WORK` is 0, because the previous fixer committed nothing and no ticket merged since, or
+- `review-<r-1>.md` has a blocking count of zero, and either its advisory count is zero too, or it has a `review-<r-1>-fix.md` (an advisory-only round whose fixer already ran) and `git log $(cat $STATE/review-<r-1>-base)..WORK --format='%(trailers:key=Ticket,valueonly)'` prints nothing (no ticket that its triage attached has merged since). This makes a resume after a clean or advisory-only round go straight on.
 
-1. Run the review. Give every reviewer its answers up front, so none of them asks:
-   - **Fixed point**:
-     - Rounds 1–2: `F` = `$(git merge-base WORK origin/DEFAULT)`, or `DEFAULT` with no remote.
-     - Round 3: `F` = `$(cat $STATE/review-2-base)`, and the spec is SPEC plus `$STATE/review-2.md` and `$STATE/review-2-fix.md`. Add to every axis brief: "Check only that each finding marked `fixed` is fixed, and that these commits break nothing. Report nothing outside these commits."
-   - **Known dismissals**: when any `$STATE/review-*-fix.md` exists, add its `dismissed` lines to every brief: "Re-raise a known dismissal only with evidence its reason does not answer, and say which dismissal it reopens."
-   - **UX/AIX gate**: run `git diff --name-only F...WORK | grep -E -q -f <(grep -v '^[[:space:]]*$' ${CLAUDE_SKILL_DIR}/axes/ux-aix.triggers)`. It succeeds when the diff touches a UI or agent-surface file. When it fails, do not spawn the UX/AIX reviewer, and record the axis as `skipped: no UI or agent-surface files`.
-   - **Spawning**: run the `mattpocock-skills:code-review` skill with F and the spec. When it spawns its Standards and Spec axes, spawn the new axes in the same message, so all of them run in parallel. Use `subagent_type: ticket-reviewer` for all five. Each new-axis prompt is only `KEY: value` lines:
-     - `AXIS`: Security, UX/AIX or Design
-     - `AXIS_BRIEF`: the absolute path of `${CLAUDE_SKILL_DIR}/axes/security.md`, `ux-aix.md` or `design.md`
-     - `REPO`: MAIN
-     - `DIFF`: `git diff F...WORK`
-     - `COMMITS`: `git log F..WORK --oneline`
-     - `SPEC`
-     - `ROUND`
-     - `KNOWN_DISMISSALS`: the `dismissed` lines of every `review-*-fix.md`, inline, or `none`
-     - in round 3, `VERIFY_ONLY` with the round-3 sentence above
+1. **Prepare.** Give every reviewer its answers up front, so none of them asks:
+   - `F`: round 1, `$(git merge-base WORK origin/DEFAULT)`, or `DEFAULT` with no remote. Rounds 2 and 3, `$(cat $STATE/review-<r-1>-base)`.
+   - `VERIFY_ONLY`, rounds 2 and 3 only: `commits $(cat $STATE/review-<r-1>-base)..WORK; findings $STATE/review-<r-1>.md; fixes $STATE/review-<r-1>-fix.md`.
+   - `KNOWN_DISMISSALS`: the `dismissed` lines of every `$STATE/review-*-fix.md` and `$STATE/user-*-fix.md`, inline, or `none`.
+   - **UX/AIX gate**: run `git diff --name-only F...WORK | grep -E -q -f <(grep -v '^[[:space:]]*$' ${CLAUDE_SKILL_DIR}/axes/ux-aix.triggers)`. It succeeds when the diff touches a UI or agent-surface file. When it fails, do not spawn the UX/AIX reviewer; its section is `skipped: no UI or agent-surface files` and `COUNT: 0`.
+   - `TICKETS`: the `ref` of every ticket the last ORACLE run lists with `done: true` and `in_scope: true`, space-separated.
+   - `NOT_DONE`: the `id` of every ticket the last ORACLE run lists with `done: false` (skipped, stuck, or out of scope), space-separated, or `none`.
+   - `mkdir -p $STATE/verify-<r>` and `rm -f $STATE/acceptance-final.md`: this round's Acceptance supersedes an earlier closing one.
+2. **Spawn** every reviewer in one message, so they run in parallel. Each prompt is only `KEY: value` lines:
+   - `acceptance-verifier`: `REPO: MAIN`, `SPEC`, `TICKETS`, `ROUND: <r>`, `F`, `OUT_DIR: $STATE/verify-<r>/`, `PREVIOUS: $STATE/verify-<r-1>/` (`none` in round 1), `SLUG: <slug>`, `KNOWN_DISMISSALS`, `NOT_DONE`.
+   - `ticket-reviewer`, one per axis (Standards, Security, Design, and UX/AIX when its gate passed): `AXIS`, `AXIS_BRIEF` (the absolute path of `${CLAUDE_SKILL_DIR}/axes/standards.md`, `security.md`, `ux-aix.md` or `design.md`), `REPO: MAIN`, `DIFF: git diff F...WORK`, `COMMITS: git log F..WORK --oneline`, `SPEC`, `SCOPE: branch`, `ROUND: <r>`, `KNOWN_DISMISSALS`, plus `VERIFY_ONLY` in rounds 2 and 3, and for Standards `ALLOWED` (the paths Hygiene's `--allow` below takes, or `none`).
 
-   Take the reports as-is; the diff itself stays with the reviewers.
-2. Write the report verbatim to `$STATE/review-<r>.md`: the skill's aggregated report, then `## Security`, `## UX/AIX` (or its `skipped` line) and `## Design`, each as its reviewer returned it. In chat, print only `review <r>: Standards <x>, Spec <y>, Security <z>, UX/AIX <w|skipped>, Design <v>`, taking `z`, `w` and `v` from each section's `COUNT:` line. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
-3. Route by what the round found:
-   - Every section reports zero findings → go to step 7.
-   - The blocking axes report zero findings (the skill's closing summary for Standards and Spec, plus `COUNT: 0 blocking` for Security), but advisory findings remain → run item 4 once, and item 5's triage if it applies. Then go to step 7 without a new round, unless item 5's triage attached tickets: then item 5's route back to step 4 applies.
-   - Otherwise → item 4.
-4. Run `git rev-parse WORK > $STATE/review-<r>-base`, spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `ROUND: <r>`, `FINDINGS: $STATE/review-<r>.md`, and write its status block to `$STATE/review-<r>-fix.md`.
-5. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves, and the next pass through step 6 reviews the branch as round `r` + 1. This holds after an advisory-only round too.
-6. Otherwise, return to the top of step 6 for the next round.
+   Then run **Hygiene** over the whole branch: `HYGIENE <round 1's F> WORK 2>&1`, adding `--allow <path>` for every path other than `none` on an `ALLOWED:` line of `$STATE/status-*.md`, `wave-*.md`, `repair-*.md`, `review-*-fix.md` and `user-*-fix.md`. Its section is `## Hygiene`, then each line it printed as `- <line>` (`- none` when it exits 0), then `COUNT: <lines printed>`.
+3. **Record.** Build the report in `$STATE/review-<r>.partial`: truncate it when the round's agents are spawned (`: > $STATE/review-<r>.partial`), write the `## Hygiene` section and any `## UX/AIX` skipped line then, and append each other section verbatim as its agent returns (`cat >> $STATE/review-<r>.partial <<'EOF'`). When all six sections are in, `mv $STATE/review-<r>.partial $STATE/review-<r>.md`: a round's report exists only once complete, and no temporary file needs removing. In chat, print only `review <r>: Acceptance <fail>/<unverified>, Standards <x>, Security <z>, UX/AIX <w|skipped>, Design <v>, Hygiene <h>`, from the `COUNT:` lines. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
+4. **Route** by the round's counts:
+   - Blocking and advisory both zero → go to step 7.
+   - Blocking zero, advisory above zero → run item 5 once, and item 6's triage if it applies. Then go to step 7 without a new round, unless item 6's triage attached tickets: then item 6's route back to step 4 applies.
+   - Otherwise → item 5.
+5. **Fix.** Run `[ -f $STATE/review-<r>-base ] || git rev-parse WORK > $STATE/review-<r>-base`, which keeps the base of a fixer that was cut off, so the next verification round still reads its commits. Spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `SLUG: <slug>`, `ROUND: <r>`, `BASE: $(cat $STATE/review-<r>-base)`, `FINDINGS: $STATE/review-<r>.md`, `KIT` and `HYGIENE`, and write its status block verbatim to `$STATE/review-<r>-fix.md`.
+6. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` and `SOURCE: review-<r>-fix` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves. The next pass through step 6 reviews them as round `r` + 1, from `review-<r>-base`; after round 3 it goes to step 7, whose closing acceptance executes their criteria. This holds after an advisory-only round too.
+7. Otherwise, return to the top of step 6 for the next round.
 
-The **remaining findings** are the lines of the last `review-<N>-fix.md` that are not `fixed`, including every `needs-human` line, plus a RED status if that fixer returned one.
+The **remaining findings** are the lines of the last `review-<N>-fix.md` that are not `fixed`, including every `needs-human` line, a RED status if that fixer returned one, and the FAIL and UNVERIFIED lines of the newest Acceptance (step 7).
 
-Done when a review is clean, or the step 7 condition above holds after the last fixer and its triage have returned.
+Done when a review is clean, or a stop condition above holds after the last fixer and its triage have returned.
 
-## 7. Clean the branch
+## 7. Publish and report
 
-If `git ls-files --error-unmatch .handoffs >/dev/null 2>&1` succeeds:
+**Closing acceptance.** Skip it on a halt, except when step 7 runs again after a GREEN `user-<k>` fix: that run always runs it, because the halt reason belongs to the earlier report. The **newest Acceptance** is `$STATE/acceptance-final.md` when it exists, else the `## Acceptance` section of the last `review-<N>.md`. Its `HEAD:` line names the WORK it ran on. Run the closing acceptance when that line (`sed -n 's/^HEAD: *//p' <its file>`) differs from `git rev-parse --short=7 WORK`, a missing line included, or when the newest fix file (`ls -t $STATE/review-*-fix.md $STATE/user-*-fix.md 2>/dev/null | head -1`) dismisses an Acceptance finding, scope creep included (`grep -q '^- A[0-9]* dismissed'`) and is newer than the newest Acceptance's file (`[ <fix file> -nt <its file> ]`). Each closing run has its own directory, `$STATE/verify-final-<m>/`: `c` = the count of `$STATE/verify-final-*/` directories, and `m` = `c` when `[ $STATE/verify-final-<c> -nt $STATE/acceptance-final.md ]` succeeds (that run was cut off before its section was written, or a later round removed its section; the new run reuses its directory and stops what it left), else `c` + 1. Run ORACLE, recompute step 6 item 1's `TICKETS`, `NOT_DONE` and `KNOWN_DISMISSALS` from it and from STATE, run `mkdir -p $STATE/verify-final-<m>`, and spawn `acceptance-verifier` with step 6 item 2's keys, but `ROUND: final`, `OUT_DIR: $STATE/verify-final-<m>/`, round 1's `F`, and `PREVIOUS:` the newest Acceptance's directory: `$STATE/verify-final-<m-1>/` when `acceptance-final.md` exists, else `$STATE/verify-<N>/` for the last `review-<N>.md`, else `none`. Write its section verbatim to `$STATE/acceptance-final.md`, replacing any earlier closing section, so it holds the newest Acceptance, and print `acceptance final: <fail>/<unverified>`. A FAIL there is not delivered: the PR body lists it, it holds `--merge`, and it starts no round.
 
-```
-git rm -r -q .handoffs
-git commit -m "chore(run-spec): drop handoffs for <slug>"
-```
-
-The handoffs stay in the branch history. The oracle still detects finished tickets from their `Ticket:` commit trailers.
-
-## 8. Publish and report
-
-Write the PR body to `$STATE/pr-body.md`, built from STATE:
-- one line per DONE ticket: `Closes #N` (GitHub tracker only) plus its SUMMARY, from `status-<id>.md`, with every path the `RENAMED:` lines of `wave-*.md` renamed for that ticket replaced by its new path
-- FOLLOWUPS links from the same files and from `review-*-fix.md`
+Run ORACLE (a closing acceptance's run serves). The **merged tickets** are those it lists with `done: true` whose `$STATE/status-<id>.md` reads `STATUS: DONE`. Write the PR body to `$STATE/pr-body.md`, built from STATE, in this order:
+- `## Summary`: per merged ticket, from `status-<id>.md`, `Closes #N` (GitHub tracker only), its SUMMARY and its `REPORT:` link. Replace every path the `RENAMED:` lines of `wave-*.md` renamed for that ticket with its new path. Then the output of `git diff --stat F...WORK`, with round 1's `F`, in a code block.
+- `## Evidence`: the newest Acceptance, verbatim, then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
+- `## Merge Danger`: `**Door:** one-way` with `<id>: <why>` for each merged ticket whose `DOOR:` is one-way, else `**Door:** two-way`. Then `**Blast Radius:**` with `<id>: <BLAST>` per merged ticket.
+- FOLLOWUPS links from every `status-*.md`, `review-*-fix.md` and `user-*-fix.md`
 - triage results: every `ISSUES:` line of each `triage-*.md`, so each follow-up shows its verdict and whether it was attached
 - skipped tickets, each with its failure-handoff path
 - stuck ids, if any
@@ -244,7 +279,7 @@ Write the PR body to `$STATE/pr-body.md`, built from STATE:
 With a remote `origin`:
 1. `git push -u origin WORK`.
 2. Open or update the PR:
-   - no PR for WORK yet → `gh pr create --base DEFAULT --head WORK --title "<spec title>" --body-file $STATE/pr-body.md`
+   - no PR for WORK yet → `gh pr create --base DEFAULT --head WORK --title "<slug>" --body-file $STATE/pr-body.md`
    - PR already exists (`gh pr list --head WORK --json number`) → `gh api -X PATCH repos/{owner}/{repo}/pulls/<n> -F body=@$STATE/pr-body.md`. `gh pr edit` fails on repos that still use Projects classic.
 3. Merge the PR only when MERGE is true, following `QUEUE.md`. Otherwise never merge it.
 
@@ -254,10 +289,10 @@ Report to the user in their language, as a short list with no recommendations an
 - PR URL or branch
 - done / skipped / stuck counts, with ids
 - halt reason
-- review outcome: rounds run and finding counts, plus the path of the remaining findings (`$STATE/review-*-fix.md`). Do not restate individual findings.
-- follow-up links, split into attached (each also counted above as done, skipped, or stuck) and left out (with its triage verdict, or `untriaged`)
-- learnings: every `LEARNINGS:` line that is not `none` from `status-*.md`, plus the paths of `learnings.md` and `probes.md`, when they exist. An older status block without that line counts as `none`.
+- review outcome: rounds run, finding counts, and the UNVERIFIED count, plus the path of the remaining findings (`$STATE/review-*-fix.md`). Do not restate individual findings.
+- follow-up links, split into attached (each also counted above as done, skipped or stuck, or named as waiting for the next `/run-spec`) and left out (with its triage verdict, or `untriaged`), matching each link to the `from` field of an `ISSUES:` line
+- learnings: every `LEARNINGS:` line that is not `none` from `status-*.md`, every line of the fix files that carries `learning:` (`grep -sh 'learning:' $STATE/review-*-fix.md $STATE/user-*-fix.md`), plus the paths of `learnings.md` and `probes.md`, when they exist. An older status block without that line counts as `none`.
 
 When QUEUE holds another spec, continue with `QUEUE.md`. Otherwise the skill ends here, and later turns fall under the contract's "After the report" rule.
 
-Done when every ticket from the last ORACLE run appears in the report as done, skipped, or stuck.
+Done when every ticket from the last ORACLE run appears in the report as done, skipped, stuck, or (attached after the report) waiting.
