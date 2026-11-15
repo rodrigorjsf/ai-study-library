@@ -199,4 +199,44 @@ with tempfile.TemporaryDirectory() as tmp:
         code, out, err = hygiene(repo, *args)
         assert code == 2 and out == [] and len(err) == 1, (args, code, out, err)
 
+BODY = "".join(f"export const v{i} = {i};\n" for i in range(8))
+MOVE_BASE = {
+    "f.ts": "export function f() {\n  // retries because the API drops calls\n  g();\n}\n",
+    "a.py": "timeout = 30  # seconds\n",
+    "k.py": 'def f():\n    """Doc."""\n    # why\n    return 1\n\n\ndef g():\n    """\n    Old text.\n    """\n',
+    "m.ts": "// first\nexport const a = 1;\nexport const b = 2;\nexport const c = 3;\n",
+    "e.ts": "// old wording\nexport const e = 1;\n",
+    "e.py": "x = 1  # old wording\n",
+    "dup.ts": "  // shared note\nexport const x = 1;\n",
+    "dup.py": "x = 1  # shared note\n",
+    "old.ts": "  // kept through the rename\n" + BODY,
+}
+MOVE_HEAD = {
+    "f.ts": "export function f() {\n  if (x) {\n    // retries because the API drops calls\n    g();\n  }\n}\n",
+    "a.py": "timeout = 60  # seconds\n",
+    "k.py": 'class K:\n    def f(self):\n        """Doc."""\n        # why\n        return 1\n\n'
+            '    def g(self):\n        """\n        New text.\n        """\n',
+    "m.ts": "export const a = 1;\nexport const b = 2;\n// first\nexport const c = 3;\n",
+    "e.ts": "// new wording\nexport const e = 1;\n",
+    "e.py": "x = 1  # new wording\n",
+    "dup.ts": "// shared note\nexport const x = 1;\n// shared note\n",
+    "dup.py": "x = 2  # shared note\ny = 3  # shared note\n",
+    "new.ts": "// kept through the rename\n" + BODY,
+}
+MOVE_EXPECTED = [
+    "dup.py:2: comment: y = 3  # shared note",
+    "dup.ts:3: comment: // shared note",
+    "e.py:1: comment: x = 1  # new wording",
+    "e.ts:1: comment: // new wording",
+    'k.py:8: comment: """',
+]
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = Path(tmp)
+    git(repo, "init", "-q", "-b", "main")
+    base = commit(repo, MOVE_BASE, "base")
+    head = commit(repo, MOVE_HEAD, "head", remove=["old.ts"])
+    assert "R" in git(repo, "diff", "--name-status", "-M", base, head, "--", "old.ts", "new.ts")
+    assert hygiene(repo, base, head) == (1, MOVE_EXPECTED, []), hygiene(repo, base, head)
+
 print("ok")

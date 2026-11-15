@@ -86,9 +86,9 @@ Done when on WORK with a clean tree.
 
 ## 3. Recover (resume after a crash or a halt)
 
-**Same conversation first.** When the session dropped mid-run (a login, a usage limit, or a restart ended the turn) and the user says "continue" in this conversation, the stopped subagents usually still exist, with their context intact. Run `ListAgents`. Send each stopped subagent of the current wave, review, or triage one message: "The session was renewed. Check that no process you started is still running, then continue from where you stopped and finish with your status block." Then wait for their notifications as usual. A subagent `ListAgents` does not show is gone, for example after `/clear` or in a new conversation. In that case, and on every fresh `/run-spec`, run the recovery below.
+**Same conversation first.** When the session dropped mid-run (a login, a usage limit, or a restart ended the turn) and the user says "continue" in this conversation, the stopped subagents usually still exist, with their context intact. Run `ListAgents`. Send each stopped subagent of the current wave, review, or triage one message: "The session was renewed. Check that no process you started is still running, then continue from where you stopped and finish with your status block." Then wait until every subagent you resumed, or that still runs, has returned its final notification, and record each as its step says. A subagent `ListAgents` does not show is gone, for example after `/clear` or in a new conversation. When one is gone, run the recovery below only after that wait, never before: no agent is running then, so every worktree without a `status-<id>.md`, a `main-owner`, and every `running/` marker belong to a gone agent. On every fresh `/run-spec`, run it at once.
 
-Run steps 2.1 and 2.3, then `git worktree prune`. On a fresh `/run-spec`, also run `rm -f $STATE/running/*`: no agent of an earlier session is still running.
+Run steps 2.1 and 2.3, then `git worktree prune` and `rm -f $STATE/running/*`: no agent of the run is still running.
 
 **Red base.** `NN` = the number of the highest `$STATE/wave-*.md`, when one exists. When that file reads `STATUS: RED` and `$STATE/repair-NN.md` is missing or reads `STATUS: RED`, a halted wave left WORK red, and no ticket may branch from it. Spawn `wave-integrator` in repair mode, with `MAIN_REPO`, `WORK_BRANCH`, `WAVE: NN`, `HYGIENE`, and `MERGE` and `DISCARD` both empty. Write its status block verbatim to `$STATE/repair-NN.md`.
 - `STATUS: GREEN` → continue below.
@@ -267,7 +267,7 @@ Done when a review is clean, or a stop condition above holds after the last fixe
 
 Run ORACLE (a closing acceptance's run serves). The **merged tickets** are those it lists with `done: true` whose `$STATE/status-<id>.md` reads `STATUS: DONE`. Write the PR body to `$STATE/pr-body.md`, built from STATE, in this order:
 - `## Summary`: per merged ticket, from `status-<id>.md`, `Closes #N` (GitHub tracker only), its SUMMARY and its `REPORT:` link. Replace every path the `RENAMED:` lines of `wave-*.md` renamed for that ticket with its new path. Then the output of `git diff --stat F...WORK`, with round 1's `F`, in a code block.
-- `## Evidence`: the newest Acceptance, verbatim, then **Not verified**: its UNVERIFIED lines, or `none`.
+- `## Evidence`: the newest Acceptance, verbatim, then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
 - `## Merge Danger`: `**Door:** one-way` with `<id>: <why>` for each merged ticket whose `DOOR:` is one-way, else `**Door:** two-way`. Then `**Blast Radius:**` with `<id>: <BLAST>` per merged ticket.
 - FOLLOWUPS links from every `status-*.md`, `review-*-fix.md` and `user-*-fix.md`
 - triage results: every `ISSUES:` line of each `triage-*.md`, so each follow-up shows its verdict and whether it was attached

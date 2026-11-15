@@ -78,7 +78,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   - Red → attempt one small fix and commit it (`fix(integration): <what>`, with the `Integration-Wave` trailer). Re-run the suite.
   - Still red → `STATUS: RED`. Leave the merges in place for the orchestrator to report.
 
-  Then run `cd <MAIN_REPO> && <HYGIENE> <START> HEAD`. A printed line that your conflict resolution or fix wrote is yours: delete it, commit with the `Integration-Wave` trailer, and re-run until none of yours remain. When every line it still prints in one of your files is string data, not a comment, re-run with `--allow <path>` for it and name it on `ALLOWED:`. A line that came unchanged from a ticket branch already passed that ticket's own gate: leave it to the final review.
+  Then run `cd <MAIN_REPO> && <HYGIENE> <START> HEAD`. A printed line that your conflict resolution or fix wrote is yours: delete it (one that edits an existing comment's text gets its original text back, never a rewrite), commit with the `Integration-Wave` trailer, and re-run until none of yours remain. When every line it still prints in one of your files is string data, not a comment, re-run with `--allow <path>` for it and name it on `ALLOWED:`. A line that came unchanged from a ticket branch already passed that ticket's own gate: leave it to the final review.
   </PHASE>
 
   <PHASE id="4" name="cleanup">
