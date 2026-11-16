@@ -9,6 +9,20 @@
 - Check each integration against the harness's own hook, plugin and MCP docs (`ai/docs/claude-code/`, `ai/docs/cursor/`), not the tool's description of itself.
 - In diagrams, give Cursor and Claude Code separate nodes when their mechanisms differ.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues of rodrigorjsf/ai-study-library, via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context: `GLOSSARY-MAP.md` points to per-context glossaries and ADRs. See `docs/agents/domain.md`.
+
 # RTK (Rust Token Killer) - Token-Optimized Commands
 
 @RTK.md
