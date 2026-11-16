@@ -46,9 +46,32 @@ Edit only the check: the model, its config, its `.matches` record, and any chart
    - **Pass:** the check can now pass on a description that has lost the ability to fail. Break the new model the way each changed invariant guards against, using its `<how to break it>` field or a new break for new text, and confirm that TLC reports `Invariant <Name> is violated`. Then drop the break.
    - **Fail:** replay the counterexample against the source, step by step, in the skill's own words. If a step cannot happen under the skill's text, the model is wrong. Fix the model, and say what was wrong. If every step can happen, it is a bug. Name the commit that introduced it, tell the counterexample as a sequence of steps in the source's words, and state the harm in one sentence. If a cheap test or reproduction against the real code shows the bug, add it to the report as evidence. Do not commit it to the product.
 
-6. **Regenerate the charts.** When the model's folder holds a chart and a report that the `statechart` command made (`chart.mmd` and its report), run that command again on the updated model with the same `--config`, the same `--view` and a new `--out` folder, then replace the stored files with the new ones. Never edit a stored chart by hand. Read [`statechart/SKILL.md`](statechart/SKILL.md) for the command and its rules: each rule that breaks is marked on the chart. If a changed step or state no longer fits the view's labels, update the view file in the same change. A chart that was not regenerated after the model changed is stale, so say so in the report.
+6. **Regenerate the charts.** When the model's folder holds a chart and a report that the `statechart` command made (`chart.mmd` and its report), run that command again on the updated model with the same `--config`, the same `--view` and a new `--out` folder, then replace the stored files with the new ones. Never edit a stored chart by hand. Read [`statechart/SKILL.md`](statechart/SKILL.md) for the command and its rules: each rule that breaks is marked on the chart. If a changed step or state no longer fits the view's labels, update the view file in the same change. A chart that was not regenerated after the model changed is stale, so say so in the report. The exact commands for the dispatcher chart are in [Regenerate the dispatcher chart](#regenerate-the-dispatcher-chart).
 
 7. **Update the record.** Update the invariant lines of `<Model>.matches`: the `path:line` of each invariant at the commit you checked, and its `<how to break it>` field. Set the first line to `matches skill at commit <sha>` with the full sha of the commit that you checked. Do not move the commit for a blocked check, and say so in the report. Then follow `create-formal-check.md` once as the next agent would, so that you know its steps still run.
+
+## Regenerate the dispatcher chart
+
+`models/` holds the owner's view of the dispatcher model: a statechart of `running`, `interrupted`, `resumed`, `reviewing` and `done`. Four files make it, and none is installed:
+
+- `Dispatcher.chart.cfg`: the TLC config for the chart. It holds the constants of one ticket, one session drop and no review round, which keep TLC under the chart budget of 500 states. Its `SPECIFICATION` and `INVARIANT` lines must equal those of `Dispatcher.cfg`.
+- `Dispatcher.view.mjs`: names each owner-visible state from `phase`, `crashes` and `waveFor`, and labels each arrow, by the TLC action name, in the owner's words.
+- `Dispatcher.chart.mmd` and `Dispatcher.report.md`: the output of the `statechart` command. Never edit them by hand.
+
+After a change to `ai/skills/run-spec/SKILL.md` that changes `Dispatcher.tla`, regenerate them once the model passes or fails for the right reason (step 5):
+
+1. Run the command in a new folder outside the repository. The folder must not exist or must be empty:
+
+   ```sh
+   cd ai/skills/run-spec-dev/formal/models
+   ../statechart/scripts/statechart Dispatcher.tla --config Dispatcher.chart.cfg --view Dispatcher.view.mjs --out "$(mktemp -d)/chart"
+   ```
+
+   Exit 0 means every rule holds. Exit 1 means a rule breaks: the chart marks it, and the failure is a finding for the report. Exit 2 means TLC did not run and nothing was written: the chart is blocked.
+2. Copy `chart.mmd` of that folder to `Dispatcher.chart.mmd`, and `report.md` to `Dispatcher.report.md`.
+3. Read the report. It says `TLC reached <n> states`: when `<n>` is above 500 the command draws no chart while every rule holds, so lower a constant in `Dispatcher.chart.cfg` and say which one in the report.
+4. A new action in `Dispatcher.tla` makes the command fail with `The view's step() returned undefined`: give the action a label in `Dispatcher.view.mjs`. A new value of `phase`, or a new use of `crashes` or `waveFor`, may need another branch in `ownerState`.
+5. Check that the chart still marks a broken rule: apply a `<how to break it>` edit from `Dispatcher.matches` to a copy of `Dispatcher.tla`, run the command on the copy in a new folder, and read the `## <Name> breaks` section of its report and the `Breaks <Name>` line of its chart. `test_dispatcher_chart.py` does this for four rules, and compares a fresh chart and report with the stored files: `TLA2TOOLS=<tla2tools.jar> JAVA=<java> python3 -I ai/skills/run-spec/test_dispatcher_chart.py`.
 
 ## Report
 

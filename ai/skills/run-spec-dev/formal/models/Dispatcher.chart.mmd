@@ -1,0 +1,31 @@
+---
+title: "What the owner sees while /run-spec runs"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: working
+    lg1: stopped
+    lg2: checking
+    lg3: finished
+  }
+  class lg0 blue
+  class lg1 orange
+  class lg2 purple
+  class lg3 teal
+  s0: running
+  s1: interrupted
+  s2: resumed
+  s3: reviewing
+  s4: done
+  [*] --> s0
+  s0 --> s1: the session drops
+  s1 --> s2: no unfinished ticket needs resuming or the dispatcher resumes the unfinished tickets
+  s0 --> s3: no ticket is left to build
+  s2 --> s3: no ticket is left to build
+  s3 --> s1: the session drops
+  s3 --> s4: the final report is printed
+  class s0 blue
+  class s1 orange
+  class s2 blue
+  class s3 purple
+  class s4 teal

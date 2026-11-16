@@ -1,18 +1,23 @@
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import test_support as support
+
 REPO = Path(__file__).resolve().parent.parent.parent.parent
-MODELS = REPO / "ai" / "skills" / "run-spec-dev" / "formal" / "models"
+MODELS = support.FORMAL_MODELS
 SKILL_PATH = "ai/skills/run-spec/SKILL.md"
 MODEL = "Dispatcher"
 NOT_A_PROMISE = {"TypeOK"}
 
 TLA_TEXT = (MODELS / f"{MODEL}.tla").read_text()
 CFG_TEXT = (MODELS / f"{MODEL}.cfg").read_text()
-MATCHES_LINES = (MODELS / f"{MODEL}.matches").read_text().splitlines()
+MATCHES_HEADER, MATCHES_ROWS = support.model_matches(MODEL)
 
 
 def git(*args):
@@ -27,20 +32,15 @@ def cfg_invariants():
     return [name for name in names if name not in NOT_A_PROMISE]
 
 
-def broken_model_text(old, new):
-    assert TLA_TEXT.count(old) == 1, old
-    return TLA_TEXT.replace(old, new)
-
-
-header = re.fullmatch(r"matches skill at commit ([0-9a-f]{40})", MATCHES_LINES[0])
-assert header, MATCHES_LINES[0]
+header = re.fullmatch(r"matches skill at commit ([0-9a-f]{40})", MATCHES_HEADER)
+assert header, MATCHES_HEADER
 commit = header.group(1)
 assert git("cat-file", "-e", f"{commit}^{{commit}}").returncode == 0, commit
 
 skill_lines = git("show", f"{commit}:{SKILL_PATH}").stdout.splitlines()
 assert skill_lines, (commit, SKILL_PATH)
 
-rows = [line.split("\t") for line in MATCHES_LINES[1:]]
+rows = MATCHES_ROWS
 assert rows and all(len(row) == 3 for row in rows), rows
 names = [name for name, _, _ in rows]
 assert len(names) == len(set(names)), names
@@ -55,7 +55,7 @@ for name, citation, how in rows:
     assert " => " in how, (name, how)
     old, new = how.split(" => ", 1)
     assert old != new, (name, how)
-    break_edits[name] = broken_model_text(old, new)
+    break_edits[name] = support.broken_model_text(TLA_TEXT, old, new)
 
 assert not [line for line in TLA_TEXT.splitlines() if "\\*" in line or "(*" in line], "comments in the model"
 
