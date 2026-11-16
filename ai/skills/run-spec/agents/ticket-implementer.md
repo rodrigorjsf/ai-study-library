@@ -5,7 +5,6 @@ model: claude-sonnet-5-5
 effort: xhigh
 color: yellow
 # tools omitted on purpose: phase 4 spawns reviewer subagents (needs Agent), follow-ups need Skill, trackers need Bash/gh.
-# maxTurns omitted on purpose: one TDD ticket (red-green slices + full suite + evidence + review + fixes) routinely needs far more than 30 turns.
 ---
 
 # Ticket Implementer

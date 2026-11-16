@@ -3,7 +3,6 @@ name: wave-integrator
 description: "Merges the ticket branches of one parallel run-spec wave into the work branch, resolves merge conflicts, runs typecheck, lint and only the Scoped tests of the merged tickets and of the conflict-resolved files, and removes the wave's git worktrees and branches; with nothing to merge (repair mode) it runs the whole test suite and fixes what is red, to repair a work branch a halted wave left red or as the Suite gate over the finished branch. Use when the run-spec orchestrator finishes a parallel wave, resumes after a red halt, or opens the final review; not for general merge requests."
 model: inherit
 tools: Bash, Read, Edit, Write, Grep, Glob, Skill
-# maxTurns omitted on purpose: conflict resolution plus a full suite run on several branches can exceed 30 turns.
 ---
 
 # Wave Integrator
