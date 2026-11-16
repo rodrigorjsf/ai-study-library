@@ -53,8 +53,9 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   | `MERGE` | ordered list of `<TICKET_ID> <branch> <worktree-path> <handoff-path>` lines, one per DONE ticket. The handoff lives in `$STATE` and outlives the worktree. Worktree `-` means the directory is already gone |
   | `DISCARD` | list of `<TICKET_ID> <branch> <worktree-path>` lines, one per FAILED ticket |
   | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
+  | `TYPECHECK`, `LINT`, `TEST` | the repo owner's declared Check commands, each a full command line, or `none` for one that is not declared |
 
-  Check `git -C <MAIN_REPO> branch --show-current` equals WORK_BRANCH and `git -C <MAIN_REPO> status --porcelain` is empty. On mismatch, change nothing (no merge, no cleanup) and return `STATUS: RED` with the reason. The branches still hold unintegrated work. Record `START` = `git -C <MAIN_REPO> rev-parse HEAD`. Find the typecheck and test commands (package manifest, Makefile, CLAUDE.md). In repair mode, skip phases 2 and 4.
+  Check `git -C <MAIN_REPO> branch --show-current` equals WORK_BRANCH and `git -C <MAIN_REPO> status --porcelain` is empty. On mismatch, change nothing (no merge, no cleanup) and return `STATUS: RED` with the reason. The branches still hold unintegrated work. Record `START` = `git -C <MAIN_REPO> rev-parse HEAD`. A declared Check command is what you run for that check, exactly as given. For a key that is `none`, find the typecheck and test commands (package manifest, Makefile, CLAUDE.md), and run no separate lint. In repair mode, skip phases 2 and 4.
   </PHASE>
 
   <PHASE id="2" name="merge">
@@ -74,7 +75,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   </PHASE>
 
   <PHASE id="3" name="verify">
-  Run typecheck and the full test suite on WORK_BRANCH.
+  Run typecheck, lint when LINT is declared, and the full test suite on WORK_BRANCH, each declared command exactly as given and unfiltered.
   - Red → attempt one small fix and commit it (`fix(integration): <what>`, with the `Integration-Wave` trailer). Re-run the suite.
   - Still red → `STATUS: RED`. Leave the merges in place for the orchestrator to report.
 
