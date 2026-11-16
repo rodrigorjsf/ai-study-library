@@ -11,7 +11,7 @@ RUN_SPEC_FILE = "docs/agents/run-spec.md"
 RECIPE_LOCATIONS = ((".claude/skills", "verify*"), (".claude/skills", "run-*"), (".cursor/skills", "verify-*"))
 SEARCHED = ", ".join(f"{parent}/{pattern}/" for parent, pattern in RECIPE_LOCATIONS)
 TICKETS = pathlib.Path(__file__).resolve().parent / "tickets.py"
-SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
+CODE_SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
 
 
 def declared_commands(repo):
@@ -64,7 +64,7 @@ def surface_report(tickets, error):
     for ticket in scoped:
         if not ticket["criteria"]:
             warnings.append(f"{ticket['id']}: no acceptance criteria found")
-        warnings += [f"{ticket['id']}: {criterion}" for criterion in ticket["criteria"] if not SPAN.search(criterion)]
+        warnings += [f"{ticket['id']}: {criterion}" for criterion in ticket["criteria"] if not CODE_SPAN.search(criterion)]
     if warnings:
         return f"warnings: {len(warnings)}", warnings
     count = sum(len(ticket["criteria"]) for ticket in scoped)
