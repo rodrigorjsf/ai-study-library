@@ -52,10 +52,7 @@ for name, citation, how in rows:
     assert path == SKILL_PATH and number.isdigit() and 1 <= int(number) <= len(skill_lines), (name, citation)
     assert skill_lines[int(number) - 1].strip(), (name, citation)
     assert re.search(rf"^{name} ==", TLA_TEXT, re.M), name
-    assert " => " in how, (name, how)
-    old, new = how.split(" => ", 1)
-    assert old != new, (name, how)
-    break_edits[name] = support.broken_model_text(TLA_TEXT, old, new)
+    break_edits[name] = support.broken_model_text(TLA_TEXT, how)
 
 assert not [line for line in TLA_TEXT.splitlines() if "\\*" in line or "(*" in line], "comments in the model"
 

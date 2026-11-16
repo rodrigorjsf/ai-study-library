@@ -17,7 +17,10 @@ def cursor_table_rows(readme_text):
     return readme_text.split("\n## Claude Code and Cursor\n")[1].split("\n## Status")[0].splitlines()
 
 
-def broken_model_text(tla_text, old, new):
+def broken_model_text(tla_text, edit):
+    assert " => " in edit, edit
+    old, new = edit.split(" => ", 1)
+    assert old != new, edit
     assert tla_text.count(old) == 1, old
     return tla_text.replace(old, new)
 

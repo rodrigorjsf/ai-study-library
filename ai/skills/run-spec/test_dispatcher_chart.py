@@ -90,8 +90,7 @@ if tla2tools and shutil.which("node"):
     assert written["chart.mmd"] == STORED_CHART, "stored chart is stale: regenerate it with maintain-formal-check.md"
     assert written["report.md"] == STORED_REPORT, "stored report is stale: regenerate it with maintain-formal-check.md"
     for invariant in BROKEN_IN_CHART_SCOPE:
-        old, new = BREAK_EDITS[invariant].split(" => ", 1)
-        result, written = run_statechart(support.broken_model_text(TLA_TEXT, old, new))
+        result, written = run_statechart(support.broken_model_text(TLA_TEXT, BREAK_EDITS[invariant]))
         assert result.returncode == 1, (invariant, result.stdout, result.stderr)
         assert f"## {invariant} breaks" in written["report.md"], (invariant, written["report.md"])
         assert f"Breaks {invariant}" in written["chart.mmd"], (invariant, written["chart.mmd"])
