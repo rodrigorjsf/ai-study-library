@@ -6,21 +6,9 @@ from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
 ROUTE = KIT / "route.py"
-
-AXES = ("Acceptance", "Standards", "Security", "UX/AIX", "Design", "Hygiene")
-CLEAN = {
-    "Acceptance": "COUNT: 0 blocking, 0 unverified",
-    "Standards": "COUNT: 0 proven, 0 unproven",
-    "Security": "COUNT: 0 blocking, 0 needs-human",
-    "UX/AIX": "COUNT: 0",
-    "Design": "COUNT: 0 proven, 0 unproven",
-    "Hygiene": "COUNT: 0",
-}
-
-
-def report(**counts):
-    lines = {**CLEAN, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
-    return "".join(f"## {axis}\n- none\n{lines[axis]}\n\n" for axis in AXES)
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(KIT))
+from test_support import review_report as report
 
 
 def run_route(*arguments):

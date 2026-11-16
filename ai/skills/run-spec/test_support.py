@@ -23,6 +23,22 @@ FAKE_GH = (
 )
 
 
+REVIEW_AXES = ("Acceptance", "Standards", "Security", "UX/AIX", "Design", "Hygiene")
+CLEAN_COUNTS = {
+    "Acceptance": "COUNT: 0 blocking, 0 unverified",
+    "Standards": "COUNT: 0 proven, 0 unproven",
+    "Security": "COUNT: 0 blocking, 0 needs-human",
+    "UX/AIX": "COUNT: 0",
+    "Design": "COUNT: 0 proven, 0 unproven",
+    "Hygiene": "COUNT: 0",
+}
+
+
+def review_report(**counts):
+    lines_by_axis = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
+    return "".join(f"## {axis}\n- none\n{lines_by_axis[axis]}\n\n" for axis in REVIEW_AXES)
+
+
 def run_properties(properties, script, seed, *args):
     return {name: prop(random.Random(f"{seed}/{name}"), script, *args) for name, prop in properties.items()}
 

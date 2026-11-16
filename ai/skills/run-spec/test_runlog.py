@@ -5,7 +5,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-RUNLOG = Path(__file__).resolve().parent / "runlog.py"
+KIT = Path(__file__).resolve().parent
+RUNLOG = KIT / "runlog.py"
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(KIT))
+from test_support import review_report
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
 FULL_RECORD = ["--slug", "demo", "--pr", "https://github.com/o/r/pull/7", "--rounds", "2",
@@ -239,22 +243,6 @@ with tempfile.TemporaryDirectory() as tmp:
         r = runlog(tmp, *command)
         assert r.returncode != 0 and r.stdout == "" and "git" in r.stderr, (command, r)
 
-REVIEW_AXES = ("Acceptance", "Standards", "Security", "UX/AIX", "Design", "Hygiene")
-CLEAN_COUNTS = {
-    "Acceptance": "COUNT: 0 blocking, 0 unverified",
-    "Standards": "COUNT: 0 proven, 0 unproven",
-    "Security": "COUNT: 0 blocking, 0 needs-human",
-    "UX/AIX": "COUNT: 0",
-    "Design": "COUNT: 0 proven, 0 unproven",
-    "Hygiene": "COUNT: 0",
-}
-
-
-def review(**counts):
-    lines_by_axis = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
-    return "".join(f"## {axis}\n- none\n{lines_by_axis[axis]}\n\n" for axis in REVIEW_AXES)
-
-
 def review_fields(metrics_line):
     keys = ("rounds", *(f"findings.{axis}" for axis in ("acceptance", "standards", "security", "uxaix", "design",
                                                         "hygiene")), "unverified")
@@ -274,14 +262,14 @@ with tempfile.TemporaryDirectory() as tmp:
     assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
     assert review_fields(lines(metrics)[-1]) == (0, 0, 0, 0, 0, 0, 0, 0), lines(metrics)[-1]
 
-    (state / "review-1.md").write_text(review(Acceptance="COUNT: 2 blocking, 1 unverified",
-                                              Standards="COUNT: 1 proven, 3 unproven",
-                                              Security="COUNT: 1 blocking, 2 needs-human",
-                                              Design="COUNT: 2 proven, 1 unproven", Hygiene="COUNT: 1",
-                                              UX_AIX="COUNT: 4"))
-    (state / "review-2.md").write_text(review(Acceptance="COUNT: 1 blocking, 4 unverified",
-                                              Standards="COUNT: 0 proven, 2 unproven"))
-    (state / "review-10.md").write_text(review(Acceptance="COUNT: 0 blocking, 5 unverified"))
+    (state / "review-1.md").write_text(review_report(Acceptance="COUNT: 2 blocking, 1 unverified",
+                                                     Standards="COUNT: 1 proven, 3 unproven",
+                                                     Security="COUNT: 1 blocking, 2 needs-human",
+                                                     Design="COUNT: 2 proven, 1 unproven", Hygiene="COUNT: 1",
+                                                     UX_AIX="COUNT: 4"))
+    (state / "review-2.md").write_text(review_report(Acceptance="COUNT: 1 blocking, 4 unverified",
+                                                     Standards="COUNT: 0 proven, 2 unproven"))
+    (state / "review-10.md").write_text(review_report(Acceptance="COUNT: 0 blocking, 5 unverified"))
     (state / "review-1-fix.md").write_text("- S1 unproven\nCOUNT: 9\n")
     (state / "user-1-fix.md").write_text("COUNT: 9\n")
     (state / "review-3.partial").write_text("COUNT: 9\n")
@@ -295,7 +283,7 @@ with tempfile.TemporaryDirectory() as tmp:
         assert r.returncode == 2 and r.stdout == "", (overlapping, r)
 
     recorded = metrics.read_text()
-    (state / "review-11.md").write_text(review(Design="COUNT: 2"))
+    (state / "review-11.md").write_text(review_report(Design="COUNT: 2"))
     r = runlog(repo, "record", "--slug", "malformed", "--head", head, "--state", str(state))
     assert r.returncode == 2 and r.stdout == "" and "review-11.md" in r.stderr, r
     assert metrics.read_text() == recorded
