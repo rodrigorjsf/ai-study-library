@@ -8,8 +8,17 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from gitcmd import default_refs, run
+from route import UnreadableReport, read_reviews
 
-AXES = ("acceptance", "standards", "security", "uxaix", "design", "hygiene")
+REVIEW_FINDINGS = {
+    "acceptance": ("Acceptance", "blocking"),
+    "standards": ("Standards", "blocking"),
+    "security": ("Security", "blocking"),
+    "uxaix": ("UX/AIX", "advisory"),
+    "design": ("Design", "blocking"),
+    "hygiene": ("Hygiene", "blocking"),
+}
+AXES = tuple(REVIEW_FINDINGS)
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
 OPTIONAL_COUNTS = ("unproven",)
@@ -99,11 +108,25 @@ def axis_count(value):
     return axis, count(number)
 
 
+def review_numbers(state):
+    try:
+        reviews = read_reviews(state)
+    except UnreadableReport as error:
+        print(f"runlog.py: {error}", file=sys.stderr)
+        sys.exit(2)
+    findings = [(axis, sum(getattr(counts[section], field) for counts in reviews))
+                for axis, (section, field) in REVIEW_FINDINGS.items()]
+    unverified = reviews[-1]["Acceptance"].unverified if reviews else 0
+    return len(reviews), findings, unverified
+
+
 def record(args):
+    if args.state is not None:
+        args.rounds, args.findings, args.unverified = review_numbers(args.state)
     path = metrics_path()
     load_or_start_fresh(path)
     findings = dict.fromkeys(AXES, 0)
-    findings.update(args.findings)
+    findings.update(args.findings or [])
     fields = [("at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
               ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", args.rounds),
               *((f"findings.{axis}", findings[axis]) for axis in AXES),
@@ -165,12 +188,21 @@ def main():
     rec.add_argument("--slug", required=True, type=single_line_text)
     rec.add_argument("--head", required=True, type=head_sha)
     rec.add_argument("--pr", default="none", type=single_line_text)
-    for name in ("rounds", "dismissals", "unverified", "unproven", "done", "skipped", "stuck"):
+    for name in ("dismissals", "unproven", "done", "skipped", "stuck"):
         rec.add_argument(f"--{name}", default=0, type=count)
-    rec.add_argument("--findings", nargs="*", default=[], type=axis_count)
+    for name in ("rounds", "unverified"):
+        rec.add_argument(f"--{name}", type=count)
+    rec.add_argument("--findings", nargs="*", type=axis_count)
+    rec.add_argument("--state")
     rec.set_defaults(run=record)
     sub.add_parser("reverts").set_defaults(run=reverts)
     args = ap.parse_args()
+    if args.command == "record":
+        review_options = (args.rounds, args.findings, args.unverified)
+        if args.state is not None and any(option is not None for option in review_options):
+            rec.error("--state replaces --rounds, --findings and --unverified")
+        args.rounds = args.rounds or 0
+        args.unverified = args.unverified or 0
     args.run(args)
 
 
