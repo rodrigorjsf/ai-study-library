@@ -23,4 +23,11 @@ for name, text in {"create-formal-check.md": CREATE_PROCEDURE_TEXT, "maintain-fo
 mise_install = f"mise install {pinned('JAVA_TOOL')} '{pinned('TLC_TOOL')}'"
 assert mise_install in CREATE_PROCEDURE_TEXT, mise_install
 
+crlf_files = [path.relative_to(FORMAL).as_posix() for path in sorted(FORMAL.rglob("*"))
+              if path.is_file() and "node_modules" not in path.parts and b"\r\n" in path.read_bytes()]
+assert not crlf_files, (
+    f"{len(crlf_files)} files under {FORMAL} have CRLF line endings, first {crlf_files[0]}; rewrite them with "
+    "`git ls-files -z ai/skills/run-spec-dev | xargs -0 touch && git ls-files -z ai/skills/run-spec-dev | xargs -0 git checkout-index -f --` from the repository root"
+)
+
 print("ok")
