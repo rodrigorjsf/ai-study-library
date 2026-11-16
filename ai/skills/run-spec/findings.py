@@ -17,6 +17,7 @@ LOCATION = re.compile(r"(?:\[[^\]]*\] )?(?P<location>[^\s:\"`\[]+:[0-9]+(?:-[0-9
 OUTCOME_LINE = re.compile(rf"- (?P<id>[A-Z]+[0-9]+) (?P<outcome>{'|'.join(OUTCOMES)})(?:\s+(?P<note>.*))?")
 REVIEW_FILE = re.compile(r"review-([0-9]+)(-fix)?\.md")
 USER_FIX_FILE = re.compile(r"user-([0-9]+)-fix\.md")
+ROUND = re.compile(r"[0-9]+|user-[0-9]+")
 
 
 class Finding(NamedTuple):

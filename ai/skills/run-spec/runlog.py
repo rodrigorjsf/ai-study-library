@@ -7,7 +7,7 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from findings import OUTCOMES, USER_AXIS, state_findings
+from findings import OUTCOMES, ROUND, USER_AXIS, state_findings
 from gitcmd import default_refs, run
 from route import UnreadableReport, read_reviews
 
@@ -28,7 +28,6 @@ FINDING_FIELDS = ("slug", "head", "round", "axis", "location", "finding", "outco
 FINDING_IDENTITY = tuple(key for key in FINDING_FIELDS if key != "head")
 COMMIT_ID = re.compile(r"[0-9a-f]{7,40}")
 DIGITS = re.compile(r"[0-9]+")
-ROUND = re.compile(r"[0-9]+|user-[0-9]+")
 REVERT = re.compile(rf"This reverts commit ({COMMIT_ID.pattern})")
 
 
@@ -257,10 +256,10 @@ def main():
     rec.add_argument("--state")
     rec.set_defaults(run=record)
     sub.add_parser("reverts").set_defaults(run=reverts)
-    fnd = sub.add_parser("findings")
-    fnd.add_argument("--state", required=True)
-    fnd.add_argument("--head", type=head_sha)
-    fnd.set_defaults(run=append_findings)
+    findings_parser = sub.add_parser("findings")
+    findings_parser.add_argument("--state", required=True)
+    findings_parser.add_argument("--head", type=head_sha)
+    findings_parser.set_defaults(run=append_findings)
     args = ap.parse_args()
     if args.command == "record":
         review_options = (args.rounds, args.findings, args.unverified)
