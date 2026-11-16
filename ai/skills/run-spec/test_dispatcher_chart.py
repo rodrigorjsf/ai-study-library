@@ -2,12 +2,15 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent.parent.parent
-FORMAL = REPO / "ai" / "skills" / "run-spec-dev" / "formal"
-MODELS = FORMAL / "models"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import test_support as support
+
+MODELS = support.FORMAL_MODELS
+FORMAL = MODELS.parent
 STATECHART = FORMAL / "statechart" / "scripts" / "statechart"
 MODEL = "Dispatcher"
 CHART_CFG = f"{MODEL}.chart.cfg"
@@ -34,10 +37,7 @@ VIEW_TEXT = (MODELS / VIEW).read_text()
 STORED_CHART = (MODELS / CHART).read_text()
 STORED_REPORT = (MODELS / REPORT).read_text()
 MAINTAIN_TEXT = (FORMAL / "maintain-formal-check.md").read_text()
-MATCHES_ROWS = {
-    row[0]: row[2]
-    for row in (line.split("\t") for line in (MODELS / f"{MODEL}.matches").read_text().splitlines()[1:])
-}
+BREAK_EDITS = {name: how for name, _, how in support.model_matches(MODEL)[1]}
 
 
 def labels_of(chart):
@@ -55,12 +55,6 @@ def lines_outside_constants(cfg_text):
 
 def states_reached(report):
     return int(re.search(r"TLC reached ([\d,]+) states", report).group(1).replace(",", ""))
-
-
-def broken_model_text(invariant):
-    old, new = MATCHES_ROWS[invariant].split(" => ", 1)
-    assert TLA_TEXT.count(old) == 1, invariant
-    return TLA_TEXT.replace(old, new)
 
 
 def run_statechart(tla_text):
@@ -95,7 +89,8 @@ if tla2tools and shutil.which("node"):
     assert written["chart.mmd"] == STORED_CHART, "stored chart is stale: regenerate it with maintain-formal-check.md"
     assert written["report.md"] == STORED_REPORT, "stored report is stale: regenerate it with maintain-formal-check.md"
     for invariant in BROKEN_IN_CHART_SCOPE:
-        result, written = run_statechart(broken_model_text(invariant))
+        old, new = BREAK_EDITS[invariant].split(" => ", 1)
+        result, written = run_statechart(support.broken_model_text(TLA_TEXT, old, new))
         assert result.returncode == 1, (invariant, result.stdout, result.stderr)
         assert f"## {invariant} breaks" in written["report.md"], (invariant, written["report.md"])
         assert f"Breaks {invariant}" in written["chart.mmd"], (invariant, written["chart.mmd"])

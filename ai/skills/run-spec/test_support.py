@@ -5,6 +5,19 @@ import stat
 import sys
 from pathlib import Path
 
+FORMAL_MODELS = Path(__file__).resolve().parent.parent / "run-spec-dev" / "formal" / "models"
+
+
+def model_matches(model):
+    lines = (FORMAL_MODELS / f"{model}.matches").read_text().splitlines()
+    return lines[0], [line.split("\t") for line in lines[1:]]
+
+
+def broken_model_text(tla_text, old, new):
+    assert tla_text.count(old) == 1, old
+    return tla_text.replace(old, new)
+
+
 PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
 PROPERTY_CASES = 300
 
