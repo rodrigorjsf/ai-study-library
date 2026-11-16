@@ -51,6 +51,23 @@ def section(body, heading):
     return m.group(1) if m else ""
 
 
+CHECKBOX = re.compile(r"^(\s*)[-*+]\s+\[[ xX]\]\s+(.*\S)\s*$")
+
+
+def criteria(text):
+    found, indent = [], None
+    for line in re.split(r"\r?\n", text):
+        checkbox = CHECKBOX.match(line)
+        if checkbox:
+            found.append(checkbox.group(2))
+            indent = len(checkbox.group(1))
+        elif line.strip() and indent is not None and len(line) - len(line.lstrip()) > indent:
+            found[-1] += " " + line.strip()
+        elif line.strip():
+            indent = None
+    return found
+
+
 def local_tickets(spec):
     p = pathlib.Path(spec)
     root = p.parent if p.suffix == ".md" else p
@@ -66,6 +83,7 @@ def local_tickets(spec):
         m = re.search(r"^\**Blocked by:\**\s*(.*)", text, re.M)
         blocked = m.group(1) if m else ""
         tickets.append({"id": num, "ref": str(f.resolve().relative_to(top)), "title": title, "_blocked": blocked,
+                        "criteria": criteria(text),
                         "_status": (re.search(r"^\**Status:\**\s*(\S+)", text, re.M) or [None, ""])[1]})
     ids = {t["id"].lstrip("0"): t["id"] for t in tickets}
     for t in tickets:
@@ -108,6 +126,7 @@ def github_tickets(spec):
         text = section(i["body"], "Blocked by") + "\n" + " ".join(re.findall(r"^Blocked by:.*$", i["body"], re.M))
         blockers |= set(re.findall(r"#(\d+)", text))
         tickets.append({"id": f"#{m}", "ref": f"#{m}", "title": i["title"],
+                        "criteria": criteria(section(i["body"], "Acceptance criteria")),
                         "blockers": sorted(f"#{b}" for b in blockers if b != m),
                         "_closed": i["state"] == "CLOSED",
                         "in_scope": i["state"] == "CLOSED" or "ready-for-agent" in {l["name"] for l in i["labels"]}})
@@ -115,7 +134,7 @@ def github_tickets(spec):
     own = {t["id"] for t in tickets}
     for b in {b for t in tickets for b in t["blockers"]} - own:
         state = sh("gh", "issue", "view", b.lstrip("#"), "--json", "state", "--jq", ".state", check=False).strip()
-        tickets.append({"id": b, "ref": b, "title": "(outside this spec)", "blockers": [],
+        tickets.append({"id": b, "ref": b, "title": "(outside this spec)", "blockers": [], "criteria": [],
                         "_closed": state == "CLOSED", "in_scope": False})
     return f"{n}-{kebab(title)}", f"#{n}", tickets
 
@@ -134,11 +153,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tracker", required=True, choices=["github", "local"])
     ap.add_argument("--spec", required=True)
-    ap.add_argument("--work-branch", required=True)
-    ap.add_argument("--failures-dir", required=True)
+    ap.add_argument("--work-branch")
+    ap.add_argument("--failures-dir")
+    ap.add_argument("--criteria", action="store_true",
+                    help="print each ticket's id, scope and acceptance criteria, and need no --work-branch or --failures-dir")
     a = ap.parse_args()
+    if not a.criteria and (a.work_branch is None or a.failures_dir is None):
+        ap.error("--work-branch and --failures-dir are required unless --criteria is given")
 
     slug, spec, tickets = (github_tickets if a.tracker == "github" else local_tickets)(a.spec)
+    if a.criteria:
+        print(json.dumps({"slug": slug, "spec": spec,
+                          "tickets": [{key: t[key] for key in ("id", "in_scope", "criteria")} for t in tickets]}, indent=1))
+        return
     refs = default_refs()
     log = sh("git", "log", a.work_branch, *(["--not", *refs] if refs else []),
              "--format=%x1e%(trailers:only,unfold)", check=False)
@@ -153,6 +180,7 @@ def main():
     by_id = {t["id"]: t for t in tickets}
     for t in tickets:
         closed = t.pop("_closed")
+        t.pop("criteria")
         t["done"] = t["id"] in trailers or closed
         t["attempts"] = len(list(fdir.glob(f"{t['id'].lstrip('#')}-attempt*.md"))) if fdir.is_dir() else 0
         t["skipped"] = not t["done"] and t["attempts"] >= MAX_ATTEMPTS

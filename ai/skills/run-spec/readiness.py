@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import pathlib
+import re
+import subprocess
+import sys
 
 CHECK_KEYS = ("typecheck", "lint", "test")
 RUN_SPEC_FILE = "docs/agents/run-spec.md"
 RECIPE_LOCATIONS = ((".claude/skills", "verify*"), (".claude/skills", "run-*"), (".cursor/skills", "verify-*"))
 SEARCHED = ", ".join(f"{parent}/{pattern}/" for parent, pattern in RECIPE_LOCATIONS)
+TICKETS = pathlib.Path(__file__).resolve().parent / "tickets.py"
+SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
 
 
 def declared_commands(repo):
@@ -35,12 +41,44 @@ def find_recipe(repo):
     return None
 
 
-def render(spec, commands, recipe):
+def read_tickets(repo, spec):
+    tracker = "github" if re.fullmatch(r"#?\d+", spec) else "local"
+    result = subprocess.run([sys.executable, "-I", str(TICKETS), "--tracker", tracker, "--spec", spec, "--criteria"],
+                            cwd=repo, capture_output=True, text=True, errors="replace")
+    if result.returncode != 0:
+        reason = next((line for line in reversed(result.stderr.splitlines()) if line.strip()), f"exit {result.returncode}")
+        return None, reason.strip()
+    try:
+        return json.loads(result.stdout)["tickets"], None
+    except (ValueError, KeyError):
+        return None, "tickets.py printed no ticket list"
+
+
+def surface_report(tickets, error):
+    if error:
+        return "unchecked", [f"could not read ticket criteria: {error}"]
+    scoped = [ticket for ticket in tickets if ticket["in_scope"]]
+    if not scoped:
+        return "unchecked", ["no ticket in scope to check"]
+    warnings = []
+    for ticket in scoped:
+        if not ticket["criteria"]:
+            warnings.append(f"{ticket['id']}: no acceptance criteria found")
+        warnings += [f"{ticket['id']}: {criterion}" for criterion in ticket["criteria"] if not SPAN.search(criterion)]
+    if warnings:
+        return f"warnings: {len(warnings)}", warnings
+    count = sum(len(ticket["criteria"]) for ticket in scoped)
+    return "ok", [f"every criterion names a surface (tickets: {len(scoped)}, criteria: {count})"]
+
+
+def render(spec, commands, recipe, surface):
     missing = [key for key in CHECK_KEYS if key not in commands]
     summary = f"readiness {spec}: check commands {len(commands)} of {len(CHECK_KEYS)} declared"
     if missing:
         summary += f" (missing: {', '.join(missing)})"
     summary += f"; app recipe {recipe}" if recipe else "; no app recipe"
+    surface_state, surface_lines = surface
+    summary += f"; surface {surface_state}"
     lines = [summary, "### Check commands"]
     lines += [f"- {key}: declared ({commands[key]})" if key in commands else f"- {key}: missing" for key in CHECK_KEYS]
     lines.append("### App recipe")
@@ -49,6 +87,8 @@ def render(spec, commands, recipe):
     else:
         lines.append(f"- none found in {SEARCHED}")
         lines.append("- suggestion: run Claude Code's `/run-skill-generator` to create one")
+    lines.append("### Surface")
+    lines += [f"- {line}" for line in surface_lines]
     return "\n".join(lines)
 
 
@@ -61,7 +101,7 @@ def main():
         parser.error("--spec is empty")
     if not args.repo.is_dir():
         parser.error(f"--repo {args.repo} is not a directory")
-    print(render(args.spec, declared_commands(args.repo), find_recipe(args.repo)))
+    print(render(args.spec, declared_commands(args.repo), find_recipe(args.repo), surface_report(*read_tickets(args.repo, args.spec))))
 
 
 if __name__ == "__main__":

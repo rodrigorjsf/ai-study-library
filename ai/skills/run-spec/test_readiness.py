@@ -1,5 +1,7 @@
+import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -7,10 +9,52 @@ from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
 READINESS = KIT / "readiness.py"
-ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+BASE_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 RUN_SPEC_FILE = "docs/agents/run-spec.md"
 SEARCHED = ".claude/skills/verify*/, .claude/skills/run-*/, .cursor/skills/verify-*/"
 SUGGESTION = "suggestion: run Claude Code's `/run-skill-generator` to create one"
+
+
+FAKE_GH = (
+    "import json, os, sys\n"
+    "fixture = os.environ.get('FAKE_GH')\n"
+    "if not fixture:\n"
+    "    sys.exit('fake gh: no fixture')\n"
+    "data = json.load(open(fixture))\n"
+    "issues = data['issues']\n"
+    "args = sys.argv[1:]\n"
+    "if args[:2] == ['repo', 'view']:\n"
+    "    print('o/r')\n"
+    "elif args[:2] == ['issue', 'list']:\n"
+    "    print(json.dumps([{'number': i['number'], 'body': i['body']} for i in issues.values()]))\n"
+    "elif args[:2] == ['issue', 'view'] and args[2] == data['spec']:\n"
+    "    print(data['title'])\n"
+    "elif args[:2] == ['issue', 'view'] and args[4] == 'state':\n"
+    "    print(issues.get(args[2], {'state': 'OPEN'})['state'])\n"
+    "elif args[:2] == ['issue', 'view']:\n"
+    "    print(json.dumps(issues[args[2]]))\n"
+    "elif args[0] == 'api':\n"
+    "    print('')\n"
+    "else:\n"
+    "    sys.exit('fake gh: unexpected ' + ' '.join(args))\n"
+)
+FAKE_GH_DIR = tempfile.TemporaryDirectory()
+FIXTURE_DIR = tempfile.TemporaryDirectory()
+(Path(FAKE_GH_DIR.name) / "gh").write_text(f"#!{sys.executable}\n{FAKE_GH}")
+(Path(FAKE_GH_DIR.name) / "gh").chmod(0o755)
+ENV = {**BASE_ENV, "PATH": f"{FAKE_GH_DIR.name}{os.pathsep}{BASE_ENV['PATH']}"}
+
+
+def with_issues(issues, spec="6", title="Spec: demo"):
+    fixture = Path(FIXTURE_DIR.name) / "gh.json"
+    fixture.write_text(json.dumps({"spec": spec, "title": title, "issues": issues}))
+    return {**ENV, "FAKE_GH": str(fixture)}
+
+
+def github_issue(number, criteria, labels=("ready-for-agent",), state="OPEN"):
+    body = "## Parent\n\n#6\n\n## Acceptance criteria\n\n" + "".join(f"- [ ] {c}\n" for c in criteria) + "\n## Blocked by\n\nNone\n"
+    return {"number": number, "title": f"Ticket {number}", "state": state, "body": body,
+            "labels": [{"name": name} for name in labels]}
 
 
 def git(repo, *args):
@@ -30,12 +74,12 @@ def new_repo(tmp, files=None):
     return repo
 
 
-def readiness(*args, cwd=None):
-    return subprocess.run([sys.executable, "-I", str(READINESS), *args], cwd=cwd, env=ENV, capture_output=True, text=True)
+def readiness(*args, cwd=None, env=ENV):
+    return subprocess.run([sys.executable, "-I", str(READINESS), *args], cwd=cwd, env=env, capture_output=True, text=True)
 
 
-def report(repo, spec="#6"):
-    r = readiness("--repo", str(repo), "--spec", spec)
+def sections_of(repo, spec, env):
+    r = readiness("--repo", str(repo), "--spec", spec, env=env)
     assert (r.returncode, r.stderr) == (0, ""), r
     lines = r.stdout.split("\n")
     assert lines.pop() == "", r.stdout
@@ -47,8 +91,18 @@ def report(repo, spec="#6"):
         else:
             assert current is not None and line.startswith("- "), (line, r.stdout)
             current.append(line[2:])
-    assert list(sections) == ["Check commands", "App recipe"], r.stdout
-    return lines[0], sections["Check commands"], sections["App recipe"]
+    assert list(sections) == ["Check commands", "App recipe", "Surface"], r.stdout
+    return lines[0], sections
+
+
+def report(repo, spec="#6"):
+    summary, sections = sections_of(repo, spec, ENV)
+    return summary, sections["Check commands"], sections["App recipe"]
+
+
+def surface(repo, spec="#6", env=ENV):
+    summary, sections = sections_of(repo, spec, env)
+    return summary, sections["Surface"]
 
 
 def check_section(run_spec_text):
@@ -69,7 +123,7 @@ with tempfile.TemporaryDirectory() as tmp:
     summary, check_lines, recipe_lines = report(repo)
     assert check_lines == ["typecheck: declared (npm run typecheck)", "lint: declared (npm run lint)",
                            "test: declared (npm test)"], check_lines
-    assert summary == "readiness #6: check commands 3 of 3 declared; no app recipe", summary
+    assert summary == "readiness #6: check commands 3 of 3 declared; no app recipe; surface unchecked", summary
     assert recipe_lines == [f"none found in {SEARCHED}", SUGGESTION], recipe_lines
 
 assert check_section("typecheck: tsc --noEmit\ntest: pytest -q\n") == [
@@ -78,7 +132,7 @@ assert check_section("typecheck: tsc --noEmit\ntest: pytest -q\n") == [
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, {RUN_SPEC_FILE: "typecheck: tsc\ntest: pytest\n"})
     summary, _, _ = report(repo, ".scratch/demo")
-    assert summary == "readiness .scratch/demo: check commands 2 of 3 declared (missing: lint); no app recipe", summary
+    assert summary == "readiness .scratch/demo: check commands 2 of 3 declared (missing: lint); no app recipe; surface unchecked", summary
 
 everything_missing = ["typecheck: missing", "lint: missing", "test: missing"]
 assert check_section(None) == everything_missing, "no file"
@@ -148,7 +202,7 @@ assert recipe_section(".claude/skills/verify-app", extra=[".claude/skills/other/
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, {RUN_SPEC_FILE: "test: pytest\n", ".claude/skills/verify-app/SKILL.md": "x"})
     summary, _, _ = report(repo)
-    assert summary == "readiness #6: check commands 1 of 3 declared (missing: typecheck, lint); app recipe .claude/skills/verify-app/", summary
+    assert summary == "readiness #6: check commands 1 of 3 declared (missing: typecheck, lint); app recipe .claude/skills/verify-app/; surface unchecked", summary
     before = subprocess.run(["git", "status", "--porcelain"], cwd=repo, env=ENV, capture_output=True, text=True).stdout
     assert before == "", before
     other = tempfile.mkdtemp()
@@ -190,5 +244,63 @@ with tempfile.TemporaryDirectory() as tmp:
         r = readiness(*args)
         assert r.returncode == 2 and r.stdout == "" and r.stderr != "", (args, r)
     assert readiness("--help").returncode == 0
+
+GITHUB_READY = "readiness #6: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    env = with_issues({
+        "13": github_issue(13, ["Runs `a` and prints `ok`.", "No span here", "A **bold** lead", "Empty `` span", "Blank ` ` span"]),
+        "14": github_issue(14, ["Out of scope and without a span"], labels=("needs-info",)),
+        "15": github_issue(15, []),
+        "16": github_issue(16, ["Only `one` fine criterion"], labels=(), state="CLOSED"),
+    })
+    summary, lines = surface(repo, env=env)
+    assert summary == f"{GITHUB_READY}; surface warnings: 5", summary
+    assert lines == ["#13: No span here", "#13: A **bold** lead", "#13: Empty `` span", "#13: Blank ` ` span",
+                     "#15: no acceptance criteria found"], lines
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    env = with_issues({"13": github_issue(13, ["Runs `a`.", "Prints `ok`."]), "14": github_issue(14, ["Exits with `0`"])})
+    summary, lines = surface(repo, env=env)
+    assert summary == f"{GITHUB_READY}; surface ok", summary
+    assert lines == ["every criterion names a surface (tickets: 2, criteria: 3)"], lines
+    assert surface(repo, "6", env)[1] == lines, "a bare issue number"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    assert surface(repo, env=with_issues({"13": github_issue(13, ["No span"], labels=("needs-info",))})) == (
+        f"{GITHUB_READY}; surface unchecked", ["no ticket in scope to check"])
+    summary, lines = surface(repo)
+    assert summary == f"{GITHUB_READY}; surface unchecked", summary
+    assert lines == ["could not read ticket criteria: fake gh: no fixture"], lines
+    assert surface(repo, ".scratch/missing") == (
+        "readiness .scratch/missing: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe; surface unchecked",
+        ["could not read ticket criteria: no tickets under .scratch/missing/issues"])
+
+LOCAL_TICKETS = {
+    ".scratch/demo/spec.md": "# Demo\n",
+    ".scratch/demo/issues/01-first.md": "# 01 — First\n\n**Blocked by:** None\n\n**Status:** ready-for-agent\n\n"
+                                        "- [ ] Prints `ok`\n- [x] A **checked** criterion without code\n",
+    ".scratch/demo/issues/02-second.md": "# 02 — Second\n\n**Blocked by:** 01\n\n**Status:** ready-for-agent\n\n"
+                                         "- [ ] Wrapped across\n  two lines, with `span`\n- [ ] Needs a surface\n",
+    ".scratch/demo/issues/03-parked.md": "# 03 — Parked\n\n**Blocked by:** none\n\n**Status:** needs-info\n\n- [ ] Not in scope\n",
+}
+LOCAL_READY = "readiness {spec}: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, LOCAL_TICKETS)
+    for spec in (".scratch/demo", ".scratch/demo/spec.md"):
+        assert surface(repo, spec) == (f"{LOCAL_READY.format(spec=spec)}; surface warnings: 2",
+                                       ["01: A **checked** criterion without code", "02: Needs a surface"]), spec
+    before = subprocess.run(["git", "status", "--porcelain"], cwd=repo, env=ENV, capture_output=True, text=True).stdout
+    assert before == "", before
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {name: text for name, text in LOCAL_TICKETS.items() if "02-" not in name})
+    (repo / ".scratch/demo/issues/01-first.md").write_text(
+        "# 01 — First\n\n**Blocked by:** None\n\n**Status:** ready-for-agent\n\n- [ ] Prints `ok`\n- [x] Exits `0`\n")
+    assert surface(repo, ".scratch/demo")[1] == ["every criterion names a surface (tickets: 1, criteria: 2)"]
 
 print("ok")
