@@ -59,12 +59,12 @@ with materialized() as repo:
     assert (readiness.returncode, readiness.stderr) == (0, ""), readiness
     assert "- found: .claude/skills/verify-todo/" in readiness.stdout.splitlines(), readiness.stdout
 
-    oracle = run(sys.executable, "-I", str(KIT / "tickets.py"), "--tracker", "local", "--spec", SPEC,
-                 "--work-branch", "HEAD", "--failures-dir", os.devnull, cwd=repo)
-    assert (oracle.returncode, oracle.stderr) == (0, ""), oracle
-    listed = json.loads(oracle.stdout)
-    assert [ticket["id"] for ticket in listed["tickets"]] == ["01", "02", "03"], listed
-    assert listed["ready"] == ["01", "02"], listed
+    tickets_run = run(sys.executable, "-I", str(KIT / "tickets.py"), "--tracker", "local", "--spec", SPEC,
+                      "--work-branch", "HEAD", "--failures-dir", os.devnull, cwd=repo)
+    assert (tickets_run.returncode, tickets_run.stderr) == (0, ""), tickets_run
+    ticket_listing = json.loads(tickets_run.stdout)
+    assert [ticket["id"] for ticket in ticket_listing["tickets"]] == ["01", "02", "03"], ticket_listing
+    assert ticket_listing["ready"] == ["01", "02"], ticket_listing
 
     suite = run(sys.executable, "-I", "test_todo.py", cwd=repo)
     assert (suite.returncode, suite.stdout, suite.stderr) == (0, "ok\n", ""), suite

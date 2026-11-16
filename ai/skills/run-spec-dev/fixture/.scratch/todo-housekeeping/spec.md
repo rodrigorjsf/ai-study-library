@@ -15,10 +15,12 @@ A todo list only grows. Finished items stay in `todo.py list` forever, the confi
 3. As a user, I want `python3 -I -S todo.py done <id>` to answer `finished <id>`, so that the confirmation says what happened.
 4. As a user, I want `python3 -I -S todo.py list --open` to print only unfinished items, so that I see what is left.
 5. As a Windows user, I want `py -3 -I -S todo.py list --open` to print the same lines as on Linux, so that the app behaves the same on both.
+6. As a user, I want an id never to be reused after `clear`, so that "item 3" keeps meaning the same item.
 
 ## Implementation Decisions
 
 - An item keeps its id when other items are removed.
+- An id is never reused: an item added after `clear` gets an id higher than every id issued before, finished or removed.
 - `clear` writes the store once, after removing every finished item.
 - `list --open` is a flag of `list`. `list` without it prints every item, as today.
 
