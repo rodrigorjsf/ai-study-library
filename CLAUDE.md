@@ -31,3 +31,4 @@ When something fails repeatedly, when User has to re-explain, or when a workarou
 - Cursor SDK login URL expires in minutes: generate it only when the user is ready.
 - `rm` on a glob of temp files trips `dangerousRemoval`, even in bypass mode; `mv` instead.
 - No ffmpeg on PATH: use the `imageio-ffmpeg` binary via `uvx --with imageio-ffmpeg`.
+- SSH push denied (publickey): push HTTPS with `-c 'credential.helper=!gh auth git-credential'`.
