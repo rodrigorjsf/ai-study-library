@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import stat
 import subprocess
 import sys
 import tempfile
@@ -45,13 +44,13 @@ FIXTURE_DIR = tempfile.TemporaryDirectory()
 ENV = {**BASE_ENV, "PATH": f"{FAKE_GH_DIR.name}{os.pathsep}{BASE_ENV['PATH']}"}
 
 
-def with_issues(issues, spec="6", title="Spec: demo"):
+def env_with_issues(issues, spec="6", title="Spec: demo"):
     fixture = Path(FIXTURE_DIR.name) / "gh.json"
     fixture.write_text(json.dumps({"spec": spec, "title": title, "issues": issues}))
     return {**ENV, "FAKE_GH": str(fixture)}
 
 
-def github_issue(number, criteria, labels=("ready-for-agent",), state="OPEN"):
+def github_ticket(number, criteria, labels=("ready-for-agent",), state="OPEN"):
     body = "## Parent\n\n#6\n\n## Acceptance criteria\n\n" + "".join(f"- [ ] {c}\n" for c in criteria) + "\n## Blocked by\n\nNone\n"
     return {"number": number, "title": f"Ticket {number}", "state": state, "body": body,
             "labels": [{"name": name} for name in labels]}
@@ -245,35 +244,35 @@ with tempfile.TemporaryDirectory() as tmp:
         assert r.returncode == 2 and r.stdout == "" and r.stderr != "", (args, r)
     assert readiness("--help").returncode == 0
 
-GITHUB_READY = "readiness #6: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
+GITHUB_SUMMARY_PREFIX = "readiness #6: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
-    env = with_issues({
-        "13": github_issue(13, ["Runs `a` and prints `ok`.", "No span here", "A **bold** lead", "Empty `` span", "Blank ` ` span"]),
-        "14": github_issue(14, ["Out of scope and without a span"], labels=("needs-info",)),
-        "15": github_issue(15, []),
-        "16": github_issue(16, ["Only `one` fine criterion"], labels=(), state="CLOSED"),
+    env = env_with_issues({
+        "13": github_ticket(13, ["Runs `a` and prints `ok`.", "No span here", "A **bold** lead", "Empty `` span", "Blank ` ` span"]),
+        "14": github_ticket(14, ["Out of scope and without a span"], labels=("needs-info",)),
+        "15": github_ticket(15, []),
+        "16": github_ticket(16, ["Only `one` fine criterion"], labels=(), state="CLOSED"),
     })
     summary, lines = surface(repo, env=env)
-    assert summary == f"{GITHUB_READY}; surface warnings: 5", summary
+    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface warnings: 5", summary
     assert lines == ["#13: No span here", "#13: A **bold** lead", "#13: Empty `` span", "#13: Blank ` ` span",
                      "#15: no acceptance criteria found"], lines
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
-    env = with_issues({"13": github_issue(13, ["Runs `a`.", "Prints `ok`."]), "14": github_issue(14, ["Exits with `0`"])})
+    env = env_with_issues({"13": github_ticket(13, ["Runs `a`.", "Prints `ok`."]), "14": github_ticket(14, ["Exits with `0`"])})
     summary, lines = surface(repo, env=env)
-    assert summary == f"{GITHUB_READY}; surface ok", summary
+    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface ok", summary
     assert lines == ["every criterion names a surface (tickets: 2, criteria: 3)"], lines
     assert surface(repo, "6", env)[1] == lines, "a bare issue number"
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
-    assert surface(repo, env=with_issues({"13": github_issue(13, ["No span"], labels=("needs-info",))})) == (
-        f"{GITHUB_READY}; surface unchecked", ["no ticket in scope to check"])
+    assert surface(repo, env=env_with_issues({"13": github_ticket(13, ["No span"], labels=("needs-info",))})) == (
+        f"{GITHUB_SUMMARY_PREFIX}; surface unchecked", ["no ticket in scope to check"])
     summary, lines = surface(repo)
-    assert summary == f"{GITHUB_READY}; surface unchecked", summary
+    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface unchecked", summary
     assert lines == ["could not read ticket criteria: fake gh: no fixture"], lines
     assert surface(repo, ".scratch/missing") == (
         "readiness .scratch/missing: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe; surface unchecked",
@@ -287,12 +286,12 @@ LOCAL_TICKETS = {
                                          "- [ ] Wrapped across\n  two lines, with `span`\n- [ ] Needs a surface\n",
     ".scratch/demo/issues/03-parked.md": "# 03 — Parked\n\n**Blocked by:** none\n\n**Status:** needs-info\n\n- [ ] Not in scope\n",
 }
-LOCAL_READY = "readiness {spec}: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
+LOCAL_SUMMARY_PREFIX = "readiness {spec}: check commands 0 of 3 declared (missing: typecheck, lint, test); no app recipe"
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, LOCAL_TICKETS)
     for spec in (".scratch/demo", ".scratch/demo/spec.md"):
-        assert surface(repo, spec) == (f"{LOCAL_READY.format(spec=spec)}; surface warnings: 2",
+        assert surface(repo, spec) == (f"{LOCAL_SUMMARY_PREFIX.format(spec=spec)}; surface warnings: 2",
                                        ["01: A **checked** criterion without code", "02: Needs a surface"]), spec
     before = subprocess.run(["git", "status", "--porcelain"], cwd=repo, env=ENV, capture_output=True, text=True).stdout
     assert before == "", before
