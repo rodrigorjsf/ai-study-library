@@ -21,12 +21,8 @@ class Corrupt(Exception):
     pass
 
 
-def git(*args):
-    return run("git", *args)
-
-
 def metrics_path():
-    common = pathlib.Path(git("rev-parse", "--git-common-dir").strip()).resolve()
+    common = pathlib.Path(run("git", "rev-parse", "--git-common-dir").strip()).resolve()
     return common / "run-spec" / "metrics.tsv"
 
 
@@ -121,14 +117,14 @@ def same_commit(a, b):
 
 
 def reverting_commits(refs):
-    log = git("log", *refs, "--grep=This reverts commit", "--format=%x1e%H%x1f%B")
+    log = run("git", "log", *refs, "--grep=This reverts commit", "--format=%x1e%H%x1f%B")
     entries = [entry.partition("\x1f") for entry in log.split("\x1e") if entry]
     return [(sha.strip(), target) for sha, _, body in entries for target in REVERT.findall(body)]
 
 
 def merge_commits_by_parent(refs):
     merged = {}
-    for line in git("log", "--merges", *refs, "--format=%H %P").splitlines():
+    for line in run("git", "log", "--merges", *refs, "--format=%H %P").splitlines():
         merge, *parents = line.split()
         for parent in parents[1:]:
             merged.setdefault(parent, []).append(merge)
