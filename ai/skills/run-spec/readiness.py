@@ -43,8 +43,6 @@ def render(spec, commands, recipe):
     summary += f"; app recipe {recipe}" if recipe else "; no app recipe"
     lines = [summary, "### Check commands"]
     lines += [f"- {key}: declared ({commands[key]})" if key in commands else f"- {key}: missing" for key in CHECK_KEYS]
-    if missing:
-        lines.append(f'- declare a missing key as a "<key>: <command>" line in {RUN_SPEC_FILE}')
     lines.append("### App recipe")
     if recipe:
         lines.append(f"- found: {recipe}")

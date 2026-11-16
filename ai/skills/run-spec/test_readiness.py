@@ -51,13 +51,13 @@ def report(repo, spec="#6"):
     return lines[0], sections["Check commands"], sections["App recipe"]
 
 
-def checks(files_content):
+def check_section(run_spec_text):
     with tempfile.TemporaryDirectory() as tmp:
-        repo = new_repo(tmp, {} if files_content is None else {RUN_SPEC_FILE: files_content})
+        repo = new_repo(tmp, {} if run_spec_text is None else {RUN_SPEC_FILE: run_spec_text})
         return report(repo)[1]
 
 
-def recipe(*skill_dirs, extra=()):
+def recipe_section(*skill_dirs, extra=()):
     files = {f"{d}/SKILL.md": "x" for d in skill_dirs} | {name: "x" for name in extra}
     with tempfile.TemporaryDirectory() as tmp:
         repo = new_repo(tmp, files)
@@ -72,37 +72,34 @@ with tempfile.TemporaryDirectory() as tmp:
     assert summary == "readiness #6: check commands 3 of 3 declared; no app recipe", summary
     assert recipe_lines == [f"none found in {SEARCHED}", SUGGESTION], recipe_lines
 
-assert checks("typecheck: tsc --noEmit\ntest: pytest -q\n") == [
-    "typecheck: declared (tsc --noEmit)", "lint: missing", "test: declared (pytest -q)",
-    'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md'], "partial"
+assert check_section("typecheck: tsc --noEmit\ntest: pytest -q\n") == [
+    "typecheck: declared (tsc --noEmit)", "lint: missing", "test: declared (pytest -q)"], "partial"
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, {RUN_SPEC_FILE: "typecheck: tsc\ntest: pytest\n"})
     summary, _, _ = report(repo, ".scratch/demo")
     assert summary == "readiness .scratch/demo: check commands 2 of 3 declared (missing: lint); no app recipe", summary
 
-everything_missing = ["typecheck: missing", "lint: missing", "test: missing",
-                      'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md']
-assert checks(None) == everything_missing, "no file"
-assert checks("") == everything_missing, "empty file"
-assert checks("max-parallel: 3\n") == everything_missing, "other keys only"
+everything_missing = ["typecheck: missing", "lint: missing", "test: missing"]
+assert check_section(None) == everything_missing, "no file"
+assert check_section("") == everything_missing, "empty file"
+assert check_section("max-parallel: 3\n") == everything_missing, "other keys only"
 
-assert checks("typecheck:\nlint:   \ntest: npm test\n") == [
-    "typecheck: missing", "lint: missing", "test: declared (npm test)",
-    'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md'], "empty commands"
-assert checks("  typecheck: tsc\n\tlint: eslint .\n- test: pytest\nTest: pytest\n") == everything_missing, "indented or altered"
-assert checks("test: first\ntest: second\n")[2] == "test: declared (first)", "first line wins"
-assert checks("test:   pytest -q   \n")[2] == "test: declared (pytest -q)", "spaces trimmed"
-assert checks("typecheck:tsc\n")[0] == "typecheck: declared (tsc)", "no space after the colon"
-assert checks("typecheck: tsc\r\nlint: eslint .\r\ntest: npm test\r\n")[:3] == [
+assert check_section("typecheck:\nlint:   \ntest: npm test\n") == [
+    "typecheck: missing", "lint: missing", "test: declared (npm test)"], "empty commands"
+assert check_section("  typecheck: tsc\n\tlint: eslint .\n- test: pytest\nTest: pytest\n") == everything_missing, "indented or altered"
+assert check_section("test: first\ntest: second\n")[2] == "test: declared (first)", "first line wins"
+assert check_section("test:   pytest -q   \n")[2] == "test: declared (pytest -q)", "spaces trimmed"
+assert check_section("typecheck:tsc\n")[0] == "typecheck: declared (tsc)", "no space after the colon"
+assert check_section("typecheck: tsc\r\nlint: eslint .\r\ntest: npm test\r\n")[:3] == [
     "typecheck: declared (tsc)", "lint: declared (eslint .)", "test: declared (npm test)"], "crlf"
-assert checks("test: py\rtest\n")[2] == "test: declared (pytest)", "lone carriage return"
-assert checks("test: \x0c\x0bpytest\x0b\x0c \n")[2] == "test: declared (pytest)", "form feed and vertical tab"
-assert checks("test: pytest")[2] == "test: declared (pytest)", "no trailing newline"
-assert checks("typecheck: first\ntypecheck:\n")[0] == "typecheck: declared (first)", "later empty line ignored"
-assert checks("typecheck:\ntypecheck: second\n")[0] == "typecheck: missing", "first line wins even when empty"
-assert checks(b"test: pytest \xff\xfe\n")[2].startswith("test: declared (pytest "), "invalid utf-8"
-assert checks("test: make test && make e2e | tee out.log\n")[2] == "test: declared (make test && make e2e | tee out.log)"
+assert check_section("test: py\rtest\n")[2] == "test: declared (pytest)", "lone carriage return"
+assert check_section("test: \x0c\x0bpytest\x0b\x0c \n")[2] == "test: declared (pytest)", "form feed and vertical tab"
+assert check_section("test: pytest")[2] == "test: declared (pytest)", "no trailing newline"
+assert check_section("typecheck: first\ntypecheck:\n")[0] == "typecheck: declared (first)", "later empty line ignored"
+assert check_section("typecheck:\ntypecheck: second\n")[0] == "typecheck: missing", "first line wins even when empty"
+assert check_section(b"test: pytest \xff\xfe\n")[2].startswith("test: declared (pytest "), "invalid utf-8"
+assert check_section("test: make test && make e2e | tee out.log\n")[2] == "test: declared (make test && make e2e | tee out.log)"
 
 
 def shell_read(repo):
@@ -131,22 +128,22 @@ for content in ("typecheck: npm run typecheck\nlint: npm run lint\ntest: npm tes
         repo = new_repo(tmp, {RUN_SPEC_FILE: content})
         assert readiness_read(repo) == shell_read(repo), (content, readiness_read(repo), shell_read(repo))
 
-assert recipe(".claude/skills/verify-app") == ["found: .claude/skills/verify-app/"]
-assert recipe(".claude/skills/verify") == ["found: .claude/skills/verify/"]
-assert recipe(".claude/skills/run-app") == ["found: .claude/skills/run-app/"]
-assert recipe(".cursor/skills/verify-app") == ["found: .cursor/skills/verify-app/"]
-assert recipe(".claude/skills/run-app", ".cursor/skills/verify-app") == ["found: .claude/skills/run-app/"]
-assert recipe(".claude/skills/verify-app", ".claude/skills/run-app", ".cursor/skills/verify-app") == [
+assert recipe_section(".claude/skills/verify-app") == ["found: .claude/skills/verify-app/"]
+assert recipe_section(".claude/skills/verify") == ["found: .claude/skills/verify/"]
+assert recipe_section(".claude/skills/run-app") == ["found: .claude/skills/run-app/"]
+assert recipe_section(".cursor/skills/verify-app") == ["found: .cursor/skills/verify-app/"]
+assert recipe_section(".claude/skills/run-app", ".cursor/skills/verify-app") == ["found: .claude/skills/run-app/"]
+assert recipe_section(".claude/skills/verify-app", ".claude/skills/run-app", ".cursor/skills/verify-app") == [
     "found: .claude/skills/verify-app/"]
-assert recipe(".claude/skills/verify-b", ".claude/skills/verify-a") == ["found: .claude/skills/verify-a/"]
+assert recipe_section(".claude/skills/verify-b", ".claude/skills/verify-a") == ["found: .claude/skills/verify-a/"]
 
 for not_a_recipe in (".claude/skills/runner", ".claude/skills/run", ".claude/skills/other", ".claude/skills/xverify",
                      ".cursor/skills/verify", ".cursor/skills/run-app", ".cursor/skills/other",
                      ".claude/commands/verify-app", "skills/verify-app", ".agents/skills/verify-app"):
-    assert recipe(not_a_recipe)[0].startswith("none found"), not_a_recipe
-assert recipe(extra=[".claude/skills/verify-app/notes.txt"])[0].startswith("none found"), "a directory without SKILL.md"
-assert recipe(extra=[".claude/skills/verify-app"])[0].startswith("none found"), "a file named like a recipe"
-assert recipe(".claude/skills/verify-app", extra=[".claude/skills/other/SKILL.md"]) == ["found: .claude/skills/verify-app/"]
+    assert recipe_section(not_a_recipe)[0].startswith("none found"), not_a_recipe
+assert recipe_section(extra=[".claude/skills/verify-app/notes.txt"])[0].startswith("none found"), "a directory without SKILL.md"
+assert recipe_section(extra=[".claude/skills/verify-app"])[0].startswith("none found"), "a file named like a recipe"
+assert recipe_section(".claude/skills/verify-app", extra=[".claude/skills/other/SKILL.md"]) == ["found: .claude/skills/verify-app/"]
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, {RUN_SPEC_FILE: "test: pytest\n", ".claude/skills/verify-app/SKILL.md": "x"})
