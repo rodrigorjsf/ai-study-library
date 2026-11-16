@@ -2,25 +2,28 @@
 import argparse
 import re
 import sys
+from typing import NamedTuple
 
 sys.dont_write_bytecode = True
 
 COUNT_LINE = re.compile(r"COUNT: (.*)")
 SECTION_HEADING = re.compile(r"## (.*)")
-NUMBER_PATTERN = r"(\d+)"
-PROVEN_UNPROVEN = re.compile(rf"{NUMBER_PATTERN} proven, {NUMBER_PATTERN} unproven")
-BLOCKING_UNVERIFIED = re.compile(rf"{NUMBER_PATTERN} blocking, {NUMBER_PATTERN} unverified")
-BLOCKING_NEEDS_HUMAN = re.compile(rf"{NUMBER_PATTERN} blocking, {NUMBER_PATTERN} needs-human")
-TOTAL_ONLY = re.compile(NUMBER_PATTERN)
-AXES = ("Acceptance", "Standards", "Security", "UX/AIX", "Design", "Hygiene")
-COUNT_SHAPES = {
-    "Acceptance": BLOCKING_UNVERIFIED,
-    "Standards": PROVEN_UNPROVEN,
-    "Security": BLOCKING_NEEDS_HUMAN,
-    "UX/AIX": TOTAL_ONLY,
-    "Design": PROVEN_UNPROVEN,
-    "Hygiene": TOTAL_ONLY,
+COUNT_FORMS = {
+    "Acceptance": "<blocking> blocking, <unverified> unverified",
+    "Standards": "<blocking> proven, <advisory> unproven",
+    "Security": "<blocking> blocking, <advisory> needs-human",
+    "UX/AIX": "<advisory>",
+    "Design": "<blocking> proven, <advisory> unproven",
+    "Hygiene": "<blocking>",
 }
+AXES = tuple(COUNT_FORMS)
+COUNT_SHAPES = {axis: re.compile(re.sub(r"<(\w+)>", r"(?P<\1>\\d+)", form)) for axis, form in COUNT_FORMS.items()}
+
+
+class AxisCount(NamedTuple):
+    blocking: int = 0
+    advisory: int = 0
+    unverified: int = 0
 
 
 class MalformedReport(Exception):
@@ -48,8 +51,8 @@ def counts_of(axis, body):
         raise MalformedReport(f"{axis}: no COUNT line")
     shape = COUNT_SHAPES[axis].fullmatch(count_lines[-1])
     if not shape:
-        raise MalformedReport(f"{axis}: COUNT line '{count_lines[-1]}' does not match {COUNT_SHAPES[axis].pattern}")
-    return tuple(int(number) for number in shape.groups())
+        raise MalformedReport(f"{axis}: COUNT line '{count_lines[-1]}' does not match COUNT: {COUNT_FORMS[axis]}")
+    return AxisCount(**{field: int(number) for field, number in shape.groupdict().items()})
 
 
 def read_counts(text):
@@ -64,19 +67,18 @@ def read_counts(text):
 
 
 def totals(counts):
-    blocking = (counts["Acceptance"][0] + counts["Security"][0] + counts["Hygiene"][0]
-                + counts["Standards"][0] + counts["Design"][0])
-    advisory = (counts["Security"][1] + counts["UX/AIX"][0]
-                + counts["Standards"][1] + counts["Design"][1])
+    blocking = sum(count.blocking for count in counts.values())
+    advisory = sum(count.advisory for count in counts.values())
     return blocking, advisory
 
 
 def counts_line(counts, uxaix_skipped):
-    uxaix = "skipped" if uxaix_skipped else counts["UX/AIX"][0]
-    acceptance, standards, security, design = (counts[axis] for axis in ("Acceptance", "Standards", "Security", "Design"))
-    return (f"counts: Acceptance {acceptance[0]}/{acceptance[1]}, Standards {standards[0]} proven/{standards[1]} unproven, "
-            f"Security {security[0]}, UX/AIX {uxaix}, Design {design[0]} proven/{design[1]} unproven, "
-            f"Hygiene {counts['Hygiene'][0]}")
+    acceptance, standards, design = counts["Acceptance"], counts["Standards"], counts["Design"]
+    uxaix = "skipped" if uxaix_skipped else counts["UX/AIX"].advisory
+    return (f"counts: Acceptance {acceptance.blocking}/{acceptance.unverified}, "
+            f"Standards {standards.blocking} proven/{standards.advisory} unproven, "
+            f"Security {counts['Security'].blocking}, UX/AIX {uxaix}, "
+            f"Design {design.blocking} proven/{design.advisory} unproven, Hygiene {counts['Hygiene'].blocking}")
 
 
 def route_of(blocking, advisory):
