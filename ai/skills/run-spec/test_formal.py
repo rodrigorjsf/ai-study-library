@@ -2,8 +2,8 @@ import re
 from pathlib import Path
 
 FORMAL = Path(__file__).resolve().parent.parent / "run-spec-dev" / "formal"
-CREATE = (FORMAL / "create-formal-check.md").read_text()
-MAINTAIN = (FORMAL / "maintain-formal-check.md").read_text()
+CREATE_PROCEDURE_TEXT = (FORMAL / "create-formal-check.md").read_text()
+MAINTAIN_PROCEDURE_TEXT = (FORMAL / "maintain-formal-check.md").read_text()
 NOTICE = (FORMAL / "NOTICE").read_text()
 RUN_TS = (FORMAL / "statechart" / "scripts" / "run.ts").read_text()
 
@@ -17,10 +17,10 @@ def pinned(constant):
 
 assert SOURCE_REPOSITORY in NOTICE and SOURCE_COMMIT in NOTICE and "MIT License" in NOTICE, NOTICE
 
-for name, text in {"create-formal-check.md": CREATE, "maintain-formal-check.md": MAINTAIN}.items():
+for name, text in {"create-formal-check.md": CREATE_PROCEDURE_TEXT, "maintain-formal-check.md": MAINTAIN_PROCEDURE_TEXT}.items():
     assert "NOTICE" in text and SOURCE_COMMIT in text, name
 
 mise_install = f"mise install {pinned('JAVA_TOOL')} '{pinned('TLC_TOOL')}'"
-assert mise_install in CREATE, mise_install
+assert mise_install in CREATE_PROCEDURE_TEXT, mise_install
 
 print("ok")

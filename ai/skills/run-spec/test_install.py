@@ -52,8 +52,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     assert installed_files(skill) == committed_runtime_files(), (installed_files(skill), committed_runtime_files())
 
-    everything = sorted(p.relative_to(home).as_posix() for p in home.rglob("*"))
-    leaked = [path for path in everything if any(name in path for name in DEVELOPMENT_ONLY)]
+    leaked = [path for path in installed_files(home) if any(name in path for name in DEVELOPMENT_ONLY)]
     assert not leaked, leaked
 
 
