@@ -7,19 +7,19 @@ sys.dont_write_bytecode = True
 
 COUNT_LINE = re.compile(r"COUNT: (.*)")
 SECTION_HEADING = re.compile(r"## (.*)")
-NUMBER = r"(\d+)"
-PROVEN_UNPROVEN = re.compile(rf"{NUMBER} proven, {NUMBER} unproven")
-BLOCKING_UNVERIFIED = re.compile(rf"{NUMBER} blocking, {NUMBER} unverified")
-BLOCKING_NEEDS_HUMAN = re.compile(rf"{NUMBER} blocking, {NUMBER} needs-human")
-SINGLE = re.compile(NUMBER)
+NUMBER_PATTERN = r"(\d+)"
+PROVEN_UNPROVEN = re.compile(rf"{NUMBER_PATTERN} proven, {NUMBER_PATTERN} unproven")
+BLOCKING_UNVERIFIED = re.compile(rf"{NUMBER_PATTERN} blocking, {NUMBER_PATTERN} unverified")
+BLOCKING_NEEDS_HUMAN = re.compile(rf"{NUMBER_PATTERN} blocking, {NUMBER_PATTERN} needs-human")
+TOTAL_ONLY = re.compile(NUMBER_PATTERN)
 AXES = ("Acceptance", "Standards", "Security", "UX/AIX", "Design", "Hygiene")
 COUNT_SHAPES = {
     "Acceptance": BLOCKING_UNVERIFIED,
     "Standards": PROVEN_UNPROVEN,
     "Security": BLOCKING_NEEDS_HUMAN,
-    "UX/AIX": SINGLE,
+    "UX/AIX": TOTAL_ONLY,
     "Design": PROVEN_UNPROVEN,
-    "Hygiene": SINGLE,
+    "Hygiene": TOTAL_ONLY,
 }
 
 

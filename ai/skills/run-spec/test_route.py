@@ -23,10 +23,14 @@ def report(**counts):
     return "".join(f"## {axis}\n- none\n{lines[axis]}\n\n" for axis in AXES)
 
 
+def run_route(*arguments):
+    return subprocess.run([sys.executable, "-I", str(ROUTE), *arguments], capture_output=True, text=True)
+
+
 def route(text, directory):
     path = Path(directory) / "review-1.md"
     path.write_text(text)
-    return subprocess.run([sys.executable, "-I", str(ROUTE), str(path)], capture_output=True, text=True)
+    return run_route(str(path))
 
 
 def verdict(result):
@@ -97,11 +101,10 @@ with tempfile.TemporaryDirectory() as tmp:
     failure(report() + "## Design\n- none\nCOUNT: 0 proven, 0 unproven\n", tmp, mentions="Design")
     failure(report(Acceptance="COUNT: x blocking, 0 unverified"), tmp, mentions="Acceptance")
 
-    missing = subprocess.run([sys.executable, "-I", str(ROUTE), str(Path(tmp) / "absent.md")],
-                             capture_output=True, text=True)
+    missing = run_route(str(Path(tmp) / "absent.md"))
     assert missing.returncode == 2 and missing.stdout == "" and "absent.md" in missing.stderr, missing
 
-    no_argument = subprocess.run([sys.executable, "-I", str(ROUTE)], capture_output=True, text=True)
+    no_argument = run_route()
     assert no_argument.returncode == 2 and no_argument.stdout == "", no_argument
 
 
