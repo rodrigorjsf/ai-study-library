@@ -84,7 +84,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
 
   Narrow the declared `TEST` to the union through the runner's own file arguments (`npm test -- <files>`, `pytest <files>`); a declared command that is a loop or script over a file list runs with that list replaced by the union. With `TEST` at `none`, narrow the command you found in phase 1 the same way. When the union is empty, run no test command: `TESTS` is `scoped — none → no test file in scope`. Otherwise `TESTS` = `scoped — <the command with its file args> → <its pass/fail line>`.
 
-  **Repair mode.** Run the full test suite: the declared `TEST` exactly as given and unfiltered. `TESTS` = its final result line.
+  **Repair mode.** Run the whole test suite: the declared `TEST` exactly as given and unfiltered. `TESTS` = its final result line.
 
   - Red → attempt one small fix and commit it (`fix(integration): <what>`, with the `Integration-Wave` trailer). Re-run typecheck, lint and the tests of your mode: the whole suite in repair mode; in merge mode the same union plus the test files that exercise each file the fix changed.
   - Still red → `STATUS: RED`. Leave the merges in place for the orchestrator to report.
