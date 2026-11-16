@@ -55,7 +55,7 @@ def counts_of(axis, body):
     return AxisCount(**{field: int(number) for field, number in shape.groupdict().items()})
 
 
-def read_counts(text):
+def read_report(text):
     found = sections(text)
     counts = {}
     for axis in AXES:
@@ -93,7 +93,7 @@ def main():
     args = parser.parse_args()
     try:
         with open(args.review, encoding="utf-8") as review:
-            counts, uxaix_skipped = read_counts(review.read())
+            counts, uxaix_skipped = read_report(review.read())
     except (OSError, UnicodeDecodeError, MalformedReport) as error:
         print(f"route.py: {args.review}: {error}", file=sys.stderr)
         sys.exit(2)
