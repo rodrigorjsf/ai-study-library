@@ -1,6 +1,6 @@
 # run-spec — the whole flow in one place
 
-`/run-spec` implements every ticket of a spec while nobody watches. The spec and its tickets live on a GitHub issue tracker or in a local `.scratch/<slug>/` folder, in the [input format](#input-format) this kit defines. `/run-spec` runs one subagent per ticket, in parallel waves inside git worktrees; each implementer proves its criteria by running the code and posts a ticket report on the issue. The run folds follow-ups back into the spec, runs a final review whose main axis executes every acceptance criterion, executes them once more on the last HEAD when the branch moved, and opens a PR.
+`/run-spec` implements every ticket of a spec while nobody watches. The spec and its tickets live on a GitHub issue tracker or in a local `.scratch/<slug>/` folder, in the [input format](#input-format) this kit defines. `/run-spec` runs one subagent per ticket, in parallel waves inside git worktrees; each implementer proves its criteria by running the code and posts a ticket report on the issue. The run folds follow-ups back into the spec, runs the whole test suite once over the finished branch (the **Suite gate**), runs a final review whose main axis executes every acceptance criterion, executes them once more on the last HEAD when the branch moved, and opens a PR.
 
 This folder is the **source of truth** for the flow. The copy under `~/.claude` is an install of it. Earlier write-ups of the flow are historical snapshots: [`ai/docs/software-factory/04-run-spec-flow.md`](../../docs/software-factory/04-run-spec-flow.md) (2026-10-11, two-axis review, before the queue and resume rules) and [`ai/docs/run-spec-review-axes/`](../../docs/run-spec-review-axes/README.md) (pt-BR research behind the Security, UX/AIX and Design axes).
 
@@ -17,14 +17,19 @@ flowchart TB
     S2W --> S3["3. Recover from git and STATE<br/>every start, a continue after a dropped session included<br/>(Claude Code and Cursor alike)"] --> RB
     RB{"Red base?<br/>last wave-NN.md RED,<br/>no GREEN repair-NN.md"}
     RB -- yes --> REP["wave-integrator, repair mode"]
-    REP -- GREEN --> ORPH
+    REP -- GREEN --> SGR
     REP -- "RED: halt" --> S7
-    RB -- no --> ORPH["Orphan branches WORK--id<br/>merged: delete<br/>FAILED status: 5c FAILED path<br/>finished: status-id.md reads DONE<br/>unfinished: resume, or discard when the oracle<br/>no longer lists it in remaining"]
+    RB -- no --> SGR
+    SGR{"Suite gate owed?<br/>run reached step 6, and<br/>suite-final.md missing or RED"}
+    SGR -- yes --> SGRUN["step 6's Suite gate, before the orphans"]
+    SGRUN -- GREEN --> ORPH
+    SGRUN -- "RED: halt" --> S7
+    SGR -- no --> ORPH["Orphan branches WORK--id<br/>merged: delete<br/>FAILED status: 5c FAILED path<br/>finished: status-id.md reads DONE<br/>unfinished: resume, or discard when the oracle<br/>no longer lists it in remaining"]
     ORPH --> REC["dead main-owner agent: re-run from its record<br/>finished orphans: 5d + 5e<br/>unrecorded merges: a recovered wave-NN.md<br/>owed user-k fix, then owed triage (5e)<br/>resume queue: 5a-5f with RESUME: true"]
     REC --> S4
     S4{{"4. ORACLE<br/>tickets.py"}}
     S4 -- "ready: first P ids" --> S5A
-    S4 -- "ready and remaining empty,<br/>or only stuck ids" --> S6
+    S4 -- "ready and remaining empty,<br/>or only stuck ids" --> S6G
     subgraph WAVE ["5. One wave"]
         S5A["5a. worktree per ticket<br/>+ codegraph init + offline install"] --> S5B
         S5B["5b. ticket-implementer × P, in parallel<br/>TDD, suite, hygiene.py, evidence,<br/>Standards + Spec reviewers, ticket report, handoff"] --> S5C
@@ -36,6 +41,8 @@ flowchart TB
     end
     S5E --> S4
     S5D -- "STATUS: RED: halt" --> S7
+    S6G["6. Suite gate<br/>wave-integrator in repair mode:<br/>whole suite over WORK, red fixed,<br/>block recorded in suite-final.md"] -- GREEN --> S6
+    S6G -- "RED: halt, no review" --> S7
     S6["6. Final review, up to 3 rounds"] -- "a fixer's follow-ups attached" --> S4
     S6 --> S7
     S7["7. Closing acceptance in its own verify-final-m<br/>when WORK moved past the newest Acceptance HEAD<br/>(skipped on a halt,<br/>but not after a user-k fix)<br/>PR body: Summary · Evidence · Unproven findings · Merge Danger · Readiness<br/>push, open PR; merge only with --merge, via QUEUE.md gates<br/>report shows Readiness and recent Run metrics; then RUNLOG record and RUNLOG findings"] --> Q{"more specs in QUEUE,<br/>and this spec not held<br/>(no halt, no held merge)?"}
@@ -47,8 +54,12 @@ Every agent except `ticket-implementer` gets a `$STATE/running/<label>` marker a
 
 ### Step 6: the final review
 
+Step 6 opens with the **Suite gate**: the one run of the whole test suite over the finished work branch, before any reviewer is spawned. The dispatcher writes the spawn records (the `running/suite-final` marker and `main-owner`, since the integrator writes in the main checkout), spawns `wave-integrator` in repair mode (empty `MERGE` and `DISCARD`), and writes its status block verbatim to `$STATE/suite-final.md`. `STATUS: GREEN` continues to round 1, which reads the branch after the gate's fixes. `STATUS: RED` halts the run with the gate's `SUMMARY:` as the halt reason, skips the review and goes to step 7. Step 3 runs the gate again when the run reached step 6 and `suite-final.md` is missing or RED. A run that halts before step 6 never runs it, and its PR body says `full suite: not run (halted)`. The dispatcher never re-runs a suite itself: the gate's status block is its only evidence.
+
 ```mermaid
 flowchart TB
+    GATE["Suite gate<br/>suite-final.md not GREEN: wave-integrator, repair mode"] -- RED --> S7["step 7"]
+    GATE -- "GREEN, or already GREEN" --> TOP
     TOP["top of step 6<br/>round r-1's fixer cut off: re-run it<br/>then owed triage (5e)"] -- "triage attached tickets" --> S4["step 4"]
     TOP --> SQ{"r > 3, or no commit since review-(r-1)-base,<br/>or round r-1 clean, or its advisory fixes done<br/>and no attached ticket merged since?"}
     SQ -- yes --> S7["step 7"]
@@ -104,7 +115,7 @@ The per-ticket review inside `ticket-implementer` stays two-axis: it spawns two 
 
 The **newest Acceptance** is `$STATE/acceptance-final.md` when it exists, else the Acceptance section of the last `review-N.md`. Its `HEAD:` line names the WORK it ran on. Except on a halt, and always when step 7 runs again after a GREEN `user-k` fix, `acceptance-verifier` runs once more with `ROUND: final` when WORK has moved past that line, when the line is missing, or when the newest fix file (`review-N-fix.md` or `user-k-fix.md`) dismisses an Acceptance finding (scope creep included) after the newest Acceptance was written. Each closing run gets its own `verify-final-m/`, reads the newest Acceptance's directory as `PREVIOUS`, and replaces `acceptance-final.md`; a run cut off before its section was written leaves its directory to the next one, which stops what it left. A `user-k` fix's follow-ups go through 5e's triage, and its block is relayed verbatim; when it returns GREEN, step 7 runs again, without the merge. A FAIL there is not delivered: the PR lists it, it holds `--merge`, and it starts no round.
 
-The PR body uses the ticket report's sections, less Commits: `## Summary` (the SUMMARY and report link of each merged ticket: one the oracle lists as done whose status file reads `STATUS: DONE`; then `git diff --stat F...WORK`), `## Evidence` (the newest Acceptance verbatim, so each criterion keeps its verdict, command, `needs:` and screenshot path, with no image uploaded; then **Not verified**), `## Unproven findings` (every `unproven` line of the fixers' status blocks, or `none`), `## Merge Danger` (**Door:** one-way with each one-way merged ticket and why, else two-way; **Blast Radius:** each merged ticket's `BLAST:` line), `## Readiness` (the run's `$STATE/readiness.md` verbatim, or `not run`). Follow-ups, triage verdicts, skipped and stuck tickets, remaining findings, the halt reason and the owner's code-changing decisions follow.
+The PR body uses the ticket report's sections, less Commits: `## Summary` (the SUMMARY and report link of each merged ticket: one the oracle lists as done whose status file reads `STATUS: DONE`; then `git diff --stat F...WORK`), `## Evidence` (first the `full suite:` line, from `suite-final.md` or `not run (halted)`; then the newest Acceptance verbatim, so each criterion keeps its verdict, command, `needs:` and screenshot path, with no image uploaded; then **Not verified**), `## Unproven findings` (every `unproven` line of the fixers' status blocks, or `none`), `## Merge Danger` (**Door:** one-way with each one-way merged ticket and why, else two-way; **Blast Radius:** each merged ticket's `BLAST:` line), `## Readiness` (the run's `$STATE/readiness.md` verbatim, or `not run`). Follow-ups, triage verdicts, skipped and stuck tickets, remaining findings, the halt reason and the owner's code-changing decisions follow.
 
 ## Artifacts needed to run it
 
@@ -218,6 +229,7 @@ Its Surface section warns about each acceptance criterion that names no Surface.
 | `<id>-attempt<k>.md`, `<id>-resume<j>.md` | implementer, dispatcher | failures, counted by the oracle, and resumes, not counted |
 | `stalled-<id>` | dispatcher, step 5b | the ticket's first stall; a second stall is a FAILED attempt, `stalled twice` |
 | `running/<label>`, `main-owner` | dispatcher, at spawn | one marker per running non-ticket agent, reading `respawned` after its one respawn; the MAIN-side agent writing in the main checkout (the acceptance verifier included), as `<agent> <record path>` |
+| `suite-final.md` | step 6 / step 3 | the Suite gate's status block: the whole suite over WORK before the first review round. `STATUS: GREEN` lets round 1 start, `STATUS: RED` halts the run to step 7. Step 7's PR body reads its `STATUS:` and `TESTS:` lines for `full suite:`, and says `full suite: not run (halted)` when the file is missing |
 | `wave-NN.md`, `repair-NN.md` | step 5d / step 3 | integrator and repair status blocks; step 3 also writes `MERGED: <ids> (recovered)` for DONE tickets the oracle counts as done that no `MERGED:` line names |
 | `triage-N.in`, `triage-N.md` | step 5e | the triager's input (FOLLOWUPS paths, then `SOURCE: wave-<n>`, `review-<r>-fix` or `user-<k>-fix`) and its status block. An `.in` without its `.md` is owed triage. |
 | `review-N.partial`, `review-N.md`, `review-N-base`, `review-N-fix.md` | step 6 | the report while its sections arrive (moved to `review-N.md` once all six are in, so no temporary file is ever removed), the six-section report, the fixer's base SHA, the fixer's status block |
@@ -263,7 +275,7 @@ Edit the files here, commit, then re-run `install.sh`. An edit made directly und
 | Readiness report | `python3 readiness.py`, standard library only, run by the dispatcher through `${CLAUDE_SKILL_DIR}`; it reads the target's `docs/agents/run-spec.md` and the project skill folders `.claude/skills/` and `.cursor/skills/` | same files and paths; inherits the `${CLAUDE_SKILL_DIR}` caveat above | Untested in Cursor |
 | App recipe use | The dispatcher runs `readiness.py --app-recipe` through `${CLAUDE_SKILL_DIR}` and passes the `APP_RECIPE:` line to each `ticket-implementer` and `acceptance-verifier`; the recipe is a skill folder under `.claude/skills/verify*/` or `.claude/skills/run-*/` of the target | The recipe is a skill folder under `.cursor/skills/verify-*/` of the target, found after the two `.claude/skills/` locations; the same command and the same `APP_RECIPE:` line; inherits the `${CLAUDE_SKILL_DIR}` caveat above | Untested in Cursor |
 | Models | `claude-opus-5-5`, `claude-sonnet-5-5` with `effort:` | `inherit` or a Cursor model id (`claude-opus-5[effort=high]` form) | Claude Code model ids may not resolve in Cursor |
-| Resume | Step 3's recovery from git and STATE (red base, orphans, `main-owner`, owed triage), on every start | same: it uses only git and files | none |
+| Resume | Step 3's recovery from git and STATE (red base, Suite gate, orphans, `main-owner`, owed triage), on every start | same: it uses only git and files | none |
 | Stall and overdue probes | `ListAgents`, `SendMessage`, background task notifications, `run_in_background` for the watchdog | A subagent is resumed by its agent ID in the parent's prompt ("Resume agent abc123 …"); no listing of running agents or message-to-running-agent tool is documented | The 5b probes and respawns are Claude Code-only, and `SKILL.md` has no Cursor branch for them |
 | Hooks | none used | none used | — |
 | MCP | none used | none used | — |
