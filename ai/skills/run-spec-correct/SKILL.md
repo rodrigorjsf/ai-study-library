@@ -61,7 +61,7 @@ Why not higher:
 - <level>: <reason>
 ```
 
-After the blocks, print `Left out: <k> lines, in no class seen twice or dismissed or unproven.`, then `Which classes should become issues? Reply with class numbers, such as 1 3, or all, or none.`
+After the blocks, print `Left out: <k> lines that belong to no class listed above.`, then `Which classes should become issues? Reply with class numbers, such as 1 3, or all, or none.`
 
 ## 5. File the selected classes
 
@@ -75,6 +75,6 @@ The owner's reply is their request for an issue, so the gate of `follow-up-issue
   - `- [ ] The new check fails on the recorded past mistake: <how to reproduce it>, and passes with the fix in place.`
   - `- [ ] One command runs the check locally and wherever the repository checks changes. An exception sits on the offending line with a reason, an expiry date and a human's approval.`
 
-The recorded past mistake is the code the finding describes. A `fixed` line's `head` already holds the fix, so name the earlier code: the file at `location` in the commit before the fix, found with `git log -S'<text>' -- <file>`. When that commit is gone, write the smallest snippet the finding describes. A criterion nobody can re-run is no criterion.
+The recorded past mistake is the code the finding describes. A `fixed` line's `head` already holds the fix, so name the earlier code: the file at `location` in the commit before the fix, found with `git log -S'<text>' -- <file>`. When that commit is gone, write the smallest snippet the finding describes. A criterion nobody can re-run is no criterion. Reproduce the mistake on a copy in a temporary directory: never edit a file of the repository for it.
 
 Print one line per issue with its link or path, then stop. Never edit the buffer, change code, or run the new check yourself.
