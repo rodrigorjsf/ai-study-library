@@ -6,14 +6,14 @@ CONSTANTS InitialTickets, BlockedTickets, AttachableTickets,
 
 VARIABLES phase, stage, crashes,
           inScope, branch, committed, status, followUps, merged, attempts, resumes, integrations, origin,
-          log, read, reported, proven, unproven, base, fixFile,
+          log, reviewedUnits, reported, proven, unproven, base, fixFile,
           owedWave, owedFix, triageIns, triageOpen,
           wave, collected, failing, toMerge, mergedInWave, waveStep, waveFor,
           sorted, toCleanUp, toIntegrate, toResume
 
 ControlVars == <<phase, stage, crashes>>
 TicketVars == <<inScope, branch, committed, status, followUps, merged, attempts, resumes, integrations, origin>>
-ReviewVars == <<log, read, reported, proven, unproven, base, fixFile>>
+ReviewVars == <<log, reviewedUnits, reported, proven, unproven, base, fixFile>>
 TriageVars == <<owedWave, owedFix, triageIns, triageOpen>>
 WaveVars == <<wave, collected, failing, toMerge, mergedInWave, waveStep, waveFor>>
 RecoveryVars == <<sorted, toCleanUp, toIntegrate, toResume>>
@@ -46,6 +46,11 @@ AttachedTicketMerged(r) == \E i \in DOMAIN log : log[i].kind = "ticket" /\ log[i
 NoTicketSince(from) == \A i \in DOMAIN log : i > from => log[i].kind # "ticket"
 ReadsFrom(r) == IF r = 1 THEN 0 ELSE base[r - 1]
 
+ReviewIdle ==
+  /\ ~AnyFixerOwed
+  /\ triageOpen = NoTriage
+  /\ ~TriageOwed
+
 ShipNow ==
   \/ NextRound > RoundCap
   \/ /\ NextRound >= 2
@@ -76,7 +81,7 @@ Init ==
   /\ integrations = [t \in Tickets |-> 0]
   /\ origin = [t \in Tickets |-> 0]
   /\ log = <<>>
-  /\ read = {}
+  /\ reviewedUnits = {}
   /\ reported = [r \in Rounds |-> FALSE]
   /\ proven = [r \in Rounds |-> 0]
   /\ unproven = [r \in Rounds |-> 0]
@@ -98,12 +103,7 @@ Init ==
   /\ toIntegrate = {}
   /\ toResume = {}
 
-SessionDrops ==
-  /\ phase \in {"frontier", "wave", "recover", "review"}
-  /\ crashes < MaxCrashes
-  /\ crashes' = crashes + 1
-  /\ phase' = "recover"
-  /\ stage' = "sort"
+WaveCleared ==
   /\ wave' = {}
   /\ collected' = {}
   /\ failing' = {}
@@ -111,6 +111,14 @@ SessionDrops ==
   /\ mergedInWave' = {}
   /\ waveStep' = "none"
   /\ waveFor' = "none"
+
+SessionDrops ==
+  /\ phase \in {"frontier", "wave", "recover", "review"}
+  /\ crashes < MaxCrashes
+  /\ crashes' = crashes + 1
+  /\ phase' = "recover"
+  /\ stage' = "sort"
+  /\ WaveCleared
   /\ sorted' = {}
   /\ toCleanUp' = {}
   /\ toIntegrate' = {}
@@ -336,7 +344,7 @@ MergeTicket(t) ==
   /\ log' = IF merged[t] THEN log ELSE Append(log, [kind |-> "ticket", after |-> origin[t]])
   /\ mergedInWave' = mergedInWave \union {t}
   /\ UNCHANGED <<ControlVars, inScope, branch, committed, status, followUps, attempts, resumes, integrations, origin,
-                 read, reported, proven, unproven, base, fixFile, TriageVars,
+                 reviewedUnits, reported, proven, unproven, base, fixFile, TriageVars,
                  wave, collected, failing, toMerge, waveStep, waveFor, RecoveryVars>>
 
 RemoveMergedBranch(t) ==
@@ -395,13 +403,7 @@ FinishWave ==
             /\ toIntegrate' = {}
        ELSE /\ phase' = "frontier"
             /\ UNCHANGED <<stage, toIntegrate>>
-  /\ wave' = {}
-  /\ collected' = {}
-  /\ failing' = {}
-  /\ toMerge' = {}
-  /\ mergedInWave' = {}
-  /\ waveStep' = "none"
-  /\ waveFor' = "none"
+  /\ WaveCleared
   /\ UNCHANGED <<crashes, TicketVars, ReviewVars, TriageVars, sorted, toCleanUp, toResume>>
 
 ReadFrontier ==
@@ -415,7 +417,7 @@ FixerRecordsBase(r) ==
   /\ FixerOwed(r)
   /\ base[r] = NoBase
   /\ base' = [base EXCEPT ![r] = Len(log)]
-  /\ UNCHANGED <<ControlVars, TicketVars, log, read, reported, proven, unproven, fixFile, TriageVars, WaveVars, RecoveryVars>>
+  /\ UNCHANGED <<ControlVars, TicketVars, log, reviewedUnits, reported, proven, unproven, fixFile, TriageVars, WaveVars, RecoveryVars>>
 
 FixerCommits(r) ==
   /\ phase = "review"
@@ -423,7 +425,7 @@ FixerCommits(r) ==
   /\ base[r] # NoBase
   /\ ~FixerCommitted(r)
   /\ log' = Append(log, [kind |-> "fix", round |-> r])
-  /\ UNCHANGED <<ControlVars, TicketVars, read, reported, proven, unproven, base, fixFile, TriageVars, WaveVars, RecoveryVars>>
+  /\ UNCHANGED <<ControlVars, TicketVars, reviewedUnits, reported, proven, unproven, base, fixFile, TriageVars, WaveVars, RecoveryVars>>
 
 FixerReturns(r) ==
   /\ phase = "review"
@@ -432,27 +434,23 @@ FixerReturns(r) ==
   /\ fixFile' = [fixFile EXCEPT ![r] = TRUE]
   /\ \/ owedFix' = owedFix \union {r}
      \/ UNCHANGED owedFix
-  /\ UNCHANGED <<ControlVars, TicketVars, log, read, reported, proven, unproven, base,
+  /\ UNCHANGED <<ControlVars, TicketVars, log, reviewedUnits, reported, proven, unproven, base,
                  owedWave, triageIns, triageOpen, WaveVars, RecoveryVars>>
 
 ReviewRound ==
   /\ phase = "review"
-  /\ ~AnyFixerOwed
-  /\ triageOpen = NoTriage
-  /\ ~TriageOwed
+  /\ ReviewIdle
   /\ ~ShipNow
   /\ reported' = [reported EXCEPT ![NextRound] = TRUE]
   /\ \E blockingFindings \in 0 .. 1, advisoryFindings \in 0 .. 1 :
        /\ proven' = [proven EXCEPT ![NextRound] = blockingFindings]
        /\ unproven' = [unproven EXCEPT ![NextRound] = advisoryFindings]
-  /\ read' = read \union {i \in DOMAIN log : i > ReadsFrom(NextRound)}
+  /\ reviewedUnits' = reviewedUnits \union {i \in DOMAIN log : i > ReadsFrom(NextRound)}
   /\ UNCHANGED <<ControlVars, TicketVars, log, base, fixFile, TriageVars, WaveVars, RecoveryVars>>
 
 ShipReport ==
   /\ phase = "review"
-  /\ ~AnyFixerOwed
-  /\ triageOpen = NoTriage
-  /\ ~TriageOwed
+  /\ ReviewIdle
   /\ ShipNow
   /\ phase' = "reported"
   /\ UNCHANGED <<stage, crashes, TicketVars, ReviewVars, TriageVars, WaveVars, RecoveryVars>>
@@ -528,5 +526,5 @@ ShipsUnread(unit) ==
 
 UnreadIsListed ==
   phase = "reported" =>
-    {i \in DOMAIN log : i \notin read} = {i \in DOMAIN log : ShipsUnread(log[i])}
+    {i \in DOMAIN log : i \notin reviewedUnits} = {i \in DOMAIN log : ShipsUnread(log[i])}
 ====

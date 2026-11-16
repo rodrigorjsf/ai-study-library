@@ -27,10 +27,6 @@ def cfg_invariants():
     return [name for name in names if name not in NOT_A_PROMISE]
 
 
-def break_edits(rows):
-    return {invariant: how.split(" => ", 1) for invariant, _, how in rows}
-
-
 def broken_model_text(old, new):
     assert TLA_TEXT.count(old) == 1, old
     return TLA_TEXT.replace(old, new)
@@ -50,6 +46,7 @@ names = [name for name, _, _ in rows]
 assert len(names) == len(set(names)), names
 assert sorted(names) == sorted(cfg_invariants()), (names, cfg_invariants())
 
+break_edits = {}
 for name, citation, how in rows:
     path, _, number = citation.rpartition(":")
     assert path == SKILL_PATH and number.isdigit() and 1 <= int(number) <= len(skill_lines), (name, citation)
@@ -58,7 +55,7 @@ for name, citation, how in rows:
     assert " => " in how, (name, how)
     old, new = how.split(" => ", 1)
     assert old != new, (name, how)
-    broken_model_text(old, new)
+    break_edits[name] = broken_model_text(old, new)
 
 assert not [line for line in TLA_TEXT.splitlines() if "\\*" in line or "(*" in line], "comments in the model"
 
@@ -83,8 +80,8 @@ if tla2tools:
     java = os.environ.get("JAVA", "java")
     passing = run_in_copy(TLA_TEXT, java, tla2tools)
     assert "Model checking completed. No error has been found." in passing, passing[-2000:]
-    for invariant, (old, new) in break_edits(rows).items():
-        output = run_in_copy(broken_model_text(old, new), java, tla2tools)
+    for invariant, broken_text in break_edits.items():
+        output = run_in_copy(broken_text, java, tla2tools)
         assert f"Invariant {invariant} is violated" in output, (invariant, output[-2000:])
 else:
     print("TLA2TOOLS not set: TLC runs skipped")
