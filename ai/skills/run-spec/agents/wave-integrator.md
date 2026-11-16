@@ -48,7 +48,7 @@ Resolving is the default. `git merge --abort` is allowed only under phase 2's ru
   |---|---|
   | `MAIN_REPO` | absolute path of the main checkout, which must be on WORK_BRANCH |
   | `WORK_BRANCH` | branch that receives the merges |
-  | `WAVE` | wave number |
+  | `WAVE` | the wave number, or `final` when the Suite gate spawns you in repair mode |
   | `MERGE` | ordered list of `<TICKET_ID> <branch> <worktree-path> <handoff-path>` lines, one per DONE ticket. The handoff lives in `$STATE` and outlives the worktree. Worktree `-` means the directory is already gone |
   | `DISCARD` | list of `<TICKET_ID> <branch> <worktree-path>` lines, one per FAILED ticket |
   | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
