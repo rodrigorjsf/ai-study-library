@@ -41,3 +41,11 @@ _Avoid_: Trust ledger, ledger, scorecard
 **Findings buffer**:
 The per-repository log every run appends its review findings and dismissals to, read later to find mistake classes that recur across runs.
 _Avoid_: Findings log, learnings
+
+**Mistake class**:
+A set of review findings that one rule or one check could have prevented, whatever their file, run or wording. It is listed once it has two occurrences in the Findings buffer; a `dismissed` or `unproven` line is no occurrence.
+_Avoid_: Pattern, theme, category
+
+**Fix level**:
+How firmly a check stops a mistake class, from the highest that works: architecture, types, a lint whose error names the fix, a test, docs. A class gets the highest level that works, with the reason each higher level does not.
+_Avoid_: Severity, priority
