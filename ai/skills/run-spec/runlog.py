@@ -9,18 +9,9 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from findings import OUTCOMES, ROUND, USER_AXIS, state_findings
 from gitcmd import default_refs, run
-from route import UnreadableReport, read_reviews
+from route import SECTIONS, UnreadableReport, read_reviews
 
-REVIEW_FINDINGS = {
-    "acceptance": ("Acceptance", "blocking"),
-    "standards": ("Standards", "blocking"),
-    "security": ("Security", "blocking"),
-    "uxaix": ("UX/AIX", "advisory"),
-    "design": ("Design", "blocking"),
-    "hygiene": ("Hygiene", "blocking"),
-}
-AXES = tuple(REVIEW_FINDINGS)
-AXIS_OF_SECTION = {section: axis for axis, (section, _) in REVIEW_FINDINGS.items()}
+AXES = tuple(section.axis for section in SECTIONS.values())
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
 OPTIONAL_COUNTS = ("unproven",)
@@ -141,8 +132,8 @@ def review_numbers(state):
     except UnreadableReport as error:
         print(f"runlog.py: {error}", file=sys.stderr)
         sys.exit(2)
-    findings = [(axis, sum(getattr(counts[section], field) for counts in reviews))
-                for axis, (section, field) in REVIEW_FINDINGS.items()]
+    findings = [(section.axis, sum(getattr(counts[name], section.counted) for counts in reviews))
+                for name, section in SECTIONS.items()]
     unverified = reviews[-1]["Acceptance"].unverified if reviews else 0
     return len(reviews), findings, unverified
 
@@ -178,7 +169,7 @@ def append_findings(args):
     head = args.head or run("git", "rev-parse", "HEAD").strip()
     state = pathlib.Path(args.state)
     try:
-        found, problems = state_findings(state, AXIS_OF_SECTION)
+        found, problems = state_findings(state)
     except OSError as error:
         print(f"runlog.py: {error}", file=sys.stderr)
         sys.exit(2)

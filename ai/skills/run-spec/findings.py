@@ -6,12 +6,11 @@ from typing import NamedTuple
 
 sys.dont_write_bytecode = True
 
-from route import AXES, UnreadableReport, read_review, round_numbers, sections
+from route import AXES, SECTIONS, UnreadableReport, read_review, round_numbers, sections
 
 OUTCOMES = ("fixed", "dismissed", "follow-up", "needs-human", "unproven")
 USER_AXIS = "user"
 NO_LOCATION = "-"
-ID_PREFIXES = {"Acceptance": "A", "Standards": "S", "Security": "SEC", "UX/AIX": "UX", "Design": "D", "Hygiene": "H"}
 NOT_FINDING_VERDICTS = ("- [PASS]", "- [UNVERIFIED]")
 LOCATION = re.compile(r"(?:\[[^\]]*\] )?(?P<location>[^\s:\"`\[]+:[0-9]+(?:-[0-9]+)?)(?=[\s:]|$)")
 OUTCOME_LINE = re.compile(rf"- (?P<id>[A-Z]+[0-9]+) (?P<outcome>{'|'.join(OUTCOMES)})(?:\s+(?P<note>.*))?")
@@ -49,7 +48,7 @@ def is_finding(axis, line):
     return not (axis == "Acceptance" and line.startswith(NOT_FINDING_VERDICTS))
 
 
-def reported_findings(path, axis_keys):
+def reported_findings(path):
     read_review(path)
     found = sections(Path(path).read_text(encoding="utf-8"))
     reported = {}
@@ -57,8 +56,8 @@ def reported_findings(path, axis_keys):
         bullets = [single_line(line[2:]) for line in found[section] if is_finding(section, line)]
         for number, text in enumerate(bullets, start=1):
             location = LOCATION.match(text)
-            reported[f"{ID_PREFIXES[section]}{number}"] = Reported(
-                axis_keys[section], location["location"] if location else NO_LOCATION, text)
+            reported[f"{SECTIONS[section].id_prefix}{number}"] = Reported(
+                SECTIONS[section].axis, location["location"] if location else NO_LOCATION, text)
     return reported
 
 
@@ -95,9 +94,9 @@ def disagreement(reported, outcomes):
     return "; ".join(parts)
 
 
-def review_round(state, number, axis_keys):
+def review_round(state, number):
     report, fix = state / f"review-{number}.md", state / f"review-{number}-fix.md"
-    reported = reported_findings(report, axis_keys) if report.exists() else {}
+    reported = reported_findings(report) if report.exists() else {}
     outcomes = fixer_outcomes(fix) if fix.exists() else {}
     mismatch = disagreement(reported, outcomes)
     if mismatch:
@@ -112,9 +111,9 @@ def user_round(state, number):
             for id, outcome in outcomes.items()]
 
 
-def state_findings(state, axis_keys):
+def state_findings(state):
     state = Path(state)
-    reads = [partial(review_round, state, number, axis_keys) for number in round_numbers(state, REVIEW_FILE)]
+    reads = [partial(review_round, state, number) for number in round_numbers(state, REVIEW_FILE)]
     reads += [partial(user_round, state, number) for number in round_numbers(state, USER_FIX_FILE)]
     findings, problems = [], []
     for read in reads:

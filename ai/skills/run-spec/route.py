@@ -10,16 +10,26 @@ sys.dont_write_bytecode = True
 COUNT_LINE = re.compile(r"COUNT: (.*)")
 SECTION_HEADING = re.compile(r"## (.*)")
 REVIEW_REPORT = re.compile(r"review-(\d+)\.md")
-COUNT_FORMS = {
-    "Acceptance": "<blocking> blocking, <unverified> unverified",
-    "Standards": "<blocking> proven, <advisory> unproven",
-    "Security": "<blocking> blocking, <advisory> needs-human",
-    "UX/AIX": "<advisory>",
-    "Design": "<blocking> proven, <advisory> unproven",
-    "Hygiene": "<blocking>",
+
+
+class Section(NamedTuple):
+    axis: str
+    id_prefix: str
+    counted: str
+    count_form: str
+
+
+SECTIONS = {
+    "Acceptance": Section("acceptance", "A", "blocking", "<blocking> blocking, <unverified> unverified"),
+    "Standards": Section("standards", "S", "blocking", "<blocking> proven, <advisory> unproven"),
+    "Security": Section("security", "SEC", "blocking", "<blocking> blocking, <advisory> needs-human"),
+    "UX/AIX": Section("uxaix", "UX", "advisory", "<advisory>"),
+    "Design": Section("design", "D", "blocking", "<blocking> proven, <advisory> unproven"),
+    "Hygiene": Section("hygiene", "H", "blocking", "<blocking>"),
 }
-AXES = tuple(COUNT_FORMS)
-COUNT_SHAPES = {axis: re.compile(re.sub(r"<(\w+)>", r"(?P<\1>\\d+)", form)) for axis, form in COUNT_FORMS.items()}
+AXES = tuple(SECTIONS)
+COUNT_SHAPES = {name: re.compile(re.sub(r"<(\w+)>", r"(?P<\1>\\d+)", section.count_form))
+                for name, section in SECTIONS.items()}
 
 
 class AxisCount(NamedTuple):
@@ -57,7 +67,7 @@ def counts_of(axis, body):
         raise MalformedReport(f"{axis}: no COUNT line")
     shape = COUNT_SHAPES[axis].fullmatch(count_lines[-1])
     if not shape:
-        raise MalformedReport(f"{axis}: COUNT line '{count_lines[-1]}' does not match COUNT: {COUNT_FORMS[axis]}")
+        raise MalformedReport(f"{axis}: COUNT line '{count_lines[-1]}' does not match COUNT: {SECTIONS[axis].count_form}")
     return AxisCount(**{field: int(number) for field, number in shape.groupdict().items()})
 
 
