@@ -2,12 +2,22 @@
 import argparse
 import re
 import sys
+from pathlib import Path
 from typing import NamedTuple
 
 sys.dont_write_bytecode = True
 
 COUNT_LINE = re.compile(r"COUNT: (.*)")
 SECTION_HEADING = re.compile(r"## (.*)")
+REVIEW_REPORT = re.compile(r"review-(\d+)\.md")
+RUNLOG_FINDINGS = {
+    "acceptance": ("Acceptance", "blocking"),
+    "standards": ("Standards", "blocking"),
+    "security": ("Security", "blocking"),
+    "uxaix": ("UX/AIX", "advisory"),
+    "design": ("Design", "blocking"),
+    "hygiene": ("Hygiene", "blocking"),
+}
 COUNT_FORMS = {
     "Acceptance": "<blocking> blocking, <unverified> unverified",
     "Standards": "<blocking> proven, <advisory> unproven",
@@ -87,16 +97,42 @@ def route_of(blocking, advisory):
     return "advisory-only" if advisory else "clean"
 
 
+def review_reports(state):
+    numbered = ((int(match.group(1)), path) for path in Path(state).iterdir()
+                if (match := REVIEW_REPORT.fullmatch(path.name)))
+    return [path for _, path in sorted(numbered)]
+
+
+def read_review(path):
+    try:
+        return read_report(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, MalformedReport) as error:
+        print(f"route.py: {path}: {error}", file=sys.stderr)
+        sys.exit(2)
+
+
+def runlog_line(state):
+    try:
+        reports = [read_review(path)[0] for path in review_reports(state)]
+    except OSError as error:
+        print(f"route.py: {state}: {error}", file=sys.stderr)
+        sys.exit(2)
+    findings = " ".join(f"{name}={sum(getattr(counts[axis], field) for counts in reports)}"
+                        for name, (axis, field) in RUNLOG_FINDINGS.items())
+    unverified = reports[-1]["Acceptance"].unverified if reports else 0
+    return f"--rounds {len(reports)} --findings {findings} --unverified {unverified}"
+
+
 def main():
     parser = argparse.ArgumentParser(prog="route.py")
-    parser.add_argument("review")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("review", nargs="?")
+    target.add_argument("--runlog", metavar="STATE")
     args = parser.parse_args()
-    try:
-        with open(args.review, encoding="utf-8") as review:
-            counts, uxaix_skipped = read_report(review.read())
-    except (OSError, UnicodeDecodeError, MalformedReport) as error:
-        print(f"route.py: {args.review}: {error}", file=sys.stderr)
-        sys.exit(2)
+    if args.runlog is not None:
+        print(runlog_line(args.runlog))
+        return
+    counts, uxaix_skipped = read_review(args.review)
     blocking, advisory = totals(counts)
     print(counts_line(counts, uxaix_skipped))
     print(f"blocking: {blocking}")

@@ -116,6 +116,35 @@ with tempfile.TemporaryDirectory() as tmp:
     assert no_argument.returncode == 2 and no_argument.stdout == "", no_argument
 
 
+def runlog_counts(directory):
+    result = run_route("--runlog", str(directory))
+    assert result.returncode == 0 and result.stderr == "", result
+    return result.stdout
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    state = Path(tmp)
+    assert runlog_counts(state) == ("--rounds 0 --findings acceptance=0 standards=0 security=0 uxaix=0 design=0 "
+                                    "hygiene=0 --unverified 0\n")
+
+    (state / "review-1.md").write_text(everything)
+    (state / "review-2.md").write_text(report(Acceptance="COUNT: 1 blocking, 4 unverified",
+                                              Standards="COUNT: 0 proven, 2 unproven"))
+    (state / "review-10.md").write_text(report(Acceptance="COUNT: 0 blocking, 5 unverified"))
+    (state / "review-1-fix.md").write_text("- S1 unproven\nCOUNT: 9\n")
+    (state / "user-1-fix.md").write_text("COUNT: 9\n")
+    (state / "review-3.partial").write_text("COUNT: 9\n")
+    assert runlog_counts(state) == ("--rounds 3 --findings acceptance=3 standards=1 security=1 uxaix=4 design=2 "
+                                    "hygiene=1 --unverified 5\n")
+
+    (state / "review-11.md").write_text(report(Design="COUNT: 2"))
+    malformed = run_route("--runlog", str(state))
+    assert malformed.returncode == 2 and malformed.stdout == "" and "review-11.md" in malformed.stderr, malformed
+
+    both = run_route("--runlog", str(state), str(state / "review-1.md"))
+    assert both.returncode == 2 and both.stdout == "", both
+
+
 def count_line_of(path):
     lines = [line for line in path.read_text().splitlines() if line.startswith("COUNT: ")]
     assert len(lines) == 1, (path, lines)
