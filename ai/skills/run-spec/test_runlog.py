@@ -9,7 +9,7 @@ KIT = Path(__file__).resolve().parent
 RUNLOG = KIT / "runlog.py"
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(KIT))
-from test_support import review_report
+from test_support import cursor_table_rows, review_report
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
 FULL_RECORD = ["--slug", "demo", "--pr", "https://github.com/o/r/pull/7", "--rounds", "2",
@@ -287,3 +287,255 @@ with tempfile.TemporaryDirectory() as tmp:
     r = runlog(repo, "record", "--slug", "malformed", "--head", head, "--state", str(state))
     assert r.returncode == 2 and r.stdout == "" and "review-11.md" in r.stderr, r
     assert metrics.read_text() == recorded
+
+
+ROUND_ONE_FINDINGS = {
+    "Acceptance": ['- [PASS] "list shows tasks" — `python3 todo.py list` → 1 task (A)',
+                   '- [FAIL] "clear resets ids" — `python3 todo.py clear` → ids reused (A)',
+                   '- [UNVERIFIED] "runs on Windows" — needs: a Windows host',
+                   "scope-creep:",
+                   "- todo.py:41 added a --force flag nobody asked for"],
+    "Standards": ['- [hard] todo.py:12 no inline imports (CLAUDE.md) — import in a function. Fix: move it. '
+                  'Proof: "no inline imports" (CLAUDE.md)',
+                  "- [judgement] todo.py:30 possible Long Function — three stages. Fix: Extract Function"],
+    "Security": ["- [HIGH] todo.py:50 path traversal (confidence 9/10) — `..` in the file name → read any file. "
+                 "Fix: reject it",
+                 "needs-human:",
+                 "- todo.py:60 weak hash (confidence 4/10) — md5 for ids. Fix: sha256"],
+    "UX/AIX": ["- [warning] todo.py:70 clear message — now: silent; expected: says how many. Fix: print the count",
+               "deferred-to-build: none"],
+    "Design": ["- [Strong] todo.py:5 shallow module — one caller. Deepening: merge it. "
+               "Proof: `grep -c load todo.py` → 1"],
+    "Hygiene": ["- todo.py:7: comment: # keeps\tthe id",
+                "- docs/notes.md: markdown: added Markdown file"],
+}
+ROUND_ONE_COUNTS = {"Acceptance": "COUNT: 2 blocking, 1 unverified", "Standards": "COUNT: 1 proven, 1 unproven",
+                    "Security": "COUNT: 1 blocking, 1 needs-human", "UX_AIX": "COUNT: 1",
+                    "Design": "COUNT: 1 proven, 0 unproven", "Hygiene": "COUNT: 2"}
+ROUND_ONE_FIX = """STATUS: GREEN
+ROUND: 1
+FINDINGS:
+- A1 fixed — 1a2b3c4 ids are never reused after clear
+- A2 dismissed — "added a --force flag nobody asked for" — "spec: --force clears without asking"
+- S1 fixed — 2b3c4d5 moved the import to the top
+- S2 unproven — no proof field — todo.py:30
+- SEC1 fixed — 3c4d5e6 rejects `..` in the file name
+- SEC2 needs-human — a person decides the hash
+- UX1 follow-up — .scratch/follow-ups/issues/demo-1-wording.md
+- D1 dismissed — the module has two callers now
+- H1 fixed — 4d5e6f7 deleted the comment
+- H2 dismissed — allow: docs/notes.md — "spec: the notes file"
+TESTS: for f in test_*.py; do python3 -I "$f" || exit 1; done
+ALLOWED: docs/notes.md
+"""
+ROUND_TWO_STANDARDS = ['- [hard] todo.py:3 no inline imports (CLAUDE.md) — import in a function. Fix: move it. '
+                       'Proof: "no inline imports" (CLAUDE.md)']
+ROUND_TEN_HYGIENE = ["- todo.py:90: comment: # again"]
+
+
+def fixture_state(directory):
+    state = Path(directory) / "demo-spec"
+    state.mkdir()
+    (state / "review-1.md").write_text(review_report(ROUND_ONE_FINDINGS, **ROUND_ONE_COUNTS))
+    (state / "review-1-fix.md").write_text(ROUND_ONE_FIX)
+    (state / "review-2.md").write_text(review_report({"Standards": ROUND_TWO_STANDARDS},
+                                                     Standards="COUNT: 1 proven, 0 unproven"))
+    (state / "review-2-fix.md").write_text("STATUS: GREEN\nROUND: 2\nFINDINGS:\n- S1 fixed — 5e6f708 moved it\n"
+                                           "TESTS: green\nALLOWED: none\n")
+    (state / "review-10.md").write_text(review_report({"Hygiene": ROUND_TEN_HYGIENE}, Hygiene="COUNT: 1"))
+    (state / "review-10-fix.md").write_text("STATUS: GREEN\nROUND: 10\nFINDINGS:\n- H1 fixed — 6f70819 deleted it\n"
+                                            "TESTS: green\nALLOWED: none\n")
+    (state / "review-11.md").write_text(review_report())
+    (state / "review-12.partial").write_text("COUNT: 9\n")
+    return state
+
+
+def finding_line(head, round_, axis, location, finding, outcome):
+    return "\t".join(["slug=demo-spec", f"head={head}", f"round={round_}", f"axis={axis}", f"location={location}",
+                      f"finding={finding}", f"outcome={outcome}"])
+
+
+def expected_fixture_lines(head):
+    def line(*fields):
+        return finding_line(head, *fields)
+    return [
+        line(1, "acceptance", "-", '[FAIL] "clear resets ids" — `python3 todo.py clear` → ids reused (A)', "fixed"),
+        line(1, "acceptance", "todo.py:41", "todo.py:41 added a --force flag nobody asked for", "dismissed"),
+        line(1, "standards", "todo.py:12", '[hard] todo.py:12 no inline imports (CLAUDE.md) — import in a function. '
+             'Fix: move it. Proof: "no inline imports" (CLAUDE.md)', "fixed"),
+        line(1, "standards", "todo.py:30", "[judgement] todo.py:30 possible Long Function — three stages. "
+             "Fix: Extract Function", "unproven"),
+        line(1, "security", "todo.py:50", "[HIGH] todo.py:50 path traversal (confidence 9/10) — `..` in the file "
+             "name → read any file. Fix: reject it", "fixed"),
+        line(1, "security", "todo.py:60", "todo.py:60 weak hash (confidence 4/10) — md5 for ids. Fix: sha256",
+             "needs-human"),
+        line(1, "uxaix", "todo.py:70", "[warning] todo.py:70 clear message — now: silent; expected: says how many. "
+             "Fix: print the count", "follow-up"),
+        line(1, "design", "todo.py:5", "[Strong] todo.py:5 shallow module — one caller. Deepening: merge it. "
+             "Proof: `grep -c load todo.py` → 1", "dismissed"),
+        line(1, "hygiene", "todo.py:7", "todo.py:7: comment: # keeps the id", "fixed"),
+        line(1, "hygiene", "-", "docs/notes.md: markdown: added Markdown file", "dismissed"),
+        line(2, "standards", "todo.py:3", '[hard] todo.py:3 no inline imports (CLAUDE.md) — import in a function. '
+             'Fix: move it. Proof: "no inline imports" (CLAUDE.md)', "fixed"),
+        line(10, "hygiene", "todo.py:90", "todo.py:90: comment: # again", "fixed"),
+    ]
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    head = git(repo, "rev-parse", "HEAD")
+    state = fixture_state(Path(tmp))
+    findings = repo / ".git/run-spec/findings.tsv"
+    assert not findings.exists()
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    first_run = expected_fixture_lines(head)
+    assert lines(findings) == first_run, findings.read_text()
+    assert git(repo, "status", "--porcelain") == ""
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert lines(findings) == first_run, findings.read_text()
+
+    (state / "user-1-fix.md").write_text("STATUS: GREEN\nROUND: user-1\nFINDINGS:\n"
+                                         "- U1 fixed — 5e6f708 renamed the flag\n"
+                                         "- U2 dismissed — a new Markdown file breaks the no-Markdown rule\n"
+                                         "TESTS: green\nALLOWED: none\n")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "after the user fix")
+    later_head = git(repo, "rev-parse", "HEAD")
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert lines(findings) == first_run + [
+        finding_line(later_head, "user-1", "user", "-", "5e6f708 renamed the flag", "fixed"),
+        finding_line(later_head, "user-1", "user", "-", "a new Markdown file breaks the no-Markdown rule",
+                     "dismissed")], findings.read_text()
+
+    (state / "user-2-fix.md").write_text("STATUS: GREEN\nROUND: user-2\nFINDINGS:\n- U1 fixed — 7081920 kept ids\n"
+                                         "TESTS: green\nALLOWED: none\n")
+    r = runlog(repo, "findings", "--state", str(state), "--head", "abcdef1")
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert lines(findings)[-1] == finding_line("abcdef1", "user-2", "user", "-", "7081920 kept ids", "fixed")
+    assert len(lines(findings)) == len(first_run) + 3
+
+    worktree = repo.parent / (repo.name + "-wt")
+    git(repo, "worktree", "add", "-q", "-b", "other", str(worktree))
+    (state / "user-3-fix.md").write_text("STATUS: GREEN\nROUND: user-3\nFINDINGS:\n- U1 fixed — 8192031 again\n"
+                                         "TESTS: green\nALLOWED: none\n")
+    r = runlog(worktree, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert len(lines(findings)) == len(first_run) + 4, findings.read_text()
+    assert not (worktree / ".git/run-spec").exists()
+    assert git(repo, "status", "--porcelain") == ""
+    git(repo, "worktree", "remove", "--force", str(worktree))
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    findings = repo / ".git/run-spec/findings.tsv"
+    state = Path(tmp) / "demo-spec"
+    state.mkdir()
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    (state / "review-1.md").write_text(review_report())
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert not findings.exists()
+
+    for bad in (["--state", str(state / "missing")], ["--state", str(state), "--head", "zz"], []):
+        r = runlog(repo, "findings", *bad)
+        assert r.returncode == 2 and r.stdout == "", (bad, r)
+    assert not findings.exists()
+    assert "runlog.py" in runlog(repo, "findings", "--state", str(state / "missing")).stderr
+
+with tempfile.TemporaryDirectory() as tmp:
+    r = runlog(tmp, "findings", "--state", tmp)
+    assert r.returncode != 0 and r.stdout == "" and "git" in r.stderr, r
+
+
+STANDARDS_FINDING = "- [hard] todo.py:12 no inline imports (CLAUDE.md) — import in a function. Fix: move it"
+FIX_OF_ONE_STANDARDS = "STATUS: GREEN\nROUND: {n}\nFINDINGS:\n- S1 fixed — 1a2b3c4 moved it\nTESTS: green\nALLOWED: none\n"
+
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    head = git(repo, "rev-parse", "HEAD")
+    findings = repo / ".git/run-spec/findings.tsv"
+    state = Path(tmp) / "demo-spec"
+    state.mkdir()
+    one_standards = review_report({"Standards": [STANDARDS_FINDING]}, Standards="COUNT: 1 proven, 0 unproven")
+
+    (state / "review-1.md").write_text(one_standards)
+    (state / "review-1-fix.md").write_text(FIX_OF_ONE_STANDARDS.format(n=1))
+    (state / "review-2.md").write_text(one_standards.replace("COUNT: 1 proven, 0 unproven\n", ""))
+    (state / "review-2-fix.md").write_text(FIX_OF_ONE_STANDARDS.format(n=2))
+    (state / "review-3.md").write_text(one_standards)
+    (state / "review-3-fix.md").write_text("STATUS: GREEN\nROUND: 3\nTESTS: green\n")
+    (state / "review-4.md").write_text(review_report(
+        {"Standards": [STANDARDS_FINDING, STANDARDS_FINDING.replace("12", "13")]},
+        Standards="COUNT: 2 proven, 0 unproven"))
+    (state / "review-4-fix.md").write_text(FIX_OF_ONE_STANDARDS.format(n=4))
+    (state / "review-5-fix.md").write_text(FIX_OF_ONE_STANDARDS.format(n=5))
+    (state / "review-6.md").write_bytes(b"\xff\xfe\x00\x01\n")
+    (state / "review-7.md").write_text(one_standards)
+    (state / "review-8.md").write_text(one_standards)
+    (state / "review-8-fix.md").write_text("STATUS: GREEN\nROUND: 8\nFINDINGS:\n- S1 fixed — a\n- S1 dismissed — b\n")
+    (state / "user-1-fix.md").write_text("STATUS: GREEN\nROUND: user-1\nFINDINGS:\n- U1 mended — it\n")
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stderr) == (0, ""), r
+    reported = r.stdout.splitlines()
+    assert len(reported) == 8, r.stdout
+    for name in ("review-2.md", "review-3-fix.md", "review-4.md", "review-5.md", "review-6.md", "review-7.md",
+                 "review-8-fix.md", "user-1-fix.md"):
+        assert sum(name in line for line in reported) == 1, (name, r.stdout)
+    assert lines(findings) == [
+        finding_line(head, 1, "standards", "todo.py:12", STANDARDS_FINDING[2:], "fixed")], findings.read_text()
+
+
+CORRUPT_BUFFERS = {
+    "not a record": b"not a record\n",
+    "missing fields": b"slug=demo-spec\thead=abcdef1\n",
+    "unknown outcome": finding_line("abcdef1", 1, "standards", "-", "text", "mended").encode() + b"\n",
+    "unknown axis": finding_line("abcdef1", 1, "style", "-", "text", "fixed").encode() + b"\n",
+    "bad round": finding_line("abcdef1", "first", "standards", "-", "text", "fixed").encode() + b"\n",
+    "bad head": finding_line("zz", 1, "standards", "-", "text", "fixed").encode() + b"\n",
+    "binary": b"\xff\xfe\x00\x01\n",
+    "no final newline": finding_line("abcdef1", 1, "standards", "-", "text", "fixed").encode(),
+}
+
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    head = git(repo, "rev-parse", "HEAD")
+    findings = repo / ".git/run-spec/findings.tsv"
+    state = fixture_state(Path(tmp))
+
+    def findings_asides():
+        return sorted(findings.parent.glob("findings.tsv.corrupt-*"))
+
+    for kind, content in CORRUPT_BUFFERS.items():
+        findings.parent.mkdir(exist_ok=True)
+        findings.write_bytes(content)
+        r = runlog(repo, "findings", "--state", str(state))
+        assert (r.returncode, r.stderr) == (0, ""), (kind, r)
+        assert len(r.stdout.splitlines()) == 1 and "corrupt" in r.stdout, (kind, r.stdout)
+        assert lines(findings) == expected_fixture_lines(head), (kind, findings.read_text())
+        assert content in [aside.read_bytes() for aside in findings_asides()], kind
+    assert len(findings_asides()) == len(CORRUPT_BUFFERS), findings_asides()
+    assert not list(findings.parent.glob("metrics.tsv*"))
+
+
+skill_text = (KIT / "SKILL.md").read_text()
+step_seven = skill_text.split("\n## 7. ")[1]
+assert "RUNLOG record" in step_seven and "RUNLOG findings --state $STATE" in step_seven
+assert step_seven.index("RUNLOG findings --state $STATE") > step_seven.index("RUNLOG record")
+assert "A failure of `RUNLOG` never fails the run: print its error line and go on" in step_seven
+assert "RUNLOG findings" in skill_text.split("\n## 1. ")[0]
+
+readme_text = (KIT / "README.md").read_text()
+assert any(row.startswith("| Findings buffer |") for row in cursor_table_rows(readme_text))
+assert any(row.startswith("| `<git-common-dir>/run-spec/findings.tsv` |") for row in readme_text.splitlines())

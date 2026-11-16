@@ -1,0 +1,11 @@
+matches skill at commit 791d67442a68ed8a8e200db92532b2230acc829d
+NeverIntegratedTwice	ai/skills/run-spec/SKILL.md:134	/\ integrations[t] = 0 => /\ TRUE
+ResumeCapHolds	ai/skills/run-spec/SKILL.md:121	/\ resumes[t] + 1 <= ResumeCap => /\ TRUE
+AttemptCapHolds	ai/skills/run-spec/SKILL.md:203	/\ attempts[t] < AttemptCap} => /\ TRUE}
+FailedNeverMerged	ai/skills/run-spec/SKILL.md:119	FinishedOrphan(t) == branch[t] /\ ~merged[t] /\ status[t] = "DONE" => FinishedOrphan(t) == branch[t] /\ ~merged[t] /\ status[t] # "none"
+NoOrphanSurvivesRecovery	ai/skills/run-spec/SKILL.md:138	/\ \A t \in toCleanUp : ~branch[t] => /\ TRUE
+EveryTicketResolved	ai/skills/run-spec/SKILL.md:330	/\ Ready = {} => /\ TRUE
+RoundsCapped	ai/skills/run-spec/SKILL.md:253	\/ NextRound > RoundCap => \/ FALSE
+TriageCapped	ai/skills/run-spec/SKILL.md:223	/\ triageIns < TriageCap => /\ TRUE
+AdvisoryNeverStartsRound	ai/skills/run-spec/SKILL.md:244	Blocking(r) == proven[r] => Blocking(r) == proven[r] + unproven[r]
+UnreadIsListed	ai/skills/run-spec/SKILL.md:246	ReadsFrom(r) == IF r = 1 THEN 0 ELSE base[r - 1] => ReadsFrom(r) == IF r = 1 THEN 0 ELSE IF r >= RoundCap THEN Len(log) ELSE base[r - 1]

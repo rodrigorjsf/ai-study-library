@@ -5,6 +5,26 @@ import stat
 import sys
 from pathlib import Path
 
+FORMAL_MODELS = Path(__file__).resolve().parent.parent / "run-spec-dev" / "formal" / "models"
+
+
+def model_matches(model):
+    lines = (FORMAL_MODELS / f"{model}.matches").read_text().splitlines()
+    return lines[0], [line.split("\t") for line in lines[1:]]
+
+
+def cursor_table_rows(readme_text):
+    return readme_text.split("\n## Claude Code and Cursor\n")[1].split("\n## Status")[0].splitlines()
+
+
+def broken_model_text(tla_text, edit):
+    assert " => " in edit, edit
+    old, new = edit.split(" => ", 1)
+    assert old != new, edit
+    assert tla_text.count(old) == 1, old
+    return tla_text.replace(old, new)
+
+
 PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
 PROPERTY_CASES = 300
 
@@ -34,9 +54,11 @@ CLEAN_COUNTS = {
 }
 
 
-def review_report(**counts):
-    lines_by_axis = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
-    return "".join(f"## {axis}\n- none\n{lines_by_axis[axis]}\n\n" for axis in REVIEW_AXES)
+def review_report(findings=None, **counts):
+    count_lines = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
+    bodies = {**dict.fromkeys(REVIEW_AXES, ["- none"]), **(findings or {})}
+    return "".join(f"## {axis}\n" + "".join(f"{line}\n" for line in bodies[axis]) + f"{count_lines[axis]}\n\n"
+                   for axis in REVIEW_AXES)
 
 
 def run_properties(properties, script, seed, *args):

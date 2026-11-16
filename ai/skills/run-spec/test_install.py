@@ -5,6 +5,7 @@ from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
 INSTALL = KIT / "install.sh"
+CORRECT_KIT = KIT.parent / "run-spec-correct"
 
 RUNTIME_FILES = ["SKILL.md", "QUEUE.md", "tickets.py", "hygiene.py", "runlog.py", "gitcmd.py", "watchdog.sh",
                  "guides/tdd.md", "axes/standards.md", "axes/spec.md", "axes/security.md",
@@ -25,9 +26,13 @@ def installed_files(skill_dir):
     return sorted(p.relative_to(skill_dir).as_posix() for p in skill_dir.rglob("*") if p.is_file())
 
 
+def committed_files(directory):
+    return subprocess.run(["git", "-C", str(directory), "ls-tree", "-r", "--name-only", "HEAD", "."],
+                          capture_output=True, text=True, check=True).stdout.split()
+
+
 def committed_runtime_files():
-    committed_paths = subprocess.run(["git", "-C", str(KIT), "ls-tree", "-r", "--name-only", "HEAD", "."],
-                                     capture_output=True, text=True, check=True).stdout.split()
+    committed_paths = committed_files(KIT)
     skipped = ("agents/", "docs/")
     return sorted(name for name in committed_paths
                   if not name.startswith(skipped)
@@ -52,6 +57,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
     assert installed_files(skill) == committed_runtime_files(), (installed_files(skill), committed_runtime_files())
 
+    correct = home / ".claude/skills/run-spec-correct"
+    assert installed_files(correct) == ["SKILL.md"], installed_files(correct)
+    assert committed_files(CORRECT_KIT) == ["SKILL.md"], committed_files(CORRECT_KIT)
+
     leaked = [path for path in installed_files(home) if any(name in path for name in DEVELOPMENT_ONLY)]
     assert not leaked, leaked
 
@@ -65,6 +74,10 @@ with tempfile.TemporaryDirectory() as tmp:
     (skill / "__pycache__").mkdir()
     (skill / "__pycache__/hygiene.cpython-312.pyc").write_bytes(b"old")
     (skill / "SKILL.md").write_text("stale\n")
+    correct = home / ".claude/skills/run-spec-correct"
+    correct.mkdir(parents=True)
+    (correct / "SKILL.md").write_text("stale\n")
+    (correct / "old.md").write_text("old\n")
 
     r = install(home)
     assert r.returncode == 0, r
@@ -73,10 +86,12 @@ with tempfile.TemporaryDirectory() as tmp:
     assert not (skill / "__pycache__").exists(), installed_files(skill)
     assert (skill / "SKILL.md").read_text() != "stale\n"
     assert installed_files(skill) == committed_runtime_files(), (installed_files(skill), committed_runtime_files())
+    assert installed_files(correct) == ["SKILL.md"], installed_files(correct)
+    assert (correct / "SKILL.md").read_text() != "stale\n"
 
-    first = installed_files(skill)
+    first = installed_files(skill), installed_files(correct)
     r = install(home)
     assert r.returncode == 0, r
-    assert installed_files(skill) == first
+    assert (installed_files(skill), installed_files(correct)) == first
 
 print("ok")
