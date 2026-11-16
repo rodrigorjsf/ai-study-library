@@ -1,0 +1,197 @@
+import os
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+KIT = Path(__file__).resolve().parent
+READINESS = KIT / "readiness.py"
+ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+RUN_SPEC_FILE = "docs/agents/run-spec.md"
+SEARCHED = ".claude/skills/verify*/, .claude/skills/run-*/, .cursor/skills/verify-*/"
+SUGGESTION = "suggestion: run Claude Code's `/run-skill-generator` to create one"
+
+
+def git(repo, *args):
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                   cwd=repo, env=ENV, capture_output=True, text=True, check=True)
+
+
+def new_repo(tmp, files=None):
+    repo = Path(tmp)
+    git(repo, "init", "-q", "-b", "main")
+    for name, content in (files or {}).items():
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content if isinstance(content, bytes) else content.encode())
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "base")
+    return repo
+
+
+def readiness(*args, cwd=None):
+    return subprocess.run([sys.executable, "-I", str(READINESS), *args], cwd=cwd, env=ENV, capture_output=True, text=True)
+
+
+def report(repo, spec="#6"):
+    r = readiness("--repo", str(repo), "--spec", spec)
+    assert (r.returncode, r.stderr) == (0, ""), r
+    lines = r.stdout.split("\n")
+    assert lines.pop() == "", r.stdout
+    sections, current = {}, None
+    for line in lines[1:]:
+        heading = re.fullmatch(r"### (.+)", line)
+        if heading:
+            current = sections.setdefault(heading.group(1), [])
+        else:
+            assert current is not None and line.startswith("- "), (line, r.stdout)
+            current.append(line[2:])
+    assert list(sections) == ["Check commands", "App recipe"], r.stdout
+    return lines[0], sections["Check commands"], sections["App recipe"]
+
+
+def checks(files_content):
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = new_repo(tmp, {} if files_content is None else {RUN_SPEC_FILE: files_content})
+        return report(repo)[1]
+
+
+def recipe(*skill_dirs, extra=()):
+    files = {f"{d}/SKILL.md": "x" for d in skill_dirs} | {name: "x" for name in extra}
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = new_repo(tmp, files)
+        return report(repo)[2]
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {RUN_SPEC_FILE: "max-parallel: 2\ntypecheck: npm run typecheck\nlint: npm run lint\ntest: npm test\n"})
+    summary, check_lines, recipe_lines = report(repo)
+    assert check_lines == ["typecheck: declared (npm run typecheck)", "lint: declared (npm run lint)",
+                           "test: declared (npm test)"], check_lines
+    assert summary == "readiness #6: check commands 3 of 3 declared; no app recipe", summary
+    assert recipe_lines == [f"none found in {SEARCHED}", SUGGESTION], recipe_lines
+
+assert checks("typecheck: tsc --noEmit\ntest: pytest -q\n") == [
+    "typecheck: declared (tsc --noEmit)", "lint: missing", "test: declared (pytest -q)",
+    'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md'], "partial"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {RUN_SPEC_FILE: "typecheck: tsc\ntest: pytest\n"})
+    summary, _, _ = report(repo, ".scratch/demo")
+    assert summary == "readiness .scratch/demo: check commands 2 of 3 declared (missing: lint); no app recipe", summary
+
+everything_missing = ["typecheck: missing", "lint: missing", "test: missing",
+                      'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md']
+assert checks(None) == everything_missing, "no file"
+assert checks("") == everything_missing, "empty file"
+assert checks("max-parallel: 3\n") == everything_missing, "other keys only"
+
+assert checks("typecheck:\nlint:   \ntest: npm test\n") == [
+    "typecheck: missing", "lint: missing", "test: declared (npm test)",
+    'declare a missing key as a "<key>: <command>" line in docs/agents/run-spec.md'], "empty commands"
+assert checks("  typecheck: tsc\n\tlint: eslint .\n- test: pytest\nTest: pytest\n") == everything_missing, "indented or altered"
+assert checks("test: first\ntest: second\n")[2] == "test: declared (first)", "first line wins"
+assert checks("test:   pytest -q   \n")[2] == "test: declared (pytest -q)", "spaces trimmed"
+assert checks("typecheck:tsc\n")[0] == "typecheck: declared (tsc)", "no space after the colon"
+assert checks("typecheck: tsc\r\nlint: eslint .\r\ntest: npm test\r\n")[:3] == [
+    "typecheck: declared (tsc)", "lint: declared (eslint .)", "test: declared (npm test)"], "crlf"
+assert checks("test: py\rtest\n")[2] == "test: declared (pytest)", "lone carriage return"
+assert checks("test: \x0c\x0bpytest\x0b\x0c \n")[2] == "test: declared (pytest)", "form feed and vertical tab"
+assert checks("test: pytest")[2] == "test: declared (pytest)", "no trailing newline"
+assert checks("typecheck: first\ntypecheck:\n")[0] == "typecheck: declared (first)", "later empty line ignored"
+assert checks("typecheck:\ntypecheck: second\n")[0] == "typecheck: missing", "first line wins even when empty"
+assert checks(b"test: pytest \xff\xfe\n")[2].startswith("test: declared (pytest "), "invalid utf-8"
+assert checks("test: make test && make e2e | tee out.log\n")[2] == "test: declared (make test && make e2e | tee out.log)"
+
+
+def shell_read(repo):
+    skill = (KIT / "SKILL.md").read_text()
+    loop = re.search(r"^  (for key in typecheck lint test; do .*)$", skill, re.M).group(1)
+    r = subprocess.run(["bash", "-c", loop], env={**ENV, "MAIN": str(repo)}, capture_output=True, text=True)
+    assert (r.returncode, r.stderr) == (0, ""), r
+    return {key.lower(): value for key, value in (line.split(": ", 1) for line in r.stdout.rstrip("\n").split("\n"))}
+
+
+def readiness_read(repo):
+    values = {}
+    for line in report(repo)[1]:
+        match = re.fullmatch(r"(typecheck|lint|test): (?:declared \((.*)\)|missing)", line)
+        if match:
+            values[match.group(1)] = match.group(2) or "none"
+    return values
+
+
+for content in ("typecheck: npm run typecheck\nlint: npm run lint\ntest: npm test\n", "test: pytest\n", "",
+                "typecheck:\nlint:  \ntest: x\n", "  test: indented\ntest: real\n", "test: a\ntest: b\n",
+                "typecheck: tsc\r\nlint: eslint .\r\ntest: npm test\r\n", "lint:\teslint .\t\n", "test: a   b   \n",
+                "max-parallel: 3\n# test: commented\ntest: ok\n", "test: a\rb\n", "test: \x0cpytest \x0b\n",
+                "lint: eslint\x0b.\n"):
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = new_repo(tmp, {RUN_SPEC_FILE: content})
+        assert readiness_read(repo) == shell_read(repo), (content, readiness_read(repo), shell_read(repo))
+
+assert recipe(".claude/skills/verify-app") == ["found: .claude/skills/verify-app/"]
+assert recipe(".claude/skills/verify") == ["found: .claude/skills/verify/"]
+assert recipe(".claude/skills/run-app") == ["found: .claude/skills/run-app/"]
+assert recipe(".cursor/skills/verify-app") == ["found: .cursor/skills/verify-app/"]
+assert recipe(".claude/skills/run-app", ".cursor/skills/verify-app") == ["found: .claude/skills/run-app/"]
+assert recipe(".claude/skills/verify-app", ".claude/skills/run-app", ".cursor/skills/verify-app") == [
+    "found: .claude/skills/verify-app/"]
+assert recipe(".claude/skills/verify-b", ".claude/skills/verify-a") == ["found: .claude/skills/verify-a/"]
+
+for not_a_recipe in (".claude/skills/runner", ".claude/skills/run", ".claude/skills/other", ".claude/skills/xverify",
+                     ".cursor/skills/verify", ".cursor/skills/run-app", ".cursor/skills/other",
+                     ".claude/commands/verify-app", "skills/verify-app", ".agents/skills/verify-app"):
+    assert recipe(not_a_recipe)[0].startswith("none found"), not_a_recipe
+assert recipe(extra=[".claude/skills/verify-app/notes.txt"])[0].startswith("none found"), "a directory without SKILL.md"
+assert recipe(extra=[".claude/skills/verify-app"])[0].startswith("none found"), "a file named like a recipe"
+assert recipe(".claude/skills/verify-app", extra=[".claude/skills/other/SKILL.md"]) == ["found: .claude/skills/verify-app/"]
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {RUN_SPEC_FILE: "test: pytest\n", ".claude/skills/verify-app/SKILL.md": "x"})
+    summary, _, _ = report(repo)
+    assert summary == "readiness #6: check commands 1 of 3 declared (missing: typecheck, lint); app recipe .claude/skills/verify-app/", summary
+    before = subprocess.run(["git", "status", "--porcelain"], cwd=repo, env=ENV, capture_output=True, text=True).stdout
+    assert before == "", before
+    other = tempfile.mkdtemp()
+    r = readiness("--repo", os.path.relpath(repo, other), "--spec", "#6", cwd=other)
+    assert r.returncode == 0 and "found: .claude/skills/verify-app/" in r.stdout, r
+    os.rmdir(other)
+
+with tempfile.TemporaryDirectory() as tmp:
+    plain = Path(tmp)
+    (plain / ".cursor/skills/verify-app").mkdir(parents=True)
+    (plain / ".cursor/skills/verify-app/SKILL.md").write_text("x")
+    assert report(plain)[2] == ["found: .cursor/skills/verify-app/"], "a directory that is not a git repository"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    (repo / "docs/agents/run-spec.md").mkdir(parents=True)
+    assert report(repo)[1] == everything_missing, "run-spec.md is a directory"
+    (repo / ".claude").write_text("a file where a directory belongs")
+    assert report(repo)[2][0].startswith("none found"), ".claude is a file"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    target = repo / "elsewhere"
+    target.mkdir()
+    (repo / ".claude/skills").mkdir(parents=True)
+    (repo / ".claude/skills/verify-link").symlink_to(target)
+    assert report(repo)[2][0].startswith("none found"), "a symlink to a directory without SKILL.md"
+    (target / "SKILL.md").write_text("x")
+    assert report(repo)[2] == ["found: .claude/skills/verify-link/"], "a symlinked recipe"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    usage_errors = (
+        [], ["--repo", str(repo)], ["--spec", "#6"], ["--repo", str(repo), "--spec", ""],
+        ["--repo", str(repo), "--spec", "  "], ["--repo", str(repo / "missing"), "--spec", "#6"],
+        ["--repo", str(repo / ".git/HEAD"), "--spec", "#6"], ["--repo", str(repo), "--spec", "#6", "--strict"],
+        ["--repo", str(repo), "--spec", "#6", "extra"], ["--bogus"])
+    for args in usage_errors:
+        r = readiness(*args)
+        assert r.returncode == 2 and r.stdout == "" and r.stderr != "", (args, r)
+    assert readiness("--help").returncode == 0
+
+print("ok")
