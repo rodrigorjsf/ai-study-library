@@ -55,6 +55,10 @@ const labels = {
 };
 
 export const step = (action, from, to) => {
+  if (action === "RunSuiteGate")
+    return to.suite === "red"
+      ? "the Suite gate finds the suite red and the run halts"
+      : "the Suite gate finds the suite green";
   if (action === "TriageFinish")
     return to.inScope.length > from.inScope.length
       ? "the triage attaches a follow-up ticket"
