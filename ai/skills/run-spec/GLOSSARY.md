@@ -26,6 +26,14 @@ _Avoid_: Runtime oracle, verify script, launch instructions
 The part of an App recipe that lists the application's features from the user's point of view, how a user reaches each one, and what result proves it works.
 _Avoid_: Site map, feature list
 
+**Scoped tests**:
+The test files a ticket's diff adds or changes, plus the existing test files that exercise the modules it changes. An implementer and a wave integration run only these; the whole suite waits for the Suite gate.
+_Avoid_: Unit tests, affected tests, partial suite
+
+**Suite gate**:
+The one run of the whole test suite over the finished work branch, before the final review, that also fixes what it finds red. Until it passes, no run has proven the whole suite.
+_Avoid_: Full suite check, final suite, CI run
+
 **Proven finding**:
 A review finding that carries a command whose output shows the defect, or, for a written-rule finding, the line of the rule it breaks. Only proven findings can block.
 _Avoid_: Verified finding, confirmed finding
