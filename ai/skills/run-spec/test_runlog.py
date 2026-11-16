@@ -10,7 +10,7 @@ ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"
 
 FULL_RECORD = ["--slug", "demo", "--pr", "https://github.com/o/r/pull/7", "--rounds", "2",
                "--findings", "acceptance=1", "standards=3", "security=0", "uxaix=2", "design=1", "hygiene=4",
-               "--dismissals", "5", "--unverified", "1", "--done", "4", "--skipped", "1", "--stuck", "2"]
+               "--dismissals", "5", "--unverified", "1", "--unproven", "3", "--done", "4", "--skipped", "1", "--stuck", "2"]
 
 
 def git(repo, *args):
@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert fields[1:] == ["slug=demo", "pr=https://github.com/o/r/pull/7", f"head={head}", "rounds=2",
                           "findings.acceptance=1", "findings.standards=3", "findings.security=0",
                           "findings.uxaix=2", "findings.design=1", "findings.hygiene=4",
-                          "dismissals=5", "unverified=1", "done=4", "skipped=1", "stuck=2"], fields
+                          "dismissals=5", "unverified=1", "done=4", "skipped=1", "stuck=2", "unproven=3"], fields
     first = lines(metrics)[0]
 
     r = runlog(repo, "record", "--slug", "second", "--head", head)
@@ -57,10 +57,11 @@ with tempfile.TemporaryDirectory() as tmp:
     assert lines(metrics)[1].split("\t")[1:] == [
         "slug=second", "pr=none", f"head={head}", "rounds=0", "findings.acceptance=0", "findings.standards=0",
         "findings.security=0", "findings.uxaix=0", "findings.design=0", "findings.hygiene=0",
-        "dismissals=0", "unverified=0", "done=0", "skipped=0", "stuck=0"], lines(metrics)[1]
+        "dismissals=0", "unverified=0", "done=0", "skipped=0", "stuck=0", "unproven=0"], lines(metrics)[1]
 
     for bad in (["--slug", "x", "--head", "zz"], ["--slug", "a\tb", "--head", head],
                 ["--slug", "x", "--head", head, "--rounds", "-1"],
+                ["--slug", "x", "--head", head, "--unproven", "-1"], ["--slug", "x", "--head", head, "--unproven", "x"],
                 ["--slug", "x", "--head", head, "--findings", "bogus=1"],
                 ["--slug", "x", "--head", head, "--findings", "design=x"], ["--head", head]):
         r = runlog(repo, "record", *bad)
@@ -75,6 +76,29 @@ with tempfile.TemporaryDirectory() as tmp:
     assert not (worktree / ".git/run-spec").exists()
     assert git(repo, "status", "--porcelain") == ""
     git(repo, "worktree", "remove", "--force", str(worktree))
+
+
+LEGACY_RECORD = ("at=2026-11-15T10:00:00Z\tslug=legacy\tpr=none\thead={head}\trounds=1\tfindings.acceptance=0"
+                 "\tfindings.standards=2\tfindings.security=0\tfindings.uxaix=0\tfindings.design=1\tfindings.hygiene=0"
+                 "\tdismissals=1\tunverified=0\tdone=2\tskipped=0\tstuck=0\n")
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    head = git(repo, "rev-parse", "HEAD")
+    metrics = repo / ".git/run-spec/metrics.tsv"
+    metrics.parent.mkdir(parents=True)
+    metrics.write_text(LEGACY_RECORD.format(head=head))
+    legacy = metrics.read_text()
+
+    r = runlog(repo, "record", "--slug", "after-legacy", "--head", head, "--unproven", "2")
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert lines(metrics)[0] == legacy.rstrip("\n"), metrics.read_text()
+    assert lines(metrics)[1].endswith("\tunproven=2"), lines(metrics)[1]
+    assert not list(metrics.parent.glob("metrics.tsv.corrupt-*"))
+
+    r = runlog(repo, "reverts")
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert not list(metrics.parent.glob("metrics.tsv.corrupt-*"))
 
 
 def topic(repo, name, base="main"):
@@ -148,6 +172,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "not a record": b"not a record\n",
         "missing fields": b"at=2026-11-15T10:00:00Z\tslug=x\n",
         "non-numeric count": good.replace("rounds=0", "rounds=many").encode(),
+        "non-numeric unproven": good.replace("unproven=0", "unproven=many").encode(),
         "binary": b"\xff\xfe\x00\x01\n",
         "no final newline": good.rstrip("\n").encode(),
     }

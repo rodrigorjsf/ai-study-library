@@ -58,14 +58,22 @@ Severity:
 - **Worth exploring**: real friction, but the right shape needs more thought.
 - **Speculative**: a hunch worth recording.
 
+## Proof
+
+A finding that ends in a `Proof:` field, a command and its decisive output, is **Proven**. The final review blocks on a Proven finding, a Design one included, and the review-fixer re-runs each proof under a timeout. A finding without the field is **Unproven**: it is advisory and starts no round.
+
+- The command runs from `REPO`, ends under a minute, and its output shows the defect: the `grep -rn` that counts the callers of a shallow module, the line of the test that reaches past the interface, the two construction sites of a hard-wired dependency.
+- A command that only prints the code you read proves nothing: it must show the counted or compared fact the finding rests on.
+- Leave the field out when you hold no command. Do not pad it with prose.
+
 ## Output
 
 Report only this, under 400 words:
 
 ```
 ## Design
-- [Strong|Worth exploring|Speculative] <file:line> <principle> — <evidence>. Deepening: <one line>
-COUNT: <n>
+- [Strong|Worth exploring|Speculative] <file:line> <principle> — <evidence>. Deepening: <one line>. Proof: `<command>` → <decisive output>
+COUNT: <p> proven, <u> unproven
 ```
 
-Write `- none` when there are no findings.
+Write `- none` when there are no findings. `COUNT` must equal the number of findings with a `Proof:` field, then the number without one.
