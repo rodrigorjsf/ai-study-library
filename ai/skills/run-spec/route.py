@@ -93,10 +93,12 @@ def route_of(blocking, advisory):
     return "advisory-only" if advisory else "clean"
 
 
+def round_numbers(state, pattern):
+    return sorted({int(match[1]) for path in Path(state).iterdir() if (match := pattern.fullmatch(path.name))})
+
+
 def review_reports(state):
-    numbered = ((int(match.group(1)), path) for path in Path(state).iterdir()
-                if (match := REVIEW_REPORT.fullmatch(path.name)))
-    return [path for _, path in sorted(numbered)]
+    return [Path(state) / f"review-{number}.md" for number in round_numbers(state, REVIEW_REPORT)]
 
 
 def read_review(path):

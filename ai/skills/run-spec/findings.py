@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 sys.dont_write_bytecode = True
 
-from route import AXES, UnreadableReport, read_review, sections
+from route import AXES, UnreadableReport, read_review, round_numbers, sections
 
 OUTCOMES = ("fixed", "dismissed", "follow-up", "needs-human", "unproven")
 USER_AXIS = "user"
@@ -110,10 +110,6 @@ def user_round(state, number):
     outcomes = fixer_outcomes(state / f"user-{number}-fix.md")
     return [Finding(f"user-{number}", USER_AXIS, NO_LOCATION, outcome.note or id, outcome.outcome)
             for id, outcome in outcomes.items()]
-
-
-def round_numbers(state, pattern):
-    return sorted({int(match[1]) for path in state.iterdir() if (match := pattern.fullmatch(path.name))})
 
 
 def state_findings(state, axis_keys):
