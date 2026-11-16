@@ -155,22 +155,26 @@ assert check_section(b"test: pytest \xff\xfe\n")[2].startswith("test: declared (
 assert check_section("test: make test && make e2e | tee out.log\n")[2] == "test: declared (make test && make e2e | tee out.log)"
 
 
-def shell_read(repo):
-    skill = (KIT / "SKILL.md").read_text()
-    loop = re.search(r"^  (for key in typecheck lint test; do .*)$", skill, re.M).group(1)
-    r = subprocess.run(["bash", "-c", loop], env={**ENV, "MAIN": str(repo)}, capture_output=True, text=True)
+def check_command_lines(repo):
+    r = readiness("--repo", str(repo), "--check-commands")
     assert (r.returncode, r.stderr) == (0, ""), r
-    return {key.lower(): value for key, value in (line.split(": ", 1) for line in r.stdout.rstrip("\n").split("\n"))}
+    return r.stdout.rstrip("\n").split("\n")
 
 
-def readiness_read(repo):
-    values = {}
+def report_as_prompt_lines(repo):
+    lines = []
     for line in report(repo)[1]:
-        match = re.fullmatch(r"(typecheck|lint|test): (?:declared \((.*)\)|missing)", line)
-        if match:
-            values[match.group(1)] = match.group(2) or "none"
-    return values
+        key, command = re.fullmatch(r"(typecheck|lint|test): (?:declared \((.*)\)|missing)", line).groups()
+        lines.append(f"{key.upper()}: {command or 'none'}")
+    return lines
 
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {RUN_SPEC_FILE: "max-parallel: 2\ntest: pnpm -r test -- --run\n"})
+    assert check_command_lines(repo) == ["TYPECHECK: none", "LINT: none", "TEST: pnpm -r test -- --run"]
+
+with tempfile.TemporaryDirectory() as tmp:
+    assert check_command_lines(new_repo(tmp)) == ["TYPECHECK: none", "LINT: none", "TEST: none"], "no file"
 
 for content in ("typecheck: npm run typecheck\nlint: npm run lint\ntest: npm test\n", "test: pytest\n", "",
                 "typecheck:\nlint:  \ntest: x\n", "  test: indented\ntest: real\n", "test: a\ntest: b\n",
@@ -179,7 +183,7 @@ for content in ("typecheck: npm run typecheck\nlint: npm run lint\ntest: npm tes
                 "lint: eslint\x0b.\n"):
     with tempfile.TemporaryDirectory() as tmp:
         repo = new_repo(tmp, {RUN_SPEC_FILE: content})
-        assert readiness_read(repo) == shell_read(repo), (content, readiness_read(repo), shell_read(repo))
+        assert check_command_lines(repo) == report_as_prompt_lines(repo), (content, check_command_lines(repo))
 
 assert recipe_section(".claude/skills/verify-app") == ["found: .claude/skills/verify-app/"]
 assert recipe_section(".claude/skills/verify") == ["found: .claude/skills/verify/"]
@@ -238,7 +242,8 @@ with tempfile.TemporaryDirectory() as tmp:
         [], ["--repo", str(repo)], ["--spec", "#6"], ["--repo", str(repo), "--spec", ""],
         ["--repo", str(repo), "--spec", "  "], ["--repo", str(repo / "missing"), "--spec", "#6"],
         ["--repo", str(repo / ".git/HEAD"), "--spec", "#6"], ["--repo", str(repo), "--spec", "#6", "--strict"],
-        ["--repo", str(repo), "--spec", "#6", "extra"], ["--bogus"])
+        ["--repo", str(repo), "--spec", "#6", "extra"], ["--bogus"], ["--check-commands"],
+        ["--repo", str(repo), "--spec", "#6", "--check-commands"], ["--repo", str(repo / "missing"), "--check-commands"])
     for args in usage_errors:
         r = readiness(*args)
         assert r.returncode == 2 and r.stdout == "" and r.stderr != "", (args, r)

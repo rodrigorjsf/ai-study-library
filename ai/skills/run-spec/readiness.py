@@ -29,6 +29,10 @@ def declared_commands(repo):
     return commands
 
 
+def check_command_lines(commands):
+    return "\n".join(f"{key.upper()}: {commands.get(key, 'none')}" for key in CHECK_KEYS)
+
+
 def find_recipe(repo):
     for parent, pattern in RECIPE_LOCATIONS:
         try:
@@ -95,12 +99,18 @@ def render(spec, commands, recipe, surface):
 def main():
     parser = argparse.ArgumentParser(prog="readiness.py")
     parser.add_argument("--repo", required=True, type=pathlib.Path)
-    parser.add_argument("--spec", required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--spec")
+    mode.add_argument("--check-commands", action="store_true",
+                      help="print only the TYPECHECK, LINT and TEST prompt lines, none for a key not declared")
     args = parser.parse_args()
-    if not args.spec.strip():
+    if args.spec is not None and not args.spec.strip():
         parser.error("--spec is empty")
     if not args.repo.is_dir():
         parser.error(f"--repo {args.repo} is not a directory")
+    if args.check_commands:
+        print(check_command_lines(declared_commands(args.repo)))
+        return
     print(render(args.spec, declared_commands(args.repo), find_recipe(args.repo), surface_report(*read_tickets(args.repo, args.spec))))
 
 

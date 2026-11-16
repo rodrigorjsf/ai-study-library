@@ -27,7 +27,7 @@ This contract holds for the whole run **and for every later turn in this convers
 - Running the skill that OWNER_NOTES names for after the queue (`QUEUE.md`).
 
 Nothing else. In particular:
-- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code. The steps name your only exceptions: the one-line `sed` reads of steps 1 and 3, step 6's `HYGIENE` run, step 2's `READINESS` run and `head` read, and the `RUNLOG` runs of steps 2 and 7.
+- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code. The steps name your only exceptions: the one-line `sed` reads of steps 1 and 3, step 6's `HYGIENE` run, the `READINESS` runs of steps 1 and 2 and step 2's `head` read, and the `RUNLOG` runs of steps 2 and 7.
 - **Evidence is the status block.** A subagent's `TESTS:`, `STATUS:` or `COUNT:` line is the verification. Never re-run the suite to double-check it.
 - **Scope is the oracle's ticket set.** Dispatch only ids listed in the oracle's `ready`, in the order given, each exactly once per attempt. A ticket outside `ready` does not run, even when you think it could. This covers a ticket blocked by an open issue, a ticket from another spec, and a follow-up that `followup-triager` left out. A follow-up enters the run only when the triager attaches it to SPEC and ORACLE then lists it. Order and blocking edges change only when a re-run of ORACLE changes them.
 - **Chat is a status line.** Print one line per event, in the user's language, such as `wave 02: dispatched #10 #11` or `wave 02: #10 DONE, #11 FAILED (attempt 1)`. Do not analyse, predict, recommend, or ask. The only long message is step 7's report.
@@ -52,7 +52,7 @@ Variables:
 - `ORACLE` — `python3 ${CLAUDE_SKILL_DIR}/tickets.py --tracker <T> --spec <SPEC> --work-branch <WORK> --failures-dir $STATE`
 - `HYGIENE` — `python3 ${CLAUDE_SKILL_DIR}/hygiene.py`, the hygiene gate: run from inside a checkout as `HYGIENE <base> <head> [--allow <path>]...`, it prints one line per comment line or Markdown file the range adds, and nothing when clean. Agents receive it as `HYGIENE: python3 <absolute skill dir>/hygiene.py`.
 - `RUNLOG` — `python3 ${CLAUDE_SKILL_DIR}/runlog.py`, the Run metrics log. `RUNLOG reverts` marks the records of earlier runs whose pull request was reverted on DEFAULT. `RUNLOG record <options>` appends one record of this run to `$GITDIR/run-spec/metrics.tsv`, untracked and shared by every spec of the repository. Neither prints anything unless it found a corrupt `metrics.tsv` and started a new one, or `reverts` marked a record. Agents do not receive it.
-- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it.
+- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it. `READINESS --repo $MAIN --check-commands` prints instead only the three Check commands prompt lines, from the same parser.
 - `KIT` — `${CLAUDE_SKILL_DIR}`, the absolute skill directory. Agents receive it as `KIT: <absolute skill dir>` and read `guides/tdd.md` and `axes/*.md` under it.
 
 ## 1. Resolve the input
@@ -73,7 +73,7 @@ Variables:
 - **Check commands** `TYPECHECK`, `LINT` and `TEST`: for each of `typecheck`, `lint` and `test`, the command on the first line of `$MAIN/docs/agents/run-spec.md` that starts with `<key>:`, with the line's `\r` and surrounding spaces dropped, or `none` when the file is missing, no line starts so, or the command is empty. This prints the three lines:
 
   ```
-  for key in typecheck lint test; do v=$(cat "$MAIN/docs/agents/run-spec.md" 2>/dev/null | tr -d '\r' | sed -n "s/^$key:[[:space:]]*//p" | head -1 | sed 's/[[:space:]]*$//'); printf '%s: %s\n' "$(printf %s "$key" | tr a-z A-Z)" "${v:-none}"; done
+  READINESS --repo $MAIN --check-commands
   ```
 
   Every prompt to `ticket-implementer`, `wave-integrator`, `acceptance-verifier` and `review-fixer` carries these three lines verbatim, the repair spawns of step 3 and every later spawn included. The agent runs a declared command exactly and derives a `none` one as it does without them.
