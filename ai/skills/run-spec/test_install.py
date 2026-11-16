@@ -6,7 +6,7 @@ from pathlib import Path
 KIT = Path(__file__).resolve().parent
 INSTALL = KIT / "install.sh"
 
-RUNTIME_FILES = ["SKILL.md", "QUEUE.md", "tickets.py", "hygiene.py", "runlog.py", "watchdog.sh",
+RUNTIME_FILES = ["SKILL.md", "QUEUE.md", "tickets.py", "hygiene.py", "runlog.py", "gitcmd.py", "watchdog.sh",
                  "guides/tdd.md", "axes/standards.md", "axes/spec.md", "axes/security.md",
                  "axes/ux-aix.md", "axes/design.md", "axes/ux-aix.triggers"]
 AGENTS = ["acceptance-verifier.md", "followup-triager.md", "review-fixer.md", "ticket-implementer.md",

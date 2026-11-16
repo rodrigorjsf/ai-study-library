@@ -29,17 +29,13 @@ import argparse
 import json
 import pathlib
 import re
-import subprocess
 import sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from gitcmd import default_refs, run as sh
+
 MAX_ATTEMPTS = 2
-
-
-def sh(*cmd, check=True):
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if check and r.returncode != 0:
-        sys.exit(f"command failed: {' '.join(cmd)}\n{r.stderr.strip()}")
-    return r.stdout if r.returncode == 0 else ""
 
 
 def kebab(s, n=40):
@@ -137,16 +133,6 @@ def github_tickets(spec):
         tickets.append({"id": b, "ref": b, "title": "(outside this spec)", "blockers": [], "criteria": [],
                         "_closed": state == "CLOSED", "in_scope": False})
     return f"{n}-{kebab(title)}", f"#{n}", tickets
-
-
-def default_refs():
-    head = sh("git", "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD", check=False).strip()
-    for name in ([head.removeprefix("origin/")] if head else []) + ["main", "master"]:
-        refs = [r for r in (f"refs/heads/{name}", f"refs/remotes/origin/{name}")
-                if sh("git", "rev-parse", "-q", "--verify", f"{r}^{{commit}}", check=False).strip()]
-        if refs:
-            return refs
-    return []
 
 
 def main():

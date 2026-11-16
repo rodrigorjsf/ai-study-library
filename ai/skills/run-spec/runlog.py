@@ -3,8 +3,11 @@ import argparse
 import datetime
 import pathlib
 import re
-import subprocess
 import sys
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from gitcmd import default_refs, run
 
 AXES = ("acceptance", "standards", "security", "uxaix", "design", "hygiene")
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
@@ -18,11 +21,8 @@ class Corrupt(Exception):
     pass
 
 
-def git(*args, check=True):
-    r = subprocess.run(["git", *args], capture_output=True, text=True)
-    if check and r.returncode != 0:
-        sys.exit(f"runlog: git {' '.join(args)} failed: {r.stderr.strip()}")
-    return r.stdout if r.returncode == 0 else ""
+def git(*args):
+    return run("git", *args)
 
 
 def metrics_path():
@@ -114,16 +114,6 @@ def record(args):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write("\t".join(f"{key}={value}" for key, value in fields) + "\n")
-
-
-def default_refs():
-    head = git("symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD", check=False).strip()
-    for name in ([head.removeprefix("origin/")] if head else []) + ["main", "master"]:
-        refs = [ref for ref in (f"refs/heads/{name}", f"refs/remotes/origin/{name}")
-                if git("rev-parse", "-q", "--verify", f"{ref}^{{commit}}", check=False)]
-        if refs:
-            return refs
-    return []
 
 
 def same_commit(a, b):
