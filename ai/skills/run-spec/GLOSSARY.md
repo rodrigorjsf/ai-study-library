@@ -35,7 +35,7 @@ A review finding without that proof. It is advisory and never starts a review ro
 _Avoid_: Weak finding, opinion
 
 **Run metrics**:
-One record per finished run of a spec: findings per axis, dismissals, rounds, unverified criteria, and whether the run's pull request was later reverted.
+One record per finished run of a spec: findings per axis, dismissals, rounds, unverified criteria, unproven findings, and whether the run's pull request was later reverted.
 _Avoid_: Trust ledger, ledger, scorecard
 
 **Findings buffer**:

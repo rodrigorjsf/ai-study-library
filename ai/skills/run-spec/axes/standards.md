@@ -44,15 +44,25 @@ Each refactoring is the one Fowler's *Refactoring* catalogues for that smell.
 - Anything the linter, the code-style tool, or the type checker already enforces.
 - Code the diff did not touch.
 
+## Proof
+
+A finding that ends in a `Proof:` field is **Proven**. The final review blocks only on a Proven finding, and the review-fixer re-runs each proof, so write one it can run or look up. A finding without the field is **Unproven**: it is advisory and starts no round.
+
+- A broken written rule is proven by a quote of the rule line, verbatim, and the file that states it, written as `Proof: "<rule line>" (<file>)`. The quote comes from a written rule of the repo (Sources, item 1), never from the smell baseline.
+- A smell, or a broken rule you also demonstrate, is proven by a command and its decisive output, written as ``Proof: `<command>` → <decisive output>``. The command runs from `REPO`, ends under a minute, and shows the defect, for example a `grep` that lists both sites of a duplicated helper.
+- Leave the field out when you hold neither. Do not pad it with prose.
+
+With `SCOPE: ticket`, the implementer decides every finding as before, so the field only helps it; the routing that reads the counts is the final review's.
+
 ## Output
 
-Every finding names its `file:line` (both sites for a cross-ticket finding) and the fix. A broken written rule is `hard` and names the file that states it; a smell is a `judgement` call. Report only this. Keep the prose under 400 words; the cap never drops a finding: shorten each line instead.
+Every finding names its `file:line` (both sites for a cross-ticket finding), the fix and, when you hold one, its proof. A broken written rule is `hard` and names the file that states it; a smell is a `judgement` call. Report only this. Keep the prose under 400 words; the cap never drops a finding: shorten each line instead.
 
 ```
 ## Standards
-- [hard] <file:line> <rule> (<file that states it>) — <why>. Fix: <fix>
-- [judgement] <file:line> possible <smell> — <why>. Fix: <refactoring>
-COUNT: <n>
+- [hard] <file:line> <rule> (<file that states it>) — <why>. Fix: <fix>. Proof: "<rule line>" (<file>) | `<command>` → <decisive output>
+- [judgement] <file:line> possible <smell> — <why>. Fix: <refactoring>. Proof: `<command>` → <decisive output>
+COUNT: <p> proven, <u> unproven
 ```
 
-Write `- none` when there are no findings.
+Write `- none` when there are no findings. `COUNT` must equal the number of findings with a `Proof:` field, then the number without one.

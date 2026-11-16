@@ -27,7 +27,7 @@ This contract holds for the whole run **and for every later turn in this convers
 - Running the skill that OWNER_NOTES names for after the queue (`QUEUE.md`).
 
 Nothing else. In particular:
-- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code. The steps name your only exceptions: the one-line `sed` reads of steps 1 and 3, step 6's `HYGIENE` run, the `READINESS` runs of steps 1 and 2 and step 2's `head` read, and the `RUNLOG` runs of steps 2 and 7.
+- **Work goes to a subagent.** Reading or editing source, tests, docs, tickets, or handoffs is subagent work, and so is running tests, builds, linters, or CI, and so is committing code. The steps name your only exceptions: the one-line `sed` reads of steps 1 and 3, step 6's `HYGIENE` run, the `READINESS` runs of steps 1 and 2 and step 2's `head` read, the `ROUTE` runs of step 6, and the `RUNLOG` runs of steps 2 and 7.
 - **Evidence is the status block.** A subagent's `TESTS:`, `STATUS:` or `COUNT:` line is the verification. Never re-run the suite to double-check it.
 - **Scope is the oracle's ticket set.** Dispatch only ids listed in the oracle's `ready`, in the order given, each exactly once per attempt. A ticket outside `ready` does not run, even when you think it could. This covers a ticket blocked by an open issue, a ticket from another spec, and a follow-up that `followup-triager` left out. A follow-up enters the run only when the triager attaches it to SPEC and ORACLE then lists it. Order and blocking edges change only when a re-run of ORACLE changes them.
 - **Chat is a status line.** Print one line per event, in the user's language, such as `wave 02: dispatched #10 #11` or `wave 02: #10 DONE, #11 FAILED (attempt 1)`. Do not analyse, predict, recommend, or ask. The only long message is step 7's report.
@@ -51,8 +51,9 @@ Variables:
 - `<id>` — the oracle id with `#` stripped, used in every path and branch name
 - `ORACLE` — `python3 ${CLAUDE_SKILL_DIR}/tickets.py --tracker <T> --spec <SPEC> --work-branch <WORK> --failures-dir $STATE`
 - `HYGIENE` — `python3 ${CLAUDE_SKILL_DIR}/hygiene.py`, the hygiene gate: run from inside a checkout as `HYGIENE <base> <head> [--allow <path>]...`, it prints one line per comment line or Markdown file the range adds, and nothing when clean. Agents receive it as `HYGIENE: python3 <absolute skill dir>/hygiene.py`.
-- `RUNLOG` — `python3 ${CLAUDE_SKILL_DIR}/runlog.py`, the Run metrics log. `RUNLOG reverts` marks the records of earlier runs whose pull request was reverted on DEFAULT. `RUNLOG record <options>` appends one record of this run to `$GITDIR/run-spec/metrics.tsv`, untracked and shared by every spec of the repository. Neither prints anything unless it found a corrupt `metrics.tsv` and started a new one, or `reverts` marked a record. Agents do not receive it.
-- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it. `READINESS --repo $MAIN --check-commands` prints instead only the three Check commands prompt lines, from the same parser.
+- `RUNLOG` — `python3 ${CLAUDE_SKILL_DIR}/runlog.py`, the Run metrics log. `RUNLOG reverts` marks the records of earlier runs whose pull request was reverted on DEFAULT. `RUNLOG record <options>` appends one record of this run to `$GITDIR/run-spec/metrics.tsv`, untracked and shared by every spec of the repository; with `--state $STATE` it takes the run's review numbers from the `COUNT:` lines of every `$STATE/review-<N>.md`, read through `route.py`, and exits 2 with one stderr line when one is missing or malformed. Neither prints anything unless it found a corrupt `metrics.tsv` and started a new one, or `reverts` marked a record. Agents do not receive it.
+- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it. `READINESS --repo $MAIN --check-commands` prints instead only the three Check commands prompt lines, from the same parser. `READINESS --repo $MAIN --app-recipe` prints instead only the one prompt line `APP_RECIPE: <path>`, or `APP_RECIPE: none`, from the same discovery as the report's App recipe section.
+- `ROUTE` — `python3 ${CLAUDE_SKILL_DIR}/route.py`, the routing read of step 6. `ROUTE $STATE/review-<r>.md` reads the `COUNT:` line of each of the report's six sections and prints four lines: `counts: …` (the chat line's counts), `blocking: <n>`, `advisory: <m>` and `route: clean | advisory-only | blocking`. It sums the counts as step 6 defines them. It exits 2, with one stderr line and no stdout, when a section or its `COUNT:` line is missing or malformed. Agents do not receive it.
 - `KIT` — `${CLAUDE_SKILL_DIR}`, the absolute skill directory. Agents receive it as `KIT: <absolute skill dir>` and read `guides/tdd.md` and `axes/*.md` under it.
 
 ## 1. Resolve the input
@@ -77,8 +78,15 @@ Variables:
   ```
 
   Every prompt to `ticket-implementer`, `wave-integrator`, `acceptance-verifier` and `review-fixer` carries these three lines verbatim, the repair spawns of step 3 and every later spawn included. The agent runs a declared command exactly and derives a `none` one as it does without them.
+- **App recipe** `APP_RECIPE`: the one line this command prints, `APP_RECIPE: <repo-relative path>` or `APP_RECIPE: none`:
 
-Done when TRACKER, SPEC, P and the Check commands are set.
+  ```
+  READINESS --repo $MAIN --app-recipe
+  ```
+
+  Every prompt to `ticket-implementer` and `acceptance-verifier` carries that line verbatim, a resume, a respawn, a closing acceptance and every later spawn included. When the command fails, the line is `APP_RECIPE: none`. The command is the only discovery: neither you nor any agent searches for a recipe.
+
+Done when TRACKER, SPEC, P, the Check commands and APP_RECIPE are set.
 
 ## 2. Resolve the branch
 
@@ -179,7 +187,7 @@ A failed install is not a failure of the ticket: the implementer installs on its
 - `MAIN_REPO`, `WORKTREE`, `BRANCH`, `BASE_SHA`
 - `HANDOFF_OUT`, `REPORT_OUT`, `STATUS_OUT`, `FAILURE_OUT`, `CONTEXT_HANDOFFS`
 - `KIT`, `HYGIENE`
-- `TYPECHECK`, `LINT`, `TEST`
+- `TYPECHECK`, `LINT`, `TEST`, `APP_RECIPE`
 - `RESUME: true`, only for a ticket resumed by step 3
 
 Then start the **watchdog**, unless one runs on this STATE: `bash ${CLAUDE_SKILL_DIR}/watchdog.sh $STATE` with `run_in_background`. A subagent that dies sends no notification, so the watchdog's exit is the only signal. Until this spec's step 7 report in this invocation, keep exactly one running while `$STATE/wt/` holds a worktree or `$STATE/running/` holds a marker: when it exits, handle its line, then start it again while either exists. After that report the user is present, so no watchdog runs: ignore a line from this STATE's watchdog and start none on it. The queue's next spec, and any new `/run-spec`, starts it again. It sleeps one interval before each check and skips a ticket whose `status-<id>.md` exists, except in the first case below.
@@ -227,43 +235,43 @@ Six axes review the branch, and every section ends in a `COUNT:` line:
 | Axis | Run by | Brief | Its `COUNT:` counts toward |
 |---|---|---|---|
 | Acceptance | `acceptance-verifier` | its own agent file | blocking: FAIL and scope creep. UNVERIFIED counts toward nothing |
-| Standards | `ticket-reviewer` | `axes/standards.md` | blocking |
+| Standards | `ticket-reviewer` | `axes/standards.md` | `COUNT: <p> proven, <u> unproven`. Blocking: proven. Advisory: unproven |
 | Security | `ticket-reviewer` | `axes/security.md` | blocking: HIGH and MEDIUM. Advisory: `needs-human` |
 | UX/AIX | `ticket-reviewer`, behind its gate | `axes/ux-aix.md` | advisory |
-| Design | `ticket-reviewer` | `axes/design.md` | advisory |
+| Design | `ticket-reviewer` | `axes/design.md` | `COUNT: <p> proven, <u> unproven`. Blocking: proven. Advisory: unproven |
 | Hygiene | you, with `HYGIENE` | none | blocking |
 
-The **blocking count** sums Acceptance's and Security's first number with Standards' and Hygiene's number. The **advisory count** sums Security's `needs-human` with UX/AIX's and Design's number. Only a blocking count starts a round; the fixer handles advisory findings, but they never start a round on their own.
+A Standards or Design finding is **Proven** when it ends in a `Proof:` field (a rule quote or a command with its decisive output) and **Unproven** otherwise. The **blocking count** sums Acceptance's and Security's first number, Hygiene's number, and the proven count of Standards and of Design. The **advisory count** sums Security's `needs-human`, UX/AIX's number, and the unproven count of Standards and of Design. Only a blocking count starts a round; the fixer handles advisory findings, but they never start a round on their own. `ROUTE` reads these sums from the report; you never add them yourself.
 
 Round 1 reviews the whole branch. Rounds 2 and 3 are **verification rounds**: the code-reading axes review only the commits since the previous fixer started, which no review has read yet. Acceptance re-runs every criterion and Hygiene re-checks the whole branch every round. No final-review axis reads round 3's own fixes or the tickets round 3's triage attaches, and no code-reading axis reads an advisory-only round's fixes unless its triage attaches tickets. Each fixer runs the hygiene gate over its own `BASE`, each attached ticket gets its per-ticket review, and step 7's closing acceptance executes every criterion on the final WORK.
 
-`r` = the count of `$STATE/review-<N>.md` reports, not counting `review-<N>-fix.md`, + 1. First, finish what a cut-off run left:
-- `review-<r-1>.md` has a blocking or advisory count above zero but no `review-<r-1>-fix.md`: its fixer was cut off. Run item 5 for round `r-1`.
+`r` = the count of `$STATE/review-<N>.md` reports, not counting `review-<N>-fix.md`, + 1. When `r` ≥ 2, run `ROUTE $STATE/review-<r-1>.md` now: its `blocking:`, `advisory:` and `route:` lines are the counts below, and an exit 2 halts the run as item 3 says. First, finish what a cut-off run left:
+- `review-<r-1>.md` has a blocking or advisory count above zero (its `route:` is not `clean`) but no `review-<r-1>-fix.md`: its fixer was cut off. Run item 5 for round `r-1`.
 - Then run owed triage (5e). When it attaches tickets, go to step 4.
 
 Go to step 7 when:
 - `r` > 3, or
 - `r` ≥ 2 and `git rev-list --count $(cat $STATE/review-<r-1>-base)..WORK` is 0, because the previous fixer committed nothing and no ticket merged since, or
-- `review-<r-1>.md` has a blocking count of zero, and either its advisory count is zero too, or it has a `review-<r-1>-fix.md` (an advisory-only round whose fixer already ran) and `git log $(cat $STATE/review-<r-1>-base)..WORK --format='%(trailers:key=Ticket,valueonly)'` prints nothing (no ticket that its triage attached has merged since). This makes a resume after a clean or advisory-only round go straight on.
+- `review-<r-1>.md` has a blocking count of zero, and either its `route:` is `clean`, or it has a `review-<r-1>-fix.md` (an advisory-only round whose fixer already ran) and `git log $(cat $STATE/review-<r-1>-base)..WORK --format='%(trailers:key=Ticket,valueonly)'` prints nothing (no ticket that its triage attached has merged since). This makes a resume after a clean or advisory-only round go straight on.
 
 1. **Prepare.** Give every reviewer its answers up front, so none of them asks:
    - `F`: round 1, `$(git merge-base WORK origin/DEFAULT)`, or `DEFAULT` with no remote. Rounds 2 and 3, `$(cat $STATE/review-<r-1>-base)`.
    - `VERIFY_ONLY`, rounds 2 and 3 only: `commits $(cat $STATE/review-<r-1>-base)..WORK; findings $STATE/review-<r-1>.md; fixes $STATE/review-<r-1>-fix.md`.
-   - `KNOWN_DISMISSALS`: the `dismissed` lines of every `$STATE/review-*-fix.md` and `$STATE/user-*-fix.md`, inline, or `none`.
+   - `KNOWN_DISMISSALS`: the `dismissed` and `unproven` lines of every `$STATE/review-*-fix.md` and `$STATE/user-*-fix.md`, inline, or `none`.
    - **UX/AIX gate**: run `git diff --name-only F...WORK | grep -E -q -f <(grep -v '^[[:space:]]*$' ${CLAUDE_SKILL_DIR}/axes/ux-aix.triggers)`. It succeeds when the diff touches a UI or agent-surface file. When it fails, do not spawn the UX/AIX reviewer; its section is `skipped: no UI or agent-surface files` and `COUNT: 0`.
    - `TICKETS`: the `ref` of every ticket the last ORACLE run lists with `done: true` and `in_scope: true`, space-separated.
    - `NOT_DONE`: the `id` of every ticket the last ORACLE run lists with `done: false` (skipped, stuck, or out of scope), space-separated, or `none`.
    - `mkdir -p $STATE/verify-<r>` and `rm -f $STATE/acceptance-final.md`: this round's Acceptance supersedes an earlier closing one.
 2. **Spawn** every reviewer in one message, so they run in parallel. Each prompt is only `KEY: value` lines:
-   - `acceptance-verifier`: `REPO: MAIN`, `SPEC`, `TICKETS`, `ROUND: <r>`, `F`, `OUT_DIR: $STATE/verify-<r>/`, `PREVIOUS: $STATE/verify-<r-1>/` (`none` in round 1), `SLUG: <slug>`, `KNOWN_DISMISSALS`, `NOT_DONE`, `TYPECHECK`, `LINT`, `TEST`.
+   - `acceptance-verifier`: `REPO: MAIN`, `SPEC`, `TICKETS`, `ROUND: <r>`, `F`, `OUT_DIR: $STATE/verify-<r>/`, `PREVIOUS: $STATE/verify-<r-1>/` (`none` in round 1), `SLUG: <slug>`, `KNOWN_DISMISSALS`, `NOT_DONE`, `TYPECHECK`, `LINT`, `TEST`, `APP_RECIPE`.
    - `ticket-reviewer`, one per axis (Standards, Security, Design, and UX/AIX when its gate passed): `AXIS`, `AXIS_BRIEF` (the absolute path of `${CLAUDE_SKILL_DIR}/axes/standards.md`, `security.md`, `ux-aix.md` or `design.md`), `REPO: MAIN`, `DIFF: git diff F...WORK`, `COMMITS: git log F..WORK --oneline`, `SPEC`, `SCOPE: branch`, `ROUND: <r>`, `KNOWN_DISMISSALS`, plus `VERIFY_ONLY` in rounds 2 and 3, and for Standards `ALLOWED` (the paths Hygiene's `--allow` below takes, or `none`).
 
    Then run **Hygiene** over the whole branch: `HYGIENE <round 1's F> WORK 2>&1`, adding `--allow <path>` for every path other than `none` on an `ALLOWED:` line of `$STATE/status-*.md`, `wave-*.md`, `repair-*.md`, `review-*-fix.md` and `user-*-fix.md`. Its section is `## Hygiene`, then each line it printed as `- <line>` (`- none` when it exits 0), then `COUNT: <lines printed>`.
-3. **Record.** Build the report in `$STATE/review-<r>.partial`: truncate it when the round's agents are spawned (`: > $STATE/review-<r>.partial`), write the `## Hygiene` section and any `## UX/AIX` skipped line then, and append each other section verbatim as its agent returns (`cat >> $STATE/review-<r>.partial <<'EOF'`). When all six sections are in, `mv $STATE/review-<r>.partial $STATE/review-<r>.md`: a round's report exists only once complete, and no temporary file needs removing. In chat, print only `review <r>: Acceptance <fail>/<unverified>, Standards <x>, Security <z>, UX/AIX <w|skipped>, Design <v>, Hygiene <h>`, from the `COUNT:` lines. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
-4. **Route** by the round's counts:
-   - Blocking and advisory both zero → go to step 7.
-   - Blocking zero, advisory above zero → run item 5 once, and item 6's triage if it applies. Then go to step 7 without a new round, unless item 6's triage attached tickets: then item 6's route back to step 4 applies.
-   - Otherwise → item 5.
+3. **Record.** Build the report in `$STATE/review-<r>.partial`: truncate it when the round's agents are spawned (`: > $STATE/review-<r>.partial`), write the `## Hygiene` section and any `## UX/AIX` skipped line then, and append each other section verbatim as its agent returns (`cat >> $STATE/review-<r>.partial <<'EOF'`). When all six sections are in, `mv $STATE/review-<r>.partial $STATE/review-<r>.md`: a round's report exists only once complete, and no temporary file needs removing. Then run `ROUTE $STATE/review-<r>.md`. When it exits 2, halt with its stderr line as the reason and go to step 7. Otherwise print `review <r>: ` and the text after `counts: ` of its first line, such as `Acceptance 0/0, Standards 0 proven/2 unproven, Security 0, UX/AIX skipped, Design 1 proven/0 unproven, Hygiene 0`. Never summarise, triage, or discuss individual findings; triaging them is the fixer's job.
+4. **Route** by the `route:` line `ROUTE` printed for the round:
+   - `clean` (blocking and advisory both zero) → go to step 7.
+   - `advisory-only` (blocking zero, advisory above zero) → run item 5 once, and item 6's triage if it applies. Then go to step 7 without a new round, unless item 6's triage attached tickets: then item 6's route back to step 4 applies.
+   - `blocking` → item 5.
 5. **Fix.** Run `[ -f $STATE/review-<r>-base ] || git rev-parse WORK > $STATE/review-<r>-base`, which keeps the base of a fixer that was cut off, so the next verification round still reads its commits. Spawn `review-fixer` with `MAIN_REPO`, `WORK_BRANCH`, `SPEC`, `SLUG: <slug>`, `ROUND: <r>`, `BASE: $(cat $STATE/review-<r>-base)`, `FINDINGS: $STATE/review-<r>.md`, `KIT`, `HYGIENE`, `TYPECHECK`, `LINT` and `TEST`, and write its status block verbatim to `$STATE/review-<r>-fix.md`.
 6. If `review-<r>-fix.md` has `follow-up` lines, run step 5e's triage with `FOLLOWUPS: $STATE/review-<r>-fix.md` and `SOURCE: review-<r>-fix` (same `t` and cap). When its `ATTACHED:` is not `none`, go back to step 4. The attached tickets run in new waves. The next pass through step 6 reviews them as round `r` + 1, from `review-<r>-base`; after round 3 it goes to step 7, whose closing acceptance executes their criteria. This holds after an advisory-only round too.
 7. Otherwise, return to the top of step 6 for the next round.
@@ -278,7 +286,8 @@ Done when a review is clean, or a stop condition above holds after the last fixe
 
 Run ORACLE (a closing acceptance's run serves). The **merged tickets** are those it lists with `done: true` whose `$STATE/status-<id>.md` reads `STATUS: DONE`. Write the PR body to `$STATE/pr-body.md`, built from STATE, in this order:
 - `## Summary`: per merged ticket, from `status-<id>.md`, `Closes #N` (GitHub tracker only), its SUMMARY and its `REPORT:` link. Replace every path the `RENAMED:` lines of `wave-*.md` renamed for that ticket with its new path. Then the output of `git diff --stat F...WORK`, with round 1's `F`, in a code block.
-- `## Evidence`: the newest Acceptance, verbatim, then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
+- `## Evidence`: the newest Acceptance, verbatim, so each criterion keeps its verdict and command, its `needs:` when UNVERIFIED, and the `screenshot:` local path the verifier listed next to it. No image is uploaded or linked: the path alone is the record. Then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
+- `## Unproven findings`: every `unproven` line of the fixers' status blocks (`grep -h -E '^- [A-Z]+[0-9]+ unproven ' $STATE/review-*-fix.md $STATE/user-*-fix.md 2>/dev/null`), verbatim, or `none`. The owner judges them: they never blocked a round.
 - `## Merge Danger`: `**Door:** one-way` with `<id>: <why>` for each merged ticket whose `DOOR:` is one-way, else `**Door:** two-way`. Then `**Blast Radius:**` with `<id>: <BLAST>` per merged ticket.
 - `## Readiness`: `$STATE/readiness.md` verbatim, or `not run` when that file is missing or empty.
 - FOLLOWUPS links from every `status-*.md`, `review-*-fix.md` and `user-*-fix.md`
@@ -303,16 +312,15 @@ Report to the user in their language, as a short list with no recommendations an
 - done / skipped / stuck counts, with ids
 - halt reason
 - review outcome: rounds run, finding counts, and the UNVERIFIED count, plus the path of the remaining findings (`$STATE/review-*-fix.md`). Do not restate individual findings.
+- unproven findings: the same lines as the PR body's `## Unproven findings`, in a code block, so the owner can judge them. Leave the bullet out when there are none.
 - readiness: `$STATE/readiness.md` verbatim in a code block. Leave the bullet out when the file is missing or empty.
 - run metrics: the most recent Run metrics records of earlier runs, `tail -n 5 $GITDIR/run-spec/metrics.tsv 2>/dev/null`, verbatim in a code block. Leave the bullet out when it prints nothing.
 - follow-up links, split into attached (each also counted above as done, skipped or stuck, or named as waiting for the next `/run-spec`) and left out (with its triage verdict, or `untriaged`), matching each link to the `from` field of an `ISSUES:` line
 - learnings: every `LEARNINGS:` line that is not `none` from `status-*.md`, every line of the fix files that carries `learning:` (`grep -sh 'learning:' $STATE/review-*-fix.md $STATE/user-*-fix.md`), plus the paths of `learnings.md` and `probes.md`, when they exist. An older status block without that line counts as `none`.
 
-**Record the run.** After you print that report, run `RUNLOG record --slug <slug> --pr <PR URL, or none> --head $(git rev-parse WORK) --rounds <r> --findings acceptance=<n> standards=<n> security=<n> uxaix=<n> design=<n> hygiene=<n> --dismissals <d> --unverified <u> --done <x> --skipped <y> --stuck <z>`. Every number comes from your own records:
-- `<r>` is the count of `$STATE/review-<N>.md` files, `0` on a halt before step 6.
-- Each `--findings` value is the first number of that axis' `COUNT:` line, summed over every `$STATE/review-<N>.md`: Acceptance, Standards, Security (its blocking count), UX/AIX, Design and Hygiene. A skipped UX/AIX section counts 0.
+**Record the run.** After you print that report, run `RUNLOG record --slug <slug> --pr <PR URL, or none> --head $(git rev-parse WORK) --state $STATE --dismissals <d> --unproven <p> --done <x> --skipped <y> --stuck <z>`. `RUNLOG` sums the review numbers from the `COUNT:` lines of every `$STATE/review-<N>.md`; you never read those lines yourself. The other numbers come from your own records:
 - `<d>` is the count of `dismissed` lines in `$STATE/review-*-fix.md` and `$STATE/user-*-fix.md`.
-- `<u>` is the second number of the newest Acceptance's `COUNT:` line, `0` when no Acceptance ran.
+- `<p>` is the count of `unproven` lines in `$STATE/review-*-fix.md` and `$STATE/user-*-fix.md`.
 - `<x>`, `<y>` and `<z>` are the done, skipped and stuck counts the report states.
 
 Step 7 runs once per report, so a step 7 that runs again after a GREEN `user-<k>` fix appends a second record with the new head. A failure of `RUNLOG` never fails the run: print its error line and go on.

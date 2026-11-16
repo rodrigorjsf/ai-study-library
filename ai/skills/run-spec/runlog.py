@@ -8,10 +8,20 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from gitcmd import default_refs, run
+from route import UnreadableReport, read_reviews
 
-AXES = ("acceptance", "standards", "security", "uxaix", "design", "hygiene")
+REVIEW_FINDINGS = {
+    "acceptance": ("Acceptance", "blocking"),
+    "standards": ("Standards", "blocking"),
+    "security": ("Security", "blocking"),
+    "uxaix": ("UX/AIX", "advisory"),
+    "design": ("Design", "blocking"),
+    "hygiene": ("Hygiene", "blocking"),
+}
+AXES = tuple(REVIEW_FINDINGS)
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
+OPTIONAL_COUNTS = ("unproven",)
 COMMIT_ID = re.compile(r"[0-9a-f]{7,40}")
 DIGITS = re.compile(r"[0-9]+")
 REVERT = re.compile(rf"This reverts commit ({COMMIT_ID.pattern})")
@@ -35,7 +45,8 @@ def parse(line):
         fields[key] = value
     if any(key not in fields for key in REQUIRED):
         raise Corrupt(line)
-    if not COMMIT_ID.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in COUNTS):
+    present_counts = [*COUNTS, *(key for key in OPTIONAL_COUNTS if key in fields)]
+    if not COMMIT_ID.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in present_counts):
         raise Corrupt(line)
     return fields
 
@@ -97,16 +108,35 @@ def axis_count(value):
     return axis, count(number)
 
 
+def review_numbers(state):
+    try:
+        reviews = read_reviews(state)
+    except UnreadableReport as error:
+        print(f"runlog.py: {error}", file=sys.stderr)
+        sys.exit(2)
+    findings = [(axis, sum(getattr(counts[section], field) for counts in reviews))
+                for axis, (section, field) in REVIEW_FINDINGS.items()]
+    unverified = reviews[-1]["Acceptance"].unverified if reviews else 0
+    return len(reviews), findings, unverified
+
+
+def recorded_review_numbers(args):
+    if args.state is not None:
+        return review_numbers(args.state)
+    return args.rounds or 0, args.findings or [], args.unverified or 0
+
+
 def record(args):
+    rounds, axis_findings, unverified = recorded_review_numbers(args)
     path = metrics_path()
     load_or_start_fresh(path)
     findings = dict.fromkeys(AXES, 0)
-    findings.update(args.findings)
+    findings.update(axis_findings)
     fields = [("at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
-              ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", args.rounds),
+              ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", rounds),
               *((f"findings.{axis}", findings[axis]) for axis in AXES),
-              ("dismissals", args.dismissals), ("unverified", args.unverified),
-              ("done", args.done), ("skipped", args.skipped), ("stuck", args.stuck)]
+              ("dismissals", args.dismissals), ("unverified", unverified),
+              ("done", args.done), ("skipped", args.skipped), ("stuck", args.stuck), ("unproven", args.unproven)]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write("\t".join(f"{key}={value}" for key, value in fields) + "\n")
@@ -163,12 +193,19 @@ def main():
     rec.add_argument("--slug", required=True, type=single_line_text)
     rec.add_argument("--head", required=True, type=head_sha)
     rec.add_argument("--pr", default="none", type=single_line_text)
-    for name in ("rounds", "dismissals", "unverified", "done", "skipped", "stuck"):
+    for name in ("dismissals", "unproven", "done", "skipped", "stuck"):
         rec.add_argument(f"--{name}", default=0, type=count)
-    rec.add_argument("--findings", nargs="*", default=[], type=axis_count)
+    for name in ("rounds", "unverified"):
+        rec.add_argument(f"--{name}", type=count)
+    rec.add_argument("--findings", nargs="*", type=axis_count)
+    rec.add_argument("--state")
     rec.set_defaults(run=record)
     sub.add_parser("reverts").set_defaults(run=reverts)
     args = ap.parse_args()
+    if args.command == "record":
+        review_options = (args.rounds, args.findings, args.unverified)
+        if args.state is not None and any(option is not None for option in review_options):
+            rec.error("--state replaces --rounds, --findings and --unverified")
     args.run(args)
 
 
