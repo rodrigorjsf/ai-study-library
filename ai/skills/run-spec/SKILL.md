@@ -70,7 +70,7 @@ Variables:
   - A handoff written by `ticket-implementer` → `sed -n 's/^Spec: *\([^ ]*\).*/\1/p' <file> | head -1`. That line is the only part of the handoff you read. Other handoffs, such as `/handoff` output, carry no `Spec:` line: stop and tell the user to run `/run-spec #N` or `/run-spec .scratch/<slug>`. Never infer SPEC from a title, filename, or body. A later reply like "go" or "create a branch" is not a SPEC.
   - Empty → stop and report.
 - **Local mode**: `git ls-files --error-unmatch <spec-dir>/issues` must succeed. If the tickets are not committed, worktrees cannot see them: stop and report.
-- **Wave size** `P`: the number on a `max-parallel: <N>` line of `docs/agents/run-spec.md`, when that file has one; otherwise 3. A repo whose suite is heavy (Docker, containers, long integration runs) sets it lower there, so parallel suites cannot starve the machine.
+- **Wave size** `P`: the number on a `max-parallel: <N>` line of `docs/agents/run-spec.md`, when that file has one; otherwise 3. The tickets of a wave build, run their Scoped tests, typecheck and lint, and probe their criteria on this one machine, while the whole suite waits for the Suite gate. A repo whose Scoped tests or probes are heavy (Docker, containers, long integration runs) sets it lower there, so parallel tickets cannot starve the machine; a machine with room raises it there.
 - **Check commands** `TYPECHECK`, `LINT` and `TEST`: for each of `typecheck`, `lint` and `test`, the command on the first line of `$MAIN/docs/agents/run-spec.md` that starts with `<key>:`, with the line's `\r` and surrounding spaces dropped, or `none` when the file is missing, no line starts so, or the command is empty. This prints the three lines:
 
   ```
@@ -142,7 +142,7 @@ Done when WORK is not a red base, no triage is owed, `$STATE/main-owner` is gone
 Run ORACLE.
 - `ready` and `remaining` both empty → step 6.
 - `ready` empty, `remaining` not empty → the remaining tickets wait on a dependency cycle, or on an open ticket outside the run's scope (for example `needs-info` or `ready-for-human`). Tickets behind skipped ones are already marked skipped. Record the ids as **stuck** and go to step 6.
-- Otherwise the wave is the first P ids of `ready`, taken in the oracle's order. The limit is deliberate: every ticket runs a full test suite on this one machine. The wave holds only these ids: no id from `remaining` that is not in `ready`, and no id you know from anywhere else.
+- Otherwise the wave is the first P ids of `ready`, taken in the oracle's order. The limit is deliberate: the tickets of a wave build, test and probe on this one machine. The wave holds only these ids: no id from `remaining` that is not in `ready`, and no id you know from anywhere else.
 
 ## 5. Run one wave
 
