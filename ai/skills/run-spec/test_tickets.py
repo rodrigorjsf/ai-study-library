@@ -318,7 +318,7 @@ def join_blocks(head, blocks, rng):
     return text.replace("\n", "\r\n") if rng is not None and rng.random() < 0.2 else text
 
 
-def shuffled(rng, blocks):
+def maybe_shuffled(rng, blocks):
     blocks = list(blocks)
     if rng is not None and rng.random() < 0.7:
         rng.shuffle(blocks)
@@ -370,7 +370,7 @@ def local_text(model, by_id, rng=None):
     if model["criteria"]:
         blocks.append(criteria_lines(model["criteria"], rng))
     blocks += [[line] for line in model["prose"][1:]]
-    return join_blocks([title_line], shuffled(rng, blocks), rng)
+    return join_blocks([title_line], maybe_shuffled(rng, blocks), rng)
 
 
 def github_models(rng, count):
@@ -416,7 +416,7 @@ def github_body(model, rng=None):
     headed += [what, [criteria_heading, "", *criteria_lines(model["criteria"], rng)]]
     blocked = github_blocked_blocks(model, rng)
     headed += [block for block in blocked if block[0].startswith("## ")]
-    blocks = shuffled(rng, headed)
+    blocks = maybe_shuffled(rng, headed)
     for block in (block for block in blocked if not block[0].startswith("## ")):
         blocks.insert(rng.randint(0, len(blocks)) if rng is not None else len(blocks), block)
     return join_blocks([f"Part of #{GITHUB_SPEC}"] if parent_as_line else [], blocks, rng)
