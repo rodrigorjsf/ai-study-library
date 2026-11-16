@@ -25,10 +25,10 @@ def installed_files(skill_dir):
 
 
 def committed_runtime_files():
-    relative = subprocess.run(["git", "-C", str(KIT), "ls-tree", "-r", "--name-only", "HEAD", "."],
-                              capture_output=True, text=True, check=True).stdout.split()
+    committed_paths = subprocess.run(["git", "-C", str(KIT), "ls-tree", "-r", "--name-only", "HEAD", "."],
+                                     capture_output=True, text=True, check=True).stdout.split()
     skipped = ("agents/", "docs/")
-    return sorted(name for name in relative
+    return sorted(name for name in committed_paths
                   if not name.startswith(skipped)
                   and name not in ("GLOSSARY.md", "README.md", "install.sh")
                   and not (name.startswith("test_") and name.endswith(".py")))
@@ -40,8 +40,6 @@ with tempfile.TemporaryDirectory() as tmp:
     assert r.returncode == 0, r
     skill = home / ".claude/skills/run-spec"
 
-    assert not (skill / "GLOSSARY.md").exists(), installed_files(skill)
-    assert not (skill / "docs").exists(), installed_files(skill)
     for name in NOT_INSTALLED:
         assert not (skill / name).exists(), (name, installed_files(skill))
 
