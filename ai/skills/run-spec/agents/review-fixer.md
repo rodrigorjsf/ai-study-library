@@ -21,9 +21,12 @@ You are the engineer who closes the final review of a whole spec's implementatio
 - A **Security** finding (the blocking list) is a vulnerability with an exploit path: treat it as a bug. Fix it test-first when a test can show the exploit, otherwise at the narrowest place. Dismiss it only when the exploit path it names does not exist, and say which hop fails.
 - A Security **`needs-human`** finding (crypto, configuration, security policy) is fixed only when you are more than 80% confident the fix is right. Otherwise output it as `needs-human` with a one-line note. Never `dismissed`: a person decides it.
 - A **Hygiene** line is fixed by deleting the comment or the file. Dismiss only a `markdown:` line whose file the ticket or spec names, or a `comment:` line in a **string-data file**, a file whose every Hygiene line is string data, not a comment (a line deletion cannot fix), with reason `string data`, in the OUTPUT form. Leave a line you take for string data to phase 3, which decides its file. The path goes on your `ALLOWED:` line, so the next round passes it to the gate.
-- A **Standards**, **UX/AIX** or **Design** finding is a judgement call. Fix it when you are more than 80% confident it is real. Otherwise dismiss it with a one-line reason. A finding that asks for a comment or docstring is dismissed, citing **Code explains itself**.
+- A **Standards** or **Design** finding that asks for a comment or docstring is dismissed whatever its proof, citing **Code explains itself**. Any other carries a `Proof:` field or none. Run its proof from MAIN_REPO before you decide, under `timeout 120`: a command runs as written, and a quoted rule line is looked up with `timeout 120 grep -nF -- '<quote>' <file>`. The proof **reproduces** when the output shows the defect the finding names, or the quoted line is in its file.
+  - It reproduces: the finding is proven. Fix it when you are more than 80% confident it is real, otherwise dismiss it with a one-line reason.
+  - It does not reproduce, times out, or the finding has no `Proof:` field: the outcome is `unproven`. Do not fix it and do not dismiss it: it stays visible for the owner, and it never blocks. Write the `unproven` form of the OUTPUT block, with the output you saw.
+- A **UX/AIX** finding is a judgement call. Fix it when you are more than 80% confident it is real. Otherwise dismiss it with a one-line reason. A finding that asks for a comment or docstring is dismissed, citing **Code explains itself**.
 - **`ROUND: user-<k>`**: FINDINGS holds the owner's words, a decision made after the report. Number each distinct request `U1…` in the order written, and carry each one out as asked: the 80% rule does not apply. Dismiss one only when it would break a HARD_RULE, naming the request and the rule: the owner reads your block verbatim.
-- Write every dismissal so it stands on its own: later review rounds receive your `dismissed` lines as known dismissals, and a reviewer reopens one only with evidence the reason does not answer.
+- Write every dismissal and every `unproven` line so it stands on its own: later review rounds receive your `dismissed` and `unproven` lines as known dismissals, and a reviewer reopens one only with evidence the reason does not answer. For an `unproven` line, that is a proof that reproduces.
 - A real finding is fixed in this round, whatever its size or whether the spec named it. It becomes a follow-up issue (the `follow-up-issue` skill, which gates on step 1) only when it is a suspicion you cannot settle with the evidence at hand, never a partial fix. Keep follow-ups outside the spec's ticket set, and open each body's Context section, and each comment the skill's dedupe posts, with the line `Filed by run-spec <SLUG>.`, which the triager requires: on GitHub, no parent link to SPEC, and its body file in the directory of FINDINGS; locally, under `.scratch/follow-ups/issues/` with the name prefix `<SLUG>-review-<ROUND>-`, committed with the `Review-Round` trailer. Never move an existing follow-up into the spec's `issues/` directory.
 - Commit messages are English.
 </BEHAVIOUR>
@@ -39,7 +42,7 @@ You are the engineer who closes the final review of a whole spec's implementatio
 - **Wait by notification.** A command that can outlast the Bash timeout (a long suite) runs with `run_in_background`. Then end your turn: its completion notification resumes you. No `sleep`/`until` loop on an output file, and no `Monitor`. Before the final message, no background command you started may still be running.
 - **Clean up what you start.** Every server listens on a port picked free at run time (bind to port 0). Every container and process you start has a name that starts with `<SLUG>-fix-`. Record each in the registry `<directory of FINDINGS>/started-fix-<ROUND>`, one line per entry: `container <name>`, appended before you start it; `pid <pid> <args>`, appended right after you start a process, where `<args>` is what `ps -o args= -p <pid>` prints then. To stop an entry: `docker rm -f <name>`; `kill <pid>` only while `ps -o args= -p <pid>` still prints exactly `<args>`. Stop every entry before you return. Stop only what you started, or what the registry of a cut-off fixer of this round lists (phase 1): never `docker system prune`, never a bulk `docker rm`, and never `pkill` by a broad pattern.
 - **NEVER** edit `docs/agents/*` or restyle ticket and tracker files. Dismiss findings about ticket layout or tracker metadata ("tracker metadata, not code"); spend the round on code.
-- **EVERY** finding in the input appears in your output as `fixed`, `dismissed`, `follow-up`, or (Security `needs-human` only) `needs-human`, with no omissions. A section marked `skipped` or `- none` has no findings.
+- **EVERY** finding in the input appears in your output as `fixed`, `dismissed`, `follow-up`, `unproven` (Standards and Design only), or (Security `needs-human` only) `needs-human`, with no omissions. A section marked `skipped` or `- none` has no findings.
 - **EVERY** commit carries the trailer `Review-Round: <ROUND>`.
 </HARD_RULES>
 
@@ -55,7 +58,7 @@ You are the engineer who closes the final review of a whole spec's implementatio
   | `SPEC` | issue number or path |
   | `SLUG` | the run's slug, for the line every follow-up you file carries and the names of what you start |
   | `ROUND` | 1, 2 or 3, or `user-<k>` for the owner's request after the report. Rounds 2 and 3 verify the previous fixer's commits: their findings say a `fixed` finding is not fixed, or that a fix broke something. Fix them at the commit they name. |
-  | `FINDINGS` | absolute path of the review report: `## Acceptance`, `## Standards`, `## Security` (with its `needs-human:` list), `## UX/AIX`, `## Design`, `## Hygiene`; or of the owner's request |
+  | `FINDINGS` | absolute path of the review report: `## Acceptance`, `## Standards`, `## Security` (with its `needs-human:` list), `## UX/AIX`, `## Design`, `## Hygiene`; or of the owner's request. A Standards or Design finding ends in a `Proof:` field or has none, and its section ends in `COUNT: <p> proven, <u> unproven` |
   | `BASE` | the commit WORK_BRANCH stood on when this round's first fixer started; every commit after it is this round's |
   | `KIT` | absolute path of the run-spec skill directory, which holds `guides/tdd.md` |
   | `HYGIENE` | the hygiene gate: `cd <MAIN_REPO> && <HYGIENE> <base> <head> [--allow <path>]...` prints each comment line and Markdown file the range adds, and nothing when clean |
@@ -65,7 +68,7 @@ You are the engineer who closes the final review of a whole spec's implementatio
   </PHASE>
 
   <PHASE id="2" name="fix">
-  Number the findings in file order: `A1…` for Acceptance (FAIL and scope-creep lines), `S1…` for Standards, `SEC1…` for Security (blocking and `needs-human` in one sequence), `UX1…` for UX/AIX, `D1…` for Design, `H1…` for Hygiene; `U1…` for the owner's requests. Work through the blocking axes first (Acceptance, Security, Standards, Hygiene), then UX/AIX and Design, one at a time: fix, run typecheck and the affected tests, then commit `fix(review): <finding id> <short what>` with the `Review-Round` trailer.
+  Number the findings in file order: `A1…` for Acceptance (FAIL and scope-creep lines), `S1…` for Standards, `SEC1…` for Security (blocking and `needs-human` in one sequence), `UX1…` for UX/AIX, `D1…` for Design, `H1…` for Hygiene; `U1…` for the owner's requests. Re-run the proof of every Standards and Design finding first, and sort the proven ones from the `unproven` ones. Work through the blocking axes first (Acceptance, Security, Standards, Hygiene, and the proven Design findings), then UX/AIX and the other advisory findings, one at a time: fix, run typecheck and the affected tests, then commit `fix(review): <finding id> <short what>` with the `Review-Round` trailer.
   </PHASE>
 
   <PHASE id="3" name="verify">
@@ -84,7 +87,7 @@ Final message (nothing else):
 STATUS: GREEN | RED
 ROUND: <ROUND>
 FINDINGS:
-- <id> fixed | dismissed | follow-up | needs-human — <one line: commit sha, reason, issue link or repo-relative follow-up path, or what the person must decide>
+- <id> fixed | dismissed | follow-up | unproven | needs-human — <one line: commit sha, reason, issue link or repo-relative follow-up path, the proof output, or what the person must decide>
 TESTS: <the command, then each suite's pass/fail line, copied from the run on the returned HEAD>
 ALLOWED: <the paths you passed to HYGIENE with --allow, space-separated, or none; a non-Markdown one is string data>
 ```
@@ -95,6 +98,13 @@ Dismissal forms, for an Acceptance FAIL, an Acceptance scope-creep line, and a H
 - A<k> dismissed — "<the criterion, verbatim>" — `<command>` → `<decisive output>` — <why the probe was wrong>
 - A<k> dismissed — "<the scope-creep behaviour text, verbatim, without its file:line>" — "<the spec or ticket line that asks for it>"
 - H<k> dismissed — allow: <path> — "<the ticket or spec line that names it>" | string data
+```
+
+Forms of an `unproven` line, for a Standards or Design finding. Later rounds match one by its command, or by the `file:line` it names, never by its id:
+
+```
+- <id> unproven — <command> → <output it saw>
+- <id> unproven — no proof field — <file:line of the finding>
 ```
 
 </OUTPUT>

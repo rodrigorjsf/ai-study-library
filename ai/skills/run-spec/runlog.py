@@ -12,6 +12,7 @@ from gitcmd import default_refs, run
 AXES = ("acceptance", "standards", "security", "uxaix", "design", "hygiene")
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
+OPTIONAL_COUNTS = ("unproven",)
 COMMIT_ID = re.compile(r"[0-9a-f]{7,40}")
 DIGITS = re.compile(r"[0-9]+")
 REVERT = re.compile(rf"This reverts commit ({COMMIT_ID.pattern})")
@@ -35,7 +36,8 @@ def parse(line):
         fields[key] = value
     if any(key not in fields for key in REQUIRED):
         raise Corrupt(line)
-    if not COMMIT_ID.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in COUNTS):
+    present_counts = [*COUNTS, *(key for key in OPTIONAL_COUNTS if key in fields)]
+    if not COMMIT_ID.fullmatch(fields["head"]) or not all(DIGITS.fullmatch(fields[key]) for key in present_counts):
         raise Corrupt(line)
     return fields
 
@@ -106,7 +108,7 @@ def record(args):
               ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", args.rounds),
               *((f"findings.{axis}", findings[axis]) for axis in AXES),
               ("dismissals", args.dismissals), ("unverified", args.unverified),
-              ("done", args.done), ("skipped", args.skipped), ("stuck", args.stuck)]
+              ("done", args.done), ("skipped", args.skipped), ("stuck", args.stuck), ("unproven", args.unproven)]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write("\t".join(f"{key}={value}" for key, value in fields) + "\n")
@@ -163,7 +165,7 @@ def main():
     rec.add_argument("--slug", required=True, type=single_line_text)
     rec.add_argument("--head", required=True, type=head_sha)
     rec.add_argument("--pr", default="none", type=single_line_text)
-    for name in ("rounds", "dismissals", "unverified", "done", "skipped", "stuck"):
+    for name in ("rounds", "dismissals", "unverified", "unproven", "done", "skipped", "stuck"):
         rec.add_argument(f"--{name}", default=0, type=count)
     rec.add_argument("--findings", nargs="*", default=[], type=axis_count)
     rec.set_defaults(run=record)
