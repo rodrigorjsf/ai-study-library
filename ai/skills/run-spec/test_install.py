@@ -12,6 +12,7 @@ RUNTIME_FILES = ["SKILL.md", "QUEUE.md", "tickets.py", "hygiene.py", "runlog.py"
 AGENTS = ["acceptance-verifier.md", "followup-triager.md", "review-fixer.md", "ticket-implementer.md",
           "ticket-reviewer.md", "wave-integrator.md"]
 NOT_INSTALLED = ["GLOSSARY.md", "docs", "README.md", "install.sh", "agents", "test_install.py", "test_tickets.py"]
+DEVELOPMENT_ONLY = ["run-spec-dev", "statechart", "NOTICE", "formal-check"]
 
 
 def install(home):
@@ -50,6 +51,9 @@ with tempfile.TemporaryDirectory() as tmp:
     assert (home / ".claude/skills/follow-up-issue/SKILL.md").is_file()
 
     assert installed_files(skill) == committed_runtime_files(), (installed_files(skill), committed_runtime_files())
+
+    leaked = [path for path in installed_files(home) if any(name in path for name in DEVELOPMENT_ONLY)]
+    assert not leaked, leaked
 
 
 with tempfile.TemporaryDirectory() as tmp:

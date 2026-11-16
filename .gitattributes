@@ -2,3 +2,4 @@ ai/skills/run-spec/** text eol=lf
 ai/skills/follow-up-issue/** text eol=lf
 ai/skills/run-spec-dev/*.py text eol=lf
 ai/skills/run-spec-dev/fixture/** text eol=lf
+ai/skills/run-spec-dev/** text eol=lf
