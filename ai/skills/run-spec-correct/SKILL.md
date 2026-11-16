@@ -61,7 +61,7 @@ Why not higher:
 - <level>: <reason>
 ```
 
-After the blocks, print `Left out: <k> lines that belong to no class listed above.`, then `Which classes should become issues? Reply with class numbers, such as 1 3, or all, or none.`
+After the blocks, print `Left out: <k> lines that belong to no class listed above.`, a count that names no finding, then `Which classes should become issues? Reply with class numbers, such as 1 3, or all, or none.`
 
 ## 5. File the selected classes
 
