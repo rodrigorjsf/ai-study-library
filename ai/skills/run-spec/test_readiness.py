@@ -1,4 +1,3 @@
-import importlib.util
 import os
 import re
 import subprocess
@@ -8,9 +7,8 @@ from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
 sys.dont_write_bytecode = True
-SUPPORT_SPEC = importlib.util.spec_from_file_location("test_support", KIT / "test_support.py")
-support = importlib.util.module_from_spec(SUPPORT_SPEC)
-SUPPORT_SPEC.loader.exec_module(support)
+sys.path.insert(0, str(KIT))
+import test_support as support
 READINESS = KIT / "readiness.py"
 BASE_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 RUN_SPEC_FILE = "docs/agents/run-spec.md"

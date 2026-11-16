@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import os
 import subprocess
@@ -7,9 +6,8 @@ import tempfile
 from pathlib import Path
 
 sys.dont_write_bytecode = True
-SUPPORT_SPEC = importlib.util.spec_from_file_location("test_support", Path(__file__).resolve().parent / "test_support.py")
-support = importlib.util.module_from_spec(SUPPORT_SPEC)
-SUPPORT_SPEC.loader.exec_module(support)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import test_support as support
 TICKETS = Path(__file__).resolve().parent / "tickets.py"
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
