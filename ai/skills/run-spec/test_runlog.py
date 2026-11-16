@@ -9,7 +9,7 @@ KIT = Path(__file__).resolve().parent
 RUNLOG = KIT / "runlog.py"
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(KIT))
-from test_support import review_report
+from test_support import cursor_table_rows, review_report
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
 FULL_RECORD = ["--slug", "demo", "--pr", "https://github.com/o/r/pull/7", "--rounds", "2",
@@ -537,6 +537,5 @@ assert "A failure of `RUNLOG` never fails the run: print its error line and go o
 assert "RUNLOG findings" in skill_text.split("\n## 1. ")[0]
 
 readme_text = (KIT / "README.md").read_text()
-cursor_table = readme_text.split("\n## Claude Code and Cursor\n")[1].split("\n## Status")[0]
-assert any(row.startswith("| Findings buffer |") for row in cursor_table.splitlines())
+assert any(row.startswith("| Findings buffer |") for row in cursor_table_rows(readme_text))
 assert any(row.startswith("| `<git-common-dir>/run-spec/findings.tsv` |") for row in readme_text.splitlines())

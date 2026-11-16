@@ -13,6 +13,10 @@ def model_matches(model):
     return lines[0], [line.split("\t") for line in lines[1:]]
 
 
+def cursor_table_rows(readme_text):
+    return readme_text.split("\n## Claude Code and Cursor\n")[1].split("\n## Status")[0].splitlines()
+
+
 def broken_model_text(tla_text, old, new):
     assert tla_text.count(old) == 1, old
     return tla_text.replace(old, new)
