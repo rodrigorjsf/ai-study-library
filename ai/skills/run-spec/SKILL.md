@@ -320,7 +320,6 @@ Report to the user in their language, as a short list with no recommendations an
 - PR URL or branch
 - done / skipped / stuck counts, with ids
 - halt reason
-- full suite: the PR body's `full suite:` line
 - review outcome: rounds run, finding counts, and the UNVERIFIED count, plus the path of the remaining findings (`$STATE/review-*-fix.md`). Do not restate individual findings.
 - unproven findings: the same lines as the PR body's `## Unproven findings`, in a code block, so the owner can judge them. Leave the bullet out when there are none.
 - readiness: `$STATE/readiness.md` verbatim in a code block. Leave the bullet out when the file is missing or empty.
