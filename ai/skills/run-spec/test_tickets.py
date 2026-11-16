@@ -1,12 +1,15 @@
+import importlib.util
 import json
 import os
-import random
-import stat
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+SUPPORT_SPEC = importlib.util.spec_from_file_location("test_support", Path(__file__).resolve().parent / "test_support.py")
+support = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(support)
 TICKETS = Path(__file__).resolve().parent / "tickets.py"
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
@@ -166,40 +169,6 @@ with tempfile.TemporaryDirectory() as tmp:
                                           cwd=repo, env=ENV, capture_output=True, text=True)
     assert without_oracle_flags.returncode == 2 and without_oracle_flags.stdout == "", without_oracle_flags
 
-FAKE_GH = (
-    "import json, os, sys\n"
-    "fixture = os.environ.get('FAKE_GH')\n"
-    "if not fixture:\n"
-    "    sys.exit('fake gh: no fixture')\n"
-    "data = json.load(open(fixture))\n"
-    "issues = data['issues']\n"
-    "args = sys.argv[1:]\n"
-    "if args[:2] == ['repo', 'view']:\n"
-    "    print('o/r')\n"
-    "elif args[:2] == ['issue', 'list']:\n"
-    "    print(json.dumps([{'number': i['number'], 'body': i['body']} for i in issues.values()]))\n"
-    "elif args[:2] == ['issue', 'view'] and args[2] == data['spec']:\n"
-    "    print(data['title'])\n"
-    "elif args[:2] == ['issue', 'view'] and args[4] == 'state':\n"
-    "    print(issues.get(args[2], {'state': 'OPEN'})['state'])\n"
-    "elif args[:2] == ['issue', 'view']:\n"
-    "    print(json.dumps(issues[args[2]]))\n"
-    "elif args[0] == 'api':\n"
-    "    print('')\n"
-    "else:\n"
-    "    sys.exit('fake gh: unexpected ' + ' '.join(args))\n"
-)
-
-
-def fake_gh_env(bin_dir, fixture_dir, data):
-    gh = Path(bin_dir) / "gh"
-    gh.write_text(f"#!{sys.executable}\n{FAKE_GH}")
-    gh.chmod(gh.stat().st_mode | stat.S_IXUSR)
-    fixture = Path(fixture_dir) / "gh.json"
-    fixture.write_text(json.dumps(data))
-    return {**ENV, "PATH": f"{bin_dir}{os.pathsep}{ENV['PATH']}", "FAKE_GH": str(fixture)}
-
-
 def github_issue(number, body, state="OPEN", labels=("ready-for-agent",)):
     return {"number": number, "title": f"Ticket {number}", "state": state, "body": body,
             "labels": [{"name": name} for name in labels]}
@@ -214,13 +183,13 @@ GITHUB_BODY = (
 with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as bin_dir, tempfile.TemporaryDirectory() as fixture_dir:
     repo = Path(tmp)
     git(repo, "init", "-q", "-b", "main")
-    env = fake_gh_env(bin_dir, fixture_dir, {"spec": "6", "title": "Spec: demo", "issues": {
+    env = support.with_fake_gh_issues(support.with_fake_gh(ENV, bin_dir), fixture_dir, {
         "13": github_issue(13, GITHUB_BODY),
         "14": github_issue(14, "## Parent\r\n\r\n#6\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Windows line ends with `span`\r\n"
                                "- [ ] and none here\r\n\r\n## Blocked by\r\n\r\nNone\r\n", labels=("needs-info",)),
         "15": github_issue(15, "## Parent\n\n#6\n\n## What to build\n\nNo criteria section.\n", state="CLOSED", labels=()),
         "16": github_issue(16, "Part of #6\n\n## acceptance CRITERIA\n\n* [ ] Lowercase heading `x`\n"),
-    }})
+    })
     out = criteria(repo, "#6", "github", env)
     assert (out["slug"], out["spec"]) == ("6-spec-demo", "#6"), out
     assert out["tickets"] == [
@@ -233,8 +202,7 @@ with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as bin_
     ], out["tickets"]
 
 
-PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
-PROPERTY_CASES = 300
+PROPERTY_CASES = support.PROPERTY_CASES
 LOCAL_SPEC_SIZE = 75
 GITHUB_SPEC = 6
 TITLE_WORDS = ("parser cache render export billing ledger socket widget gadget queue retry backoff avatar bundler session "
@@ -249,20 +217,6 @@ LOCAL_DECOYS = ("See Status: draft and Blocked by: 99 for context.", "- plain bu
                 "A [ ] mid-line box and `span`.", "Plain text.")
 GITHUB_DECOYS = ("- [ ] A checkbox in the description, with `span`", "Status: resolved",
                  "Follows the decision in #{other}.", "Mentions Blocked by: #{other} mid-line, with `code`.", "Plain text.")
-FAKE_GH_SH = (
-    "#!/bin/sh\n"
-    'case "$1 $2 $5" in\n'
-    '"repo view "*) echo o/r;;\n'
-    '"issue list "*) cat "$FAKE_GH_DIR/list.json";;\n'
-    '"issue view title") cat "$FAKE_GH_DIR/title.txt";;\n'
-    '"issue view state") echo OPEN;;\n'
-    '"issue view "*) cat "$FAKE_GH_DIR/issue-$3.json";;\n'
-    '"api "*) ;;\n'
-    '*) echo "fake gh: unexpected $*" >&2; exit 1;;\n'
-    "esac\n"
-)
-
-
 def chooser(rng):
     return (lambda options: options[0]) if rng is None else rng.choice
 
@@ -422,18 +376,6 @@ def github_body(model, rng=None):
     return join_blocks([f"Part of #{GITHUB_SPEC}"] if parent_as_line else [], blocks, rng)
 
 
-def write_fake_gh(bin_dir, fixture_dir, issues):
-    gh = Path(bin_dir) / "gh"
-    gh.write_text(FAKE_GH_SH)
-    gh.chmod(gh.stat().st_mode | stat.S_IXUSR)
-    fixture = Path(fixture_dir)
-    (fixture / "title.txt").write_text("Spec: property\n")
-    (fixture / "list.json").write_text(json.dumps([{"number": n, "body": issue["body"]} for n, issue in issues.items()]))
-    for number, issue in issues.items():
-        (fixture / f"issue-{number}.json").write_text(json.dumps(issue))
-    return {**ENV, "PATH": f"{bin_dir}{os.pathsep}{ENV['PATH']}", "FAKE_GH_DIR": str(fixture)}
-
-
 def init_property_repo(repo):
     git(repo, "init", "-q", "-b", "main")
     git(repo, "commit", "-q", "--allow-empty", "-m", "root")
@@ -506,7 +448,7 @@ def github_formatting_invariance(rng, script, cases):
         for directory in (repo, failures_dir, bin_dir, fixture_dir):
             directory.mkdir()
         init_property_repo(repo)
-        env = write_fake_gh(bin_dir, fixture_dir, issues)
+        env = support.with_fake_gh_issues(support.with_fake_gh(ENV, bin_dir), fixture_dir, issues, "Spec: property")
         facets, details = ticket_facets(script, repo, "github", str(GITHUB_SPEC), env, str(failures_dir))
     if details:
         return details
@@ -522,30 +464,17 @@ PROPERTIES = {"local-ticket-formatting": local_formatting_invariance,
               "github-ticket-formatting": github_formatting_invariance}
 
 
-def run_properties(script, seed, cases=PROPERTY_CASES):
-    return {name: prop(random.Random(f"{seed}/{name}"), script, cases) for name, prop in PROPERTIES.items()}
-
-
-def failure_report(results, seed):
-    return [f"property {name} failed with seed {seed}; rerun with RUN_SPEC_PROPERTY_SEED={seed}\n" + "\n".join(details)
-            for name, details in results.items() if details]
-
-
 SILENT_ORACLE = "import json\nprint(json.dumps({'slug': 's', 'spec': 's', 'tickets': []}))\n"
 
 with tempfile.TemporaryDirectory() as tmp:
     broken_oracle = Path(tmp) / "tickets.py"
     broken_oracle.write_text(SILENT_ORACLE)
-    failed = run_properties(broken_oracle, 7, LOCAL_SPEC_SIZE)
+    failed = support.run_properties(PROPERTIES, broken_oracle, 7, LOCAL_SPEC_SIZE)
     assert all(failed.values()), failed
-    assert all("with seed 7;" in text for text in failure_report(failed, 7)), failure_report(failed, 7)
-    assert failed == run_properties(broken_oracle, 7, LOCAL_SPEC_SIZE)
-    assert failed != run_properties(broken_oracle, 8, LOCAL_SPEC_SIZE)
+    assert all("with seed 7;" in text for text in support.failure_report(failed, 7)), support.failure_report(failed, 7)
+    assert failed == support.run_properties(PROPERTIES, broken_oracle, 7, LOCAL_SPEC_SIZE)
+    assert failed != support.run_properties(PROPERTIES, broken_oracle, 8, LOCAL_SPEC_SIZE)
 
-results = run_properties(TICKETS, PROPERTY_SEED)
-for name, details in results.items():
-    print(f"property {name}: {PROPERTY_CASES} cases, seed {PROPERTY_SEED}, {'FAILED' if details else 'passed'}")
-if any(results.values()):
-    sys.exit("\n\n".join(failure_report(results, PROPERTY_SEED)))
+support.check_properties(PROPERTIES, TICKETS, PROPERTY_CASES)
 
 print("ok")

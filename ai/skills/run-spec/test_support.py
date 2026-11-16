@@ -1,0 +1,58 @@
+import json
+import os
+import random
+import stat
+import sys
+from pathlib import Path
+
+PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
+PROPERTY_CASES = 300
+
+FAKE_GH = (
+    "#!/bin/sh\n"
+    '[ -n "$FAKE_GH_DIR" ] || { echo "fake gh: no fixture" >&2; exit 1; }\n'
+    'case "$1 $2 $5" in\n'
+    '"repo view "*) echo o/r;;\n'
+    '"issue list "*) cat "$FAKE_GH_DIR/list.json";;\n'
+    '"issue view title") cat "$FAKE_GH_DIR/title.txt";;\n'
+    '"issue view state") cat "$FAKE_GH_DIR/state-$3.txt" 2>/dev/null || echo OPEN;;\n'
+    '"issue view "*) cat "$FAKE_GH_DIR/issue-$3.json";;\n'
+    '"api "*) ;;\n'
+    '*) echo "fake gh: unexpected $*" >&2; exit 1;;\n'
+    "esac\n"
+)
+
+
+def run_properties(properties, script, seed, *args):
+    return {name: prop(random.Random(f"{seed}/{name}"), script, *args) for name, prop in properties.items()}
+
+
+def failure_report(results, seed):
+    return [f"property {name} failed with seed {seed}; rerun with RUN_SPEC_PROPERTY_SEED={seed}\n" + "\n".join(details)
+            for name, details in results.items() if details]
+
+
+def check_properties(properties, script, *args):
+    results = run_properties(properties, script, PROPERTY_SEED, *args)
+    for name, details in results.items():
+        print(f"property {name}: {PROPERTY_CASES} cases, seed {PROPERTY_SEED}, {'FAILED' if details else 'passed'}")
+    if any(results.values()):
+        sys.exit("\n\n".join(failure_report(results, PROPERTY_SEED)))
+
+
+def with_fake_gh(env, bin_dir):
+    gh = Path(bin_dir) / "gh"
+    gh.write_text(FAKE_GH)
+    gh.chmod(gh.stat().st_mode | stat.S_IXUSR)
+    return {**env, "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}"}
+
+
+def with_fake_gh_issues(env, fixture_dir, issues, title="Spec: demo"):
+    fixture = Path(fixture_dir)
+    (fixture / "title.txt").write_text(title + "\n")
+    (fixture / "list.json").write_text(json.dumps([{"number": issue["number"], "body": issue["body"]}
+                                                   for issue in issues.values()]))
+    for number, issue in issues.items():
+        (fixture / f"issue-{number}.json").write_text(json.dumps(issue))
+        (fixture / f"state-{number}.txt").write_text(issue["state"] + "\n")
+    return {**env, "FAKE_GH_DIR": str(fixture)}

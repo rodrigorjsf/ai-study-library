@@ -1,13 +1,16 @@
 import collections
 import importlib.util
 import os
-import random
 import subprocess
 import sys
 import tempfile
 import textwrap
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+SUPPORT_SPEC = importlib.util.spec_from_file_location("test_support", Path(__file__).resolve().parent / "test_support.py")
+support = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(support)
 HYGIENE = Path(__file__).resolve().parent / "hygiene.py"
 ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 SPEC = importlib.util.spec_from_file_location("hygiene", HYGIENE)
@@ -260,8 +263,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert hygiene(repo, base, head) == (1, MOVE_EXPECTED, []), hygiene(repo, base, head)
 
 
-PROPERTY_SEED = int(os.environ.get("RUN_SPEC_PROPERTY_SEED", "20261115"))
-PROPERTY_CASES = 300
+PROPERTY_CASES = support.PROPERTY_CASES
 WORDS = ("retries cache because upstream drops calls timeout queue parser backoff flaky renders avatar slow billing "
          "rounds sums bundler widget gadget ledger socket").split()
 HOLDERS = ("Acme Corp", "Widget Works Ltd", "Gadget Labs", "Ledger Socket Inc", "Parser Guild")
@@ -454,15 +456,6 @@ PROPERTIES = {"no-comment-tokens": no_comment_tokens, "marker-inside-string": ma
               "licence-notice-any-width": licence_notice_any_width, "added-comment-reported": added_comment_reported}
 
 
-def run_properties(script, seed):
-    return {name: prop(random.Random(f"{seed}/{name}"), script) for name, prop in PROPERTIES.items()}
-
-
-def failure_report(results, seed):
-    return [f"property {name} failed with seed {seed}; rerun with RUN_SPEC_PROPERTY_SEED={seed}\n" + "\n".join(details)
-            for name, details in results.items() if details]
-
-
 REPORTS_EVERY_FILE = (
     "import subprocess, sys\n"
     "diff = subprocess.run(['git', 'diff', '--name-only', f'{sys.argv[1]}...{sys.argv[2]}'],\n"
@@ -474,16 +467,12 @@ REPORTS_EVERY_FILE = (
 with tempfile.TemporaryDirectory() as tmp:
     broken_gate = Path(tmp) / "hygiene.py"
     broken_gate.write_text(REPORTS_EVERY_FILE)
-    failed = run_properties(broken_gate, 7)
+    failed = support.run_properties(PROPERTIES, broken_gate, 7)
     assert all(failed.values()), failed
-    assert all("with seed 7;" in text for text in failure_report(failed, 7)), failure_report(failed, 7)
-    assert failed == run_properties(broken_gate, 7)
-    assert failed != run_properties(broken_gate, 8)
+    assert all("with seed 7;" in text for text in support.failure_report(failed, 7)), support.failure_report(failed, 7)
+    assert failed == support.run_properties(PROPERTIES, broken_gate, 7)
+    assert failed != support.run_properties(PROPERTIES, broken_gate, 8)
 
-results = run_properties(HYGIENE, PROPERTY_SEED)
-for name, details in results.items():
-    print(f"property {name}: {PROPERTY_CASES} cases, seed {PROPERTY_SEED}, {'FAILED' if details else 'passed'}")
-if any(results.values()):
-    sys.exit("\n\n".join(failure_report(results, PROPERTY_SEED)))
+support.check_properties(PROPERTIES, HYGIENE)
 
 print("ok")

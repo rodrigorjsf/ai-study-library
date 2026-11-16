@@ -1,4 +1,4 @@
-import json
+import importlib.util
 import os
 import re
 import subprocess
@@ -7,6 +7,10 @@ import tempfile
 from pathlib import Path
 
 KIT = Path(__file__).resolve().parent
+sys.dont_write_bytecode = True
+SUPPORT_SPEC = importlib.util.spec_from_file_location("test_support", KIT / "test_support.py")
+support = importlib.util.module_from_spec(SUPPORT_SPEC)
+SUPPORT_SPEC.loader.exec_module(support)
 READINESS = KIT / "readiness.py"
 BASE_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 RUN_SPEC_FILE = "docs/agents/run-spec.md"
@@ -14,40 +18,13 @@ SEARCHED = ".claude/skills/verify*/, .claude/skills/run-*/, .cursor/skills/verif
 SUGGESTION = "suggestion: run Claude Code's `/run-skill-generator` to create one"
 
 
-FAKE_GH = (
-    "import json, os, sys\n"
-    "fixture = os.environ.get('FAKE_GH')\n"
-    "if not fixture:\n"
-    "    sys.exit('fake gh: no fixture')\n"
-    "data = json.load(open(fixture))\n"
-    "issues = data['issues']\n"
-    "args = sys.argv[1:]\n"
-    "if args[:2] == ['repo', 'view']:\n"
-    "    print('o/r')\n"
-    "elif args[:2] == ['issue', 'list']:\n"
-    "    print(json.dumps([{'number': i['number'], 'body': i['body']} for i in issues.values()]))\n"
-    "elif args[:2] == ['issue', 'view'] and args[2] == data['spec']:\n"
-    "    print(data['title'])\n"
-    "elif args[:2] == ['issue', 'view'] and args[4] == 'state':\n"
-    "    print(issues.get(args[2], {'state': 'OPEN'})['state'])\n"
-    "elif args[:2] == ['issue', 'view']:\n"
-    "    print(json.dumps(issues[args[2]]))\n"
-    "elif args[0] == 'api':\n"
-    "    print('')\n"
-    "else:\n"
-    "    sys.exit('fake gh: unexpected ' + ' '.join(args))\n"
-)
-FAKE_GH_DIR = tempfile.TemporaryDirectory()
+FAKE_GH_BIN = tempfile.TemporaryDirectory()
 FIXTURE_DIR = tempfile.TemporaryDirectory()
-(Path(FAKE_GH_DIR.name) / "gh").write_text(f"#!{sys.executable}\n{FAKE_GH}")
-(Path(FAKE_GH_DIR.name) / "gh").chmod(0o755)
-ENV = {**BASE_ENV, "PATH": f"{FAKE_GH_DIR.name}{os.pathsep}{BASE_ENV['PATH']}"}
+ENV = support.with_fake_gh(BASE_ENV, FAKE_GH_BIN.name)
 
 
-def env_with_issues(issues, spec="6", title="Spec: demo"):
-    fixture = Path(FIXTURE_DIR.name) / "gh.json"
-    fixture.write_text(json.dumps({"spec": spec, "title": title, "issues": issues}))
-    return {**ENV, "FAKE_GH": str(fixture)}
+def env_with_issues(issues, title="Spec: demo"):
+    return support.with_fake_gh_issues(ENV, tempfile.mkdtemp(dir=FIXTURE_DIR.name), issues, title)
 
 
 def github_ticket(number, criteria, labels=("ready-for-agent",), state="OPEN"):
