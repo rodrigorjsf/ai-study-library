@@ -540,7 +540,7 @@ ShipsUnread(unit) ==
         \/ Route(unit.round) = "advisory-only" /\ ~AttachedTicketMerged(unit.round)
 
 UnreadIsListed ==
-  phase = "reported" /\ suite = "green" =>
+  GatePassed /\ phase = "reported" =>
     {i \in DOMAIN log : i \notin reviewedUnits} = {i \in DOMAIN log : ShipsUnread(log[i])}
 
 ReviewAfterSuiteGate == \A r \in Rounds : reported[r] => GatePassed

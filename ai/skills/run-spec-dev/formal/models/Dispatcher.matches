@@ -1,10 +1,10 @@
-matches skill at commit f2e1320284cf7e9164a45e0490b3292d15ef1a3c
+matches skill at commit 68ccdb783327503e9fef7a32e0ca93a1d55a23cb
 NeverIntegratedTwice	ai/skills/run-spec/SKILL.md:137	/\ integrations[t] = 0 => /\ TRUE
 ResumeCapHolds	ai/skills/run-spec/SKILL.md:123	/\ resumes[t] + 1 <= ResumeCap => /\ TRUE
 AttemptCapHolds	ai/skills/run-spec/SKILL.md:206	/\ attempts[t] < AttemptCap} => /\ TRUE}
 FailedNeverMerged	ai/skills/run-spec/SKILL.md:121	FinishedOrphan(t) == branch[t] /\ ~merged[t] /\ status[t] = "DONE" => FinishedOrphan(t) == branch[t] /\ ~merged[t] /\ status[t] # "none"
 NoOrphanSurvivesRecovery	ai/skills/run-spec/SKILL.md:141	/\ \A t \in toCleanUp : ~branch[t] => /\ TRUE
-EveryTicketResolved	ai/skills/run-spec/SKILL.md:342	/\ Ready = {} => /\ TRUE
+EveryTicketResolved	ai/skills/run-spec/SKILL.md:341	/\ Ready = {} => /\ TRUE
 RoundsCapped	ai/skills/run-spec/SKILL.md:262	\/ NextRound > RoundCap => \/ FALSE
 TriageCapped	ai/skills/run-spec/SKILL.md:226	/\ triageIns < TriageCap => /\ TRUE
 AdvisoryNeverStartsRound	ai/skills/run-spec/SKILL.md:253	Blocking(r) == proven[r] => Blocking(r) == proven[r] + unproven[r]
