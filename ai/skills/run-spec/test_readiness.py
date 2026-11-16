@@ -79,6 +79,13 @@ def surface(repo, spec="#6", env=ENV):
     return summary, sections["Surface"]
 
 
+def app_recipe_line(repo, *extra_args):
+    r = readiness("--repo", str(repo), "--app-recipe", *extra_args)
+    assert (r.returncode, r.stderr) == (0, ""), r
+    assert r.stdout.count("\n") == 1 and r.stdout.endswith("\n"), r.stdout
+    return r.stdout[:-1]
+
+
 def check_section(run_spec_text):
     with tempfile.TemporaryDirectory() as tmp:
         repo = new_repo(tmp, {} if run_spec_text is None else {RUN_SPEC_FILE: run_spec_text})
@@ -177,6 +184,68 @@ assert recipe_section(extra=[".claude/skills/verify-app/notes.txt"])[0].startswi
 assert recipe_section(extra=[".claude/skills/verify-app"])[0].startswith("none found"), "a file named like a recipe"
 assert recipe_section(".claude/skills/verify-app", extra=[".claude/skills/other/SKILL.md"]) == ["found: .claude/skills/verify-app/"]
 
+def recipe_line_of(*skill_dirs, extra=()):
+    files = {f"{d}/SKILL.md": "x" for d in skill_dirs} | {name: "x" for name in extra}
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = new_repo(tmp, files)
+        return app_recipe_line(repo), report(repo)[2]
+
+
+for layout, expected in (
+        ((".claude/skills/verify-app",), ".claude/skills/verify-app/"),
+        ((".claude/skills/verify",), ".claude/skills/verify/"),
+        ((".claude/skills/run-app",), ".claude/skills/run-app/"),
+        ((".cursor/skills/verify-app",), ".cursor/skills/verify-app/"),
+        ((".claude/skills/run-app", ".cursor/skills/verify-app"), ".claude/skills/run-app/"),
+        ((".claude/skills/verify-app", ".claude/skills/run-app", ".cursor/skills/verify-app"), ".claude/skills/verify-app/"),
+        ((".claude/skills/verify-b", ".claude/skills/verify-a"), ".claude/skills/verify-a/")):
+    line, section = recipe_line_of(*layout)
+    assert line == f"APP_RECIPE: {expected}", (layout, line)
+    assert section == [f"found: {expected}"], (layout, section)
+
+for not_a_recipe in (".claude/skills/runner", ".claude/skills/run", ".claude/skills/other", ".claude/skills/xverify",
+                     ".cursor/skills/verify", ".cursor/skills/run-app", ".cursor/skills/other",
+                     ".claude/commands/verify-app", "skills/verify-app", ".agents/skills/verify-app"):
+    line, section = recipe_line_of(not_a_recipe)
+    assert line == "APP_RECIPE: none", (not_a_recipe, line)
+    assert section[0].startswith("none found"), (not_a_recipe, section)
+
+for extra in ([".claude/skills/verify-app/notes.txt"], [".claude/skills/verify-app"]):
+    assert recipe_line_of(extra=extra)[0] == "APP_RECIPE: none", extra
+assert recipe_line_of(".claude/skills/verify-app", extra=[".claude/skills/other/SKILL.md"])[0] == (
+    "APP_RECIPE: .claude/skills/verify-app/")
+
+with tempfile.TemporaryDirectory() as tmp:
+    assert app_recipe_line(new_repo(tmp)) == "APP_RECIPE: none", "no recipe"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp, {RUN_SPEC_FILE: "test: pytest\n", ".claude/skills/verify-app/SKILL.md": "x"})
+    other = tempfile.mkdtemp()
+    r = readiness("--repo", os.path.relpath(repo, other), "--app-recipe", cwd=other)
+    assert (r.returncode, r.stdout, r.stderr) == (0, "APP_RECIPE: .claude/skills/verify-app/\n", ""), r
+    os.rmdir(other)
+    assert subprocess.run(["git", "status", "--porcelain"], cwd=repo, env=ENV, capture_output=True, text=True).stdout == ""
+
+with tempfile.TemporaryDirectory() as tmp:
+    plain = Path(tmp)
+    (plain / ".cursor/skills/verify-app").mkdir(parents=True)
+    (plain / ".cursor/skills/verify-app/SKILL.md").write_text("x")
+    assert app_recipe_line(plain) == "APP_RECIPE: .cursor/skills/verify-app/", "a directory that is not a git repository"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    target = repo / "elsewhere"
+    target.mkdir()
+    (repo / ".claude/skills").mkdir(parents=True)
+    (repo / ".claude/skills/verify-link").symlink_to(target)
+    assert app_recipe_line(repo) == "APP_RECIPE: none", "a symlink to a directory without SKILL.md"
+    (target / "SKILL.md").write_text("x")
+    assert app_recipe_line(repo) == "APP_RECIPE: .claude/skills/verify-link/", "a symlinked recipe"
+    (repo / ".claude/skills/verify-link").unlink()
+    (repo / ".claude").rename(repo / ".claude-moved")
+    (repo / ".claude").write_text("a file where a directory belongs")
+    assert app_recipe_line(repo) == "APP_RECIPE: none", ".claude is a file"
+
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp, {RUN_SPEC_FILE: "test: pytest\n", ".claude/skills/verify-app/SKILL.md": "x"})
     summary, _, _ = report(repo)
@@ -218,7 +287,10 @@ with tempfile.TemporaryDirectory() as tmp:
         ["--repo", str(repo), "--spec", "  "], ["--repo", str(repo / "missing"), "--spec", "#6"],
         ["--repo", str(repo / ".git/HEAD"), "--spec", "#6"], ["--repo", str(repo), "--spec", "#6", "--strict"],
         ["--repo", str(repo), "--spec", "#6", "extra"], ["--bogus"], ["--check-commands"],
-        ["--repo", str(repo), "--spec", "#6", "--check-commands"], ["--repo", str(repo / "missing"), "--check-commands"])
+        ["--repo", str(repo), "--spec", "#6", "--check-commands"], ["--repo", str(repo / "missing"), "--check-commands"],
+        ["--app-recipe"], ["--repo", str(repo), "--app-recipe", "--spec", "#6"],
+        ["--repo", str(repo), "--app-recipe", "--check-commands"], ["--repo", str(repo / "missing"), "--app-recipe"],
+        ["--repo", str(repo / ".git/HEAD"), "--app-recipe"], ["--repo", str(repo), "--app-recipe", "extra"])
     for args in usage_errors:
         r = readiness(*args)
         assert r.returncode == 2 and r.stdout == "" and r.stderr != "", (args, r)

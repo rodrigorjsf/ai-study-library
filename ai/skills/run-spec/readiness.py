@@ -45,6 +45,10 @@ def find_recipe(repo):
     return None
 
 
+def app_recipe_line(recipe):
+    return f"APP_RECIPE: {recipe or 'none'}"
+
+
 def read_tickets(repo, spec):
     tracker = "github" if re.fullmatch(r"#?\d+", spec) else "local"
     result = subprocess.run([sys.executable, "-I", str(TICKETS), "--tracker", tracker, "--spec", spec, "--criteria"],
@@ -103,6 +107,8 @@ def main():
     mode.add_argument("--spec")
     mode.add_argument("--check-commands", action="store_true",
                       help="print only the TYPECHECK, LINT and TEST prompt lines, none for a key not declared")
+    mode.add_argument("--app-recipe", action="store_true",
+                      help="print only the APP_RECIPE prompt line: the recipe path, or none")
     args = parser.parse_args()
     if args.spec is not None and not args.spec.strip():
         parser.error("--spec is empty")
@@ -110,6 +116,9 @@ def main():
         parser.error(f"--repo {args.repo} is not a directory")
     if args.check_commands:
         print(check_command_lines(declared_commands(args.repo)))
+        return
+    if args.app_recipe:
+        print(app_recipe_line(find_recipe(args.repo)))
         return
     print(render(args.spec, declared_commands(args.repo), find_recipe(args.repo), surface_report(*read_tickets(args.repo, args.spec))))
 

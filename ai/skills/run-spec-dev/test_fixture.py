@@ -59,6 +59,10 @@ with materialized() as repo:
     assert (readiness.returncode, readiness.stderr) == (0, ""), readiness
     assert "- found: .claude/skills/verify-todo/" in readiness.stdout.splitlines(), readiness.stdout
 
+    app_recipe = run(sys.executable, "-I", str(KIT / "readiness.py"), "--repo", str(repo), "--app-recipe")
+    assert (app_recipe.returncode, app_recipe.stdout, app_recipe.stderr) == (
+        0, "APP_RECIPE: .claude/skills/verify-todo/\n", ""), app_recipe
+
     tickets_run = run(sys.executable, "-I", str(KIT / "tickets.py"), "--tracker", "local", "--spec", SPEC,
                       "--work-branch", "HEAD", "--failures-dir", os.devnull, cwd=repo)
     assert (tickets_run.returncode, tickets_run.stderr) == (0, ""), tickets_run

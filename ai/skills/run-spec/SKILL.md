@@ -52,7 +52,7 @@ Variables:
 - `ORACLE` — `python3 ${CLAUDE_SKILL_DIR}/tickets.py --tracker <T> --spec <SPEC> --work-branch <WORK> --failures-dir $STATE`
 - `HYGIENE` — `python3 ${CLAUDE_SKILL_DIR}/hygiene.py`, the hygiene gate: run from inside a checkout as `HYGIENE <base> <head> [--allow <path>]...`, it prints one line per comment line or Markdown file the range adds, and nothing when clean. Agents receive it as `HYGIENE: python3 <absolute skill dir>/hygiene.py`.
 - `RUNLOG` — `python3 ${CLAUDE_SKILL_DIR}/runlog.py`, the Run metrics log. `RUNLOG reverts` marks the records of earlier runs whose pull request was reverted on DEFAULT. `RUNLOG record <options>` appends one record of this run to `$GITDIR/run-spec/metrics.tsv`, untracked and shared by every spec of the repository. Neither prints anything unless it found a corrupt `metrics.tsv` and started a new one, or `reverts` marked a record. Agents do not receive it.
-- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it. `READINESS --repo $MAIN --check-commands` prints instead only the three Check commands prompt lines, from the same parser.
+- `READINESS` — `python3 ${CLAUDE_SKILL_DIR}/readiness.py`, the Readiness report. `READINESS --repo $MAIN --spec <SPEC>` prints the report and exits 0 whatever it finds, and 2 only on a usage error. Its first line is the chat line. Its `###` sections give the Check commands declared and missing, the App recipe found, or the `/run-skill-generator` suggestion when none exists, and the Surface warnings: each acceptance criterion of an in-scope ticket that names no backticked span. It reads the ticket criteria itself, through `tickets.py --criteria`; you read no ticket body. It never stops a run. Agents do not receive it. `READINESS --repo $MAIN --check-commands` prints instead only the three Check commands prompt lines, from the same parser. `READINESS --repo $MAIN --app-recipe` prints instead only the one prompt line `APP_RECIPE: <path>`, or `APP_RECIPE: none`, from the same discovery as the report's App recipe section.
 - `ROUTE` — `python3 ${CLAUDE_SKILL_DIR}/route.py`, the routing read of step 6. `ROUTE $STATE/review-<r>.md` reads the `COUNT:` line of each of the report's six sections and prints four lines: `counts: …` (the chat line's counts), `blocking: <n>`, `advisory: <m>` and `route: clean | advisory-only | blocking`. It sums the counts as step 6 defines them. It exits 2, with one stderr line and no stdout, when a section or its `COUNT:` line is missing or malformed. Agents do not receive it.
 - `KIT` — `${CLAUDE_SKILL_DIR}`, the absolute skill directory. Agents receive it as `KIT: <absolute skill dir>` and read `guides/tdd.md` and `axes/*.md` under it.
 
@@ -78,8 +78,15 @@ Variables:
   ```
 
   Every prompt to `ticket-implementer`, `wave-integrator`, `acceptance-verifier` and `review-fixer` carries these three lines verbatim, the repair spawns of step 3 and every later spawn included. The agent runs a declared command exactly and derives a `none` one as it does without them.
+- **App recipe** `APP_RECIPE`: the one line this command prints, `APP_RECIPE: <repo-relative path>` or `APP_RECIPE: none`:
 
-Done when TRACKER, SPEC, P and the Check commands are set.
+  ```
+  READINESS --repo $MAIN --app-recipe
+  ```
+
+  Every prompt to `ticket-implementer` and `acceptance-verifier` carries that line verbatim, a resume, a respawn, a closing acceptance and every later spawn included. When the command fails, the line is `APP_RECIPE: none`. The command is the only discovery: neither you nor any agent searches for a recipe.
+
+Done when TRACKER, SPEC, P, the Check commands and APP_RECIPE are set.
 
 ## 2. Resolve the branch
 
@@ -180,7 +187,7 @@ A failed install is not a failure of the ticket: the implementer installs on its
 - `MAIN_REPO`, `WORKTREE`, `BRANCH`, `BASE_SHA`
 - `HANDOFF_OUT`, `REPORT_OUT`, `STATUS_OUT`, `FAILURE_OUT`, `CONTEXT_HANDOFFS`
 - `KIT`, `HYGIENE`
-- `TYPECHECK`, `LINT`, `TEST`
+- `TYPECHECK`, `LINT`, `TEST`, `APP_RECIPE`
 - `RESUME: true`, only for a ticket resumed by step 3
 
 Then start the **watchdog**, unless one runs on this STATE: `bash ${CLAUDE_SKILL_DIR}/watchdog.sh $STATE` with `run_in_background`. A subagent that dies sends no notification, so the watchdog's exit is the only signal. Until this spec's step 7 report in this invocation, keep exactly one running while `$STATE/wt/` holds a worktree or `$STATE/running/` holds a marker: when it exits, handle its line, then start it again while either exists. After that report the user is present, so no watchdog runs: ignore a line from this STATE's watchdog and start none on it. The queue's next spec, and any new `/run-spec`, starts it again. It sleeps one interval before each check and skips a ticket whose `status-<id>.md` exists, except in the first case below.
@@ -256,7 +263,7 @@ Go to step 7 when:
    - `NOT_DONE`: the `id` of every ticket the last ORACLE run lists with `done: false` (skipped, stuck, or out of scope), space-separated, or `none`.
    - `mkdir -p $STATE/verify-<r>` and `rm -f $STATE/acceptance-final.md`: this round's Acceptance supersedes an earlier closing one.
 2. **Spawn** every reviewer in one message, so they run in parallel. Each prompt is only `KEY: value` lines:
-   - `acceptance-verifier`: `REPO: MAIN`, `SPEC`, `TICKETS`, `ROUND: <r>`, `F`, `OUT_DIR: $STATE/verify-<r>/`, `PREVIOUS: $STATE/verify-<r-1>/` (`none` in round 1), `SLUG: <slug>`, `KNOWN_DISMISSALS`, `NOT_DONE`, `TYPECHECK`, `LINT`, `TEST`.
+   - `acceptance-verifier`: `REPO: MAIN`, `SPEC`, `TICKETS`, `ROUND: <r>`, `F`, `OUT_DIR: $STATE/verify-<r>/`, `PREVIOUS: $STATE/verify-<r-1>/` (`none` in round 1), `SLUG: <slug>`, `KNOWN_DISMISSALS`, `NOT_DONE`, `TYPECHECK`, `LINT`, `TEST`, `APP_RECIPE`.
    - `ticket-reviewer`, one per axis (Standards, Security, Design, and UX/AIX when its gate passed): `AXIS`, `AXIS_BRIEF` (the absolute path of `${CLAUDE_SKILL_DIR}/axes/standards.md`, `security.md`, `ux-aix.md` or `design.md`), `REPO: MAIN`, `DIFF: git diff F...WORK`, `COMMITS: git log F..WORK --oneline`, `SPEC`, `SCOPE: branch`, `ROUND: <r>`, `KNOWN_DISMISSALS`, plus `VERIFY_ONLY` in rounds 2 and 3, and for Standards `ALLOWED` (the paths Hygiene's `--allow` below takes, or `none`).
 
    Then run **Hygiene** over the whole branch: `HYGIENE <round 1's F> WORK 2>&1`, adding `--allow <path>` for every path other than `none` on an `ALLOWED:` line of `$STATE/status-*.md`, `wave-*.md`, `repair-*.md`, `review-*-fix.md` and `user-*-fix.md`. Its section is `## Hygiene`, then each line it printed as `- <line>` (`- none` when it exits 0), then `COUNT: <lines printed>`.
@@ -279,7 +286,7 @@ Done when a review is clean, or a stop condition above holds after the last fixe
 
 Run ORACLE (a closing acceptance's run serves). The **merged tickets** are those it lists with `done: true` whose `$STATE/status-<id>.md` reads `STATUS: DONE`. Write the PR body to `$STATE/pr-body.md`, built from STATE, in this order:
 - `## Summary`: per merged ticket, from `status-<id>.md`, `Closes #N` (GitHub tracker only), its SUMMARY and its `REPORT:` link. Replace every path the `RENAMED:` lines of `wave-*.md` renamed for that ticket with its new path. Then the output of `git diff --stat F...WORK`, with round 1's `F`, in a code block.
-- `## Evidence`: the newest Acceptance, verbatim, then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
+- `## Evidence`: the newest Acceptance, verbatim, so each criterion keeps its verdict and command, its `needs:` when UNVERIFIED, and the `screenshot:` local path the verifier listed next to it. No image is uploaded or linked: the path alone is the record. Then **Not verified**: its UNVERIFIED lines and the rendered checks UX/AIX deferred (`grep -h '^deferred-to-build:' $STATE/review-*.md | grep -v ': none$' | sort -u`), or `none`.
 - `## Unproven findings`: every `unproven` line of the fixers' status blocks (`grep -h -E '^- [A-Z]+[0-9]+ unproven ' $STATE/review-*-fix.md $STATE/user-*-fix.md 2>/dev/null`), verbatim, or `none`. The owner judges them: they never blocked a round.
 - `## Merge Danger`: `**Door:** one-way` with `<id>: <why>` for each merged ticket whose `DOOR:` is one-way, else `**Door:** two-way`. Then `**Blast Radius:**` with `<id>: <BLAST>` per merged ticket.
 - `## Readiness`: `$STATE/readiness.md` verbatim, or `not run` when that file is missing or empty.
