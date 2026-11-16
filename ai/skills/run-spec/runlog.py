@@ -120,17 +120,22 @@ def review_numbers(state):
     return len(reviews), findings, unverified
 
 
-def record(args):
+def recorded_review_numbers(args):
     if args.state is not None:
-        args.rounds, args.findings, args.unverified = review_numbers(args.state)
+        return review_numbers(args.state)
+    return args.rounds or 0, args.findings or [], args.unverified or 0
+
+
+def record(args):
+    rounds, axis_findings, unverified = recorded_review_numbers(args)
     path = metrics_path()
     load_or_start_fresh(path)
     findings = dict.fromkeys(AXES, 0)
-    findings.update(args.findings or [])
+    findings.update(axis_findings)
     fields = [("at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
-              ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", args.rounds),
+              ("slug", args.slug), ("pr", args.pr), ("head", args.head), ("rounds", rounds),
               *((f"findings.{axis}", findings[axis]) for axis in AXES),
-              ("dismissals", args.dismissals), ("unverified", args.unverified),
+              ("dismissals", args.dismissals), ("unverified", unverified),
               ("done", args.done), ("skipped", args.skipped), ("stuck", args.stuck), ("unproven", args.unproven)]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
@@ -201,8 +206,6 @@ def main():
         review_options = (args.rounds, args.findings, args.unverified)
         if args.state is not None and any(option is not None for option in review_options):
             rec.error("--state replaces --rounds, --findings and --unverified")
-        args.rounds = args.rounds or 0
-        args.unverified = args.unverified or 0
     args.run(args)
 
 
