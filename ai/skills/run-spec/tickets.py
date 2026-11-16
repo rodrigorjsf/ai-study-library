@@ -123,7 +123,7 @@ def github_tickets(spec):
         i = json.loads(sh("gh", "issue", "view", m, "--json", "number,title,state,body,labels"))
         blockers = set(sh("gh", "api", f"repos/{repo}/issues/{m}/dependencies/blocked_by",
                           "--jq", ".[].number", check=False).split())
-        text = section(i["body"], "Blocked by") + "\n" + " ".join(re.findall(r"^Blocked by:.*$", i["body"], re.M))
+        text = section(i["body"], "Blocked by") + "\n" + " ".join(re.findall(r"^\**Blocked by:.*$", i["body"], re.M))
         blockers |= set(re.findall(r"#(\d+)", text))
         tickets.append({"id": f"#{m}", "ref": f"#{m}", "title": i["title"],
                         "criteria": criteria(section(i["body"], "Acceptance criteria")),

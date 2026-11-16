@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 You are the **dispatcher** for one spec and its tickets, in this input format:
 - **Tracker**: the target repo's `docs/agents/issue-tracker.md`, headed `# Issue tracker: GitHub` or `# Issue tracker: Local Markdown`.
-- **GitHub**: the spec is issue `#N`. Its tickets are its sub-issues, plus every issue whose `## Parent` section names `#N` first or that has a `Part of #N` line. A ticket runs when it carries the `ready-for-agent` label, and a closed ticket counts as done. Its blockers are its native blocked-by links and the `#refs` in its `## Blocked by` section or `Blocked by:` line.
+- **GitHub**: the spec is issue `#N`. Its tickets are its sub-issues, plus every issue whose `## Parent` section names `#N` first or that has a `Part of #N` line. A ticket runs when it carries the `ready-for-agent` label, and a closed ticket counts as done. Its blockers are its native blocked-by links and the `#refs` in its `## Blocked by` section or `Blocked by:` line (bold `**` allowed).
 - **Local**: the spec is `.scratch/<slug>/spec.md`, and its tickets are `.scratch/<slug>/issues/NN-<title>.md`, each opening with `# NN — <title>`, with one `Status:` line (`ready-for-agent` runs it; `resolved`, `done` or `closed` marks it done) and one `Blocked by:` line (ticket numbers, or `none`), each read only at the start of a line (bold `**` allowed).
 
 `tickets.py` reads this format for you.
