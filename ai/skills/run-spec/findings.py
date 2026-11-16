@@ -57,7 +57,7 @@ def reported_findings(path):
         for number, text in enumerate(bullets, start=1):
             location = LOCATION.match(text)
             reported[f"{SECTIONS[section].id_prefix}{number}"] = Reported(
-                SECTIONS[section].axis, location["location"] if location else NO_LOCATION, text)
+                SECTIONS[section].log_key, location["location"] if location else NO_LOCATION, text)
     return reported
 
 

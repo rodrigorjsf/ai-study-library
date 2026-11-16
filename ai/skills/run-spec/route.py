@@ -13,7 +13,7 @@ REVIEW_REPORT = re.compile(r"review-(\d+)\.md")
 
 
 class Section(NamedTuple):
-    axis: str
+    log_key: str
     id_prefix: str
     counted: str
     count_form: str

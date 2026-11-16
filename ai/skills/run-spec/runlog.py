@@ -11,7 +11,7 @@ from findings import OUTCOMES, ROUND, USER_AXIS, state_findings
 from gitcmd import default_refs, run
 from route import SECTIONS, UnreadableReport, read_reviews
 
-AXES = tuple(section.axis for section in SECTIONS.values())
+AXES = tuple(section.log_key for section in SECTIONS.values())
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
 OPTIONAL_COUNTS = ("unproven",)
@@ -132,7 +132,7 @@ def review_numbers(state):
     except UnreadableReport as error:
         print(f"runlog.py: {error}", file=sys.stderr)
         sys.exit(2)
-    findings = [(section.axis, sum(getattr(counts[name], section.counted) for counts in reviews))
+    findings = [(section.log_key, sum(getattr(counts[name], section.counted) for counts in reviews))
                 for name, section in SECTIONS.items()]
     unverified = reviews[-1]["Acceptance"].unverified if reviews else 0
     return len(reviews), findings, unverified
