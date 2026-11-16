@@ -495,6 +495,21 @@ with tempfile.TemporaryDirectory() as tmp:
     assert lines(findings) == [
         finding_line(head, 1, "standards", "todo.py:12", STANDARDS_FINDING[2:], "fixed")], findings.read_text()
 
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    findings = repo / ".git/run-spec/findings.tsv"
+    state = Path(tmp) / "demo-spec"
+    state.mkdir()
+    clean_with_notes = review_report().replace(
+        "COUNT: 0 proven, 0 unproven\n\n",
+        "COUNT: 0 proven, 0 unproven\n\nNotes:\n- S1 is fixed by 1a2b3c4.\n- D2 stays a known dismissal.\n\n")
+    (state / "review-1.md").write_text(clean_with_notes)
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stdout, r.stderr) == (0, "", ""), r
+    assert not findings.exists() or lines(findings) == [], findings.read_text()
+
 
 CORRUPT_BUFFERS = {
     "not a record": b"not a record\n",

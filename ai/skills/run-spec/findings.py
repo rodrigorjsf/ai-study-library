@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 sys.dont_write_bytecode = True
 
-from route import AXES, SECTIONS, UnreadableReport, read_review, round_numbers, sections
+from route import AXES, COUNT_LINE, SECTIONS, UnreadableReport, read_review, round_numbers, sections
 
 OUTCOMES = ("fixed", "dismissed", "follow-up", "needs-human", "unproven")
 USER_AXIS = "user"
@@ -53,7 +53,9 @@ def reported_findings(path):
     found = sections(Path(path).read_text(encoding="utf-8"))
     reported = {}
     for section in AXES:
-        bullets = [single_line(line[2:]) for line in found[section] if is_finding(section, line)]
+        body = found[section]
+        end = next((i for i, line in enumerate(body) if COUNT_LINE.fullmatch(line)), len(body))
+        bullets = [single_line(line[2:]) for line in body[:end] if is_finding(section, line)]
         for number, text in enumerate(bullets, start=1):
             location = LOCATION.match(text)
             reported[f"{SECTIONS[section].id_prefix}{number}"] = Reported(
