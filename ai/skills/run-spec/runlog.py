@@ -7,6 +7,7 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from findings import OUTCOMES, USER_AXIS, state_findings
 from gitcmd import default_refs, run
 from route import UnreadableReport, read_reviews
 
@@ -19,11 +20,15 @@ REVIEW_FINDINGS = {
     "hygiene": ("Hygiene", "blocking"),
 }
 AXES = tuple(REVIEW_FINDINGS)
+AXIS_OF_SECTION = {section: axis for axis, (section, _) in REVIEW_FINDINGS.items()}
 COUNTS = ("rounds", *(f"findings.{axis}" for axis in AXES), "dismissals", "unverified", "done", "skipped", "stuck")
 REQUIRED = ("at", "slug", "pr", "head", *COUNTS)
 OPTIONAL_COUNTS = ("unproven",)
+FINDING_FIELDS = ("slug", "head", "round", "axis", "location", "finding", "outcome")
+FINDING_IDENTITY = tuple(key for key in FINDING_FIELDS if key != "head")
 COMMIT_ID = re.compile(r"[0-9a-f]{7,40}")
 DIGITS = re.compile(r"[0-9]+")
+ROUND = re.compile(r"[0-9]+|user-[0-9]+")
 REVERT = re.compile(rf"This reverts commit ({COMMIT_ID.pattern})")
 
 
@@ -31,18 +36,41 @@ class Corrupt(Exception):
     pass
 
 
-def metrics_path():
+def run_spec_dir():
     common = pathlib.Path(run("git", "rev-parse", "--git-common-dir").strip()).resolve()
-    return common / "run-spec" / "metrics.tsv"
+    return common / "run-spec"
 
 
-def parse(line):
+def metrics_path():
+    return run_spec_dir() / "metrics.tsv"
+
+
+def findings_path():
+    return run_spec_dir() / "findings.tsv"
+
+
+def fields_of(line):
     fields = {}
     for field in line.split("\t"):
         key, sep, value = field.partition("=")
         if not sep or not key or key in fields:
             raise Corrupt(line)
         fields[key] = value
+    return fields
+
+
+def parse_finding(line):
+    fields = fields_of(line)
+    if any(key not in fields for key in FINDING_FIELDS):
+        raise Corrupt(line)
+    if (not COMMIT_ID.fullmatch(fields["head"]) or not ROUND.fullmatch(fields["round"])
+            or fields["axis"] not in (*AXES, USER_AXIS) or fields["outcome"] not in OUTCOMES):
+        raise Corrupt(line)
+    return fields
+
+
+def parse_metric(line):
+    fields = fields_of(line)
     if any(key not in fields for key in REQUIRED):
         raise Corrupt(line)
     present_counts = [*COUNTS, *(key for key in OPTIONAL_COUNTS if key in fields)]
@@ -51,7 +79,7 @@ def parse(line):
     return fields
 
 
-def load(path):
+def load(path, parse_line):
     if not path.exists():
         return []
     try:
@@ -60,7 +88,7 @@ def load(path):
         raise Corrupt(path.name)
     if text and not text.endswith("\n"):
         raise Corrupt(path.name)
-    return [(line, parse(line)) for line in text.splitlines()]
+    return [(line, parse_line(line)) for line in text.splitlines()]
 
 
 def start_fresh(path):
@@ -75,9 +103,9 @@ def start_fresh(path):
     print(f"{path.name} was corrupt: moved to {aside}, started a new file")
 
 
-def load_or_start_fresh(path):
+def load_or_start_fresh(path, parse_line):
     try:
-        return load(path)
+        return load(path, parse_line)
     except Corrupt:
         start_fresh(path)
         return []
@@ -129,7 +157,7 @@ def recorded_review_numbers(args):
 def record(args):
     rounds, axis_findings, unverified = recorded_review_numbers(args)
     path = metrics_path()
-    load_or_start_fresh(path)
+    load_or_start_fresh(path, parse_metric)
     findings = dict.fromkeys(AXES, 0)
     findings.update(axis_findings)
     fields = [("at", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
@@ -140,6 +168,34 @@ def record(args):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write("\t".join(f"{key}={value}" for key, value in fields) + "\n")
+
+
+def finding_identity(fields):
+    return tuple(fields[key] for key in FINDING_IDENTITY)
+
+
+def append_findings(args):
+    path = findings_path()
+    head = args.head or run("git", "rev-parse", "HEAD").strip()
+    state = pathlib.Path(args.state)
+    try:
+        found, problems = state_findings(state, AXIS_OF_SECTION)
+    except OSError as error:
+        print(f"runlog.py: {error}", file=sys.stderr)
+        sys.exit(2)
+    for problem in problems:
+        print(f"{problem}; skipped")
+    recorded = {finding_identity(fields) for _, fields in load_or_start_fresh(path, parse_finding)}
+    new_lines = []
+    for finding in found:
+        fields = {"slug": state.resolve().name, "head": head, "round": finding.round, "axis": finding.axis,
+                  "location": finding.location, "finding": finding.text, "outcome": finding.outcome}
+        if finding_identity(fields) not in recorded:
+            new_lines.append("\t".join(f"{key}={fields[key]}" for key in FINDING_FIELDS) + "\n")
+    if new_lines:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write("".join(new_lines))
 
 
 def same_commit(a, b):
@@ -163,7 +219,7 @@ def merge_commits_by_parent(refs):
 
 def reverts(args):
     path = metrics_path()
-    records = load_or_start_fresh(path)
+    records = load_or_start_fresh(path, parse_metric)
     refs = default_refs()
     pending = [i for i, (_, fields) in enumerate(records) if "reverted" not in fields]
     if not pending or not refs:
@@ -201,6 +257,10 @@ def main():
     rec.add_argument("--state")
     rec.set_defaults(run=record)
     sub.add_parser("reverts").set_defaults(run=reverts)
+    fnd = sub.add_parser("findings")
+    fnd.add_argument("--state", required=True)
+    fnd.add_argument("--head", type=head_sha)
+    fnd.set_defaults(run=append_findings)
     args = ap.parse_args()
     if args.command == "record":
         review_options = (args.rounds, args.findings, args.unverified)

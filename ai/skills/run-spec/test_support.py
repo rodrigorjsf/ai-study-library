@@ -34,9 +34,11 @@ CLEAN_COUNTS = {
 }
 
 
-def review_report(**counts):
-    lines_by_axis = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
-    return "".join(f"## {axis}\n- none\n{lines_by_axis[axis]}\n\n" for axis in REVIEW_AXES)
+def review_report(findings=None, **counts):
+    count_lines = {**CLEAN_COUNTS, **{axis.replace("_", "/"): line for axis, line in counts.items()}}
+    bodies = {**dict.fromkeys(REVIEW_AXES, ["- none"]), **(findings or {})}
+    return "".join(f"## {axis}\n" + "".join(f"{line}\n" for line in bodies[axis]) + f"{count_lines[axis]}\n\n"
+                   for axis in REVIEW_AXES)
 
 
 def run_properties(properties, script, seed, *args):
