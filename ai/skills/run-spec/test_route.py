@@ -82,6 +82,14 @@ with tempfile.TemporaryDirectory() as tmp:
         '## Standards\n- [hard] a.py:1 rule — said "COUNT: 9 proven, 9 unproven". Proof: `x` → y\n')
     assert verdict(route(quoting_a_count, tmp)) == ("0", "0", "clean")
 
+    acceptance_with_recipe = (
+        "## Acceptance\nrecipe: .claude/skills/verify-todo/ — feature map entries: Add an item; List items\n"
+        '- [PASS] "Prints `ok`" — `todo.py list` → ok (S), screenshot: /tmp/run/verify-1/screenshots/list.png\n'
+        "scope-creep:\n- none\nHEAD: abc1234\nCOUNT: 0 blocking, 0 unverified\n\n")
+    with_recipe_line = report().replace("## Acceptance\n- none\nCOUNT: 0 blocking, 0 unverified\n\n", acceptance_with_recipe)
+    assert with_recipe_line != report()
+    assert verdict(route(with_recipe_line, tmp)) == ("0", "0", "clean")
+
 
 def failure(text, directory, *, mentions):
     result = route(text, directory)

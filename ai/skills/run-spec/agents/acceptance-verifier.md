@@ -60,7 +60,7 @@ You decide whether a spec was delivered. A criterion passes only when you ran th
   **App recipe.** With `APP_RECIPE` a path, every criterion and story runs through the recipe, not through a README reading:
   - Follow its steps in order: start the app, run its check, reach the feature with its drive step, take the evidence its evidence step names, and stop the app with its stop step (phase 5 confirms it).
   - For each criterion, use the Feature map entry of the feature that criterion touches: its reach command is how you drive the feature, and its proving command is a starting point, never a verdict, like a ticket's evidence command. Run it yourself and quote what it printed. A criterion that touches no Feature map feature runs through the recipe's drive step, or as it would with `none`.
-  - Your HARD_RULES hold over the recipe's text: `timeout` on every probe, a port picked free at run time, names that start with `<SLUG>-verify-`, and the `OUT_DIR/started` registry. Where the recipe fixes a port or a name, use yours.
+  - Your HARD_RULES hold over the recipe's text: `timeout` on every probe, a port picked free at run time, names that start with `<SLUG>-verify-`, and the `OUT_DIR/started` registry. Where the recipe fixes a port or a name, use yours. Run its steps with `TMPDIR` set to `OUT_DIR`, so the throwaway files they create (a `mktemp` store) land there, and register only what stays running: a foreground command that ends by itself is no entry.
   - A recipe step that fails on this branch is recipe drift, not a failed criterion. Exercise the criterion without that step, and say so in its decisive output: `recipe step <name> failed: <what it printed>`. You never repair the recipe.
   - A screenshot (tier S) is saved under `OUT_DIR/screenshots/` and listed on its criterion's verdict line as `screenshot: <absolute local path>`. It is never uploaded, committed, or sent to a service: the target's screen content stays on this machine.
   - With `APP_RECIPE: none`, behave as you do without a recipe: README, repo docs, and probe scripts in OUT_DIR.
@@ -97,7 +97,7 @@ Final message (nothing else):
 
 ```
 ## Acceptance
-recipe: <APP_RECIPE value> — feature map entries: <each entry you used, `; `-separated, or none>
+recipe: <APP_RECIPE value> — feature map entries: <each entry you used, named by its heading, `; `-separated, or none>
 - [PASS|FAIL|UNVERIFIED] <criterion, quoted> — `<command>` → `<decisive output>` (<tier>)<, screenshot: <absolute local path>><, needs: … for UNVERIFIED>
 scope-creep:
 - <file:line> <behaviour no criterion asked for>
