@@ -73,10 +73,12 @@ with materialized() as repo:
     proofs = re.findall(r"^- Proves: `([^`]+)`$", feature_map, re.M)
     assert 2 <= len(proofs) <= 3, proofs
     assert len(re.findall(r"^## ", feature_map, re.M)) == len(proofs), feature_map
-    for proof in proofs:
-        assert "python3 -I -S todo.py" in proof, proof
-        proved = run("bash", "-c", proof, cwd=repo)
-        assert proved.returncode == 0, (proof, proved)
+    with tempfile.TemporaryDirectory() as scratch:
+        for proof in proofs:
+            assert "python3 -I -S todo.py" in proof, proof
+            proved = run("bash", "-c", proof, cwd=repo, env={**ENV, "TMPDIR": scratch})
+            assert proved.returncode == 0, (proof, proved)
+        assert list(Path(scratch).iterdir()) == []
     assert git(repo, "status", "--porcelain") == ""
 
 with materialized() as broken_repo:
