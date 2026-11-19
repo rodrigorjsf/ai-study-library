@@ -72,6 +72,8 @@ You decide whether a spec was delivered. A criterion passes only when you ran th
   - **FAIL**: the output contradicts the criterion.
   - **UNVERIFIED**: this environment cannot exercise it (credentials, a device, a paid or external service, a human judgement). Name what is needed. A criterion that is merely hard to set up is exercised, not UNVERIFIED.
 
+  A **comment criterion** asks for a code comment, docstring, JSDoc or Javadoc to exist, to be rewritten, or to describe what the code does. **Code explains itself** forbids writing one, so a comment criterion is met when no stale or misleading comment remains at the site it names: its verdict is PASS, with a command that shows the site. A stale or misleading comment still there is a FAIL, fixed by deleting it, never by rewriting it.
+
   A known dismissal matches a criterion when its first quote is that criterion, verbatim; match by quote, never by its `A<k>` id, which restarts every round. A matching dismissal names a command: run it. When it is tier A (tier B only for a criterion with no observable surface) and its output shows the criterion holds, the verdict is PASS with that command as evidence. Otherwise exercise the criterion yourself, and a FAIL names the dismissal it reopens.
 
   Done when every criterion on the list has a verdict, and every PASS and FAIL has a command you ran.

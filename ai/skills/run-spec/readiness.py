@@ -12,6 +12,9 @@ RECIPE_LOCATIONS = ((".claude/skills", "verify*"), (".claude/skills", "run-*"), 
 SEARCHED = ", ".join(f"{parent}/{pattern}/" for parent, pattern in RECIPE_LOCATIONS)
 TICKETS = pathlib.Path(__file__).resolve().parent / "tickets.py"
 CODE_SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
+COMMENT_WORD = re.compile(r"\b(?:comments?|coment[aá]rios?|docstrings?|jsdoc|javadoc)\b", re.IGNORECASE)
+REMOVAL_WORD = re.compile(r"\b(?:remove[ds]?|delete[ds]?|removid[oa]s?|apagad[oa]s?|exclu[ií]d[oa]s?)\b", re.IGNORECASE)
+COMMENT_CONFLICT = "asks for a code comment, which Code explains itself forbids: it is met when no stale comment remains there, unless the owner decides otherwise"
 
 
 def declared_commands(repo):
@@ -73,6 +76,8 @@ def surface_report(tickets, error):
         if not ticket["criteria"]:
             warnings.append(f"{ticket['id']}: no acceptance criteria found")
         warnings += [f"{ticket['id']}: {criterion}" for criterion in ticket["criteria"] if not CODE_SPAN.search(criterion)]
+        warnings += [f"{ticket['id']}: {criterion} — {COMMENT_CONFLICT}" for criterion in ticket["criteria"]
+                     if COMMENT_WORD.search(criterion) and not REMOVAL_WORD.search(criterion)]
     if warnings:
         return f"warnings: {len(warnings)}", warnings
     count = sum(len(ticket["criteria"]) for ticket in scoped)

@@ -284,6 +284,24 @@ with tempfile.TemporaryDirectory() as tmp:
     assert lines == ["#13: No span here", "#13: A **bold** lead", "#13: Empty `` span", "#13: Blank ` ` span",
                      "#15: no acceptance criteria found"], lines
 
+COMMENT_CONFLICT = "asks for a code comment, which Code explains itself forbids: it is met when no stale comment remains there, unless the owner decides otherwise"
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = new_repo(tmp)
+    env = env_with_issues({"13": github_ticket(13, [
+        "O comentário do `confirm` do chat descreve o comportamento novo",
+        "The docstring of `foo` describes what it returns",
+        "Adds JSDoc to `bar`",
+        "The stale comment above `baz` is removed",
+        "O comentário falso de `qux` é apagado",
+        "Prints `ok`",
+    ])})
+    summary, lines = surface(repo, env=env)
+    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface warnings: 3", summary
+    assert lines == [f"#13: O comentário do `confirm` do chat descreve o comportamento novo — {COMMENT_CONFLICT}",
+                     f"#13: The docstring of `foo` describes what it returns — {COMMENT_CONFLICT}",
+                     f"#13: Adds JSDoc to `bar` — {COMMENT_CONFLICT}"], lines
+
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
     env = env_with_issues({"13": github_ticket(13, ["Runs `a`.", "Prints `ok`."]), "14": github_ticket(14, ["Exits with `0`"])})
