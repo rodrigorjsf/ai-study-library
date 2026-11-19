@@ -13,8 +13,9 @@ SEARCHED = ", ".join(f"{parent}/{pattern}/" for parent, pattern in RECIPE_LOCATI
 TICKETS = pathlib.Path(__file__).resolve().parent / "tickets.py"
 CODE_SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
 COMMENT_WORD = re.compile(r"\b(?:comments?|coment[aá]rios?|docstrings?|jsdoc|javadoc)\b", re.IGNORECASE)
-REMOVAL_WORD = re.compile(r"\b(?:remove[ds]?|delete[ds]?|removid[oa]s?|apagad[oa]s?|exclu[ií]d[oa]s?)\b", re.IGNORECASE)
-COMMENT_CONFLICT = "asks for a code comment, which Code explains itself forbids: it is met when no stale comment remains there, unless the owner decides otherwise"
+REMOVAL_WORD = re.compile(r"\b(?:no|sem|remov\w*|delet\w*|dropped|drop|apag\w*|exclu\w*|retir\w*)\b", re.IGNORECASE)
+COMMENT_CONFLICT = ("asks for a code comment, which Code explains itself forbids: it is met when no stale or misleading "
+                    "comment remains there, unless the owner decides otherwise")
 
 
 def declared_commands(repo):

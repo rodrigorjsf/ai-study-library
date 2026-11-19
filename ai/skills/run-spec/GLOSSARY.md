@@ -7,12 +7,16 @@ The AFK flow that runs a spec's tickets through implementers, reviewers and a fi
 ### Verification
 
 **Readiness report**:
-A per-run statement of how well the target repository can be verified before any ticket runs: what its check commands cover, whether an App recipe exists, and which acceptance criteria name a surface. It informs; it never stops a run.
+A per-run statement of how well the target repository can be verified before any ticket runs: what its check commands cover, whether an App recipe exists, which acceptance criteria name a surface, and which are comment criteria. It informs; it never stops a run.
 _Avoid_: Prontidão, preflight, health check
 
 **Check commands**:
 The typecheck, lint and test commands the repository owner declares for run-spec in `docs/agents/run-spec.md`. Agents run these instead of guessing them per ticket.
 _Avoid_: Verify commands, profile, scripts
+
+**Comment criterion**:
+An acceptance criterion that asks for a code comment, docstring, JSDoc or Javadoc to exist, to be rewritten, or to describe what the code does. Code explains itself forbids writing one, so it is met when no stale or misleading comment remains at the site it names.
+_Avoid_: Documentation criterion
 
 **Surface**:
 The observable place an acceptance criterion is checked through, named in backticks in the criterion: a command, a route, a file or a screen.

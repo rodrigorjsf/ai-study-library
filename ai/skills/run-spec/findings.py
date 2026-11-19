@@ -63,7 +63,7 @@ def reported_findings(path):
         end = next((i for i, line in enumerate(body) if COUNT_LINE.fullmatch(line)), len(body))
         bullets = [single_line(line[2:]) for line in finding_lines(section, body[:end])]
         counted = counts[section].blocking + counts[section].advisory
-        if not counted:
+        if not counted and section != "Acceptance":
             continue
         if len(bullets) != counted:
             unreadable[section] = f"{section} has {len(bullets)} finding lines, but its COUNT line counts {counted}"

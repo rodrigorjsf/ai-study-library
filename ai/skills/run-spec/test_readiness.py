@@ -284,7 +284,8 @@ with tempfile.TemporaryDirectory() as tmp:
     assert lines == ["#13: No span here", "#13: A **bold** lead", "#13: Empty `` span", "#13: Blank ` ` span",
                      "#15: no acceptance criteria found"], lines
 
-COMMENT_CONFLICT = "asks for a code comment, which Code explains itself forbids: it is met when no stale comment remains there, unless the owner decides otherwise"
+COMMENT_CONFLICT = ("asks for a code comment, which Code explains itself forbids: it is met when no stale or misleading "
+                    "comment remains there, unless the owner decides otherwise")
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)
@@ -294,6 +295,10 @@ with tempfile.TemporaryDirectory() as tmp:
         "Adds JSDoc to `bar`",
         "The stale comment above `baz` is removed",
         "O comentário falso de `qux` é apagado",
+        "Remover o comentário falso de `x`",
+        "Apagar o JSDoc de `y`",
+        "The stale comment on `z` is dropped",
+        "`w` has no comments",
         "Prints `ok`",
     ])})
     summary, lines = surface(repo, env=env)

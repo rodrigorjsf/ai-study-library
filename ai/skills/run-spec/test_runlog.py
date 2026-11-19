@@ -566,11 +566,13 @@ with tempfile.TemporaryDirectory() as tmp:
         Standards="COUNT: 1 proven, 0 unproven", Security="COUNT: 1 blocking, 0 needs-human"))
     (state / "review-4-fix.md").write_text("STATUS: GREEN\nROUND: 4\nFINDINGS:\n- SEC1 fixed — 4d5e6f7 rejects it\n"
                                            "TESTS: green\nALLOWED: none\n")
+    (state / "review-5.md").write_text(review_report({"Acceptance": NOISY_ACCEPTANCE[4:7]}))
 
     r = runlog(repo, "findings", "--state", str(state))
     assert (r.returncode, r.stderr) == (0, ""), r
     reported = r.stdout.splitlines()
-    assert len(reported) == 2, r.stdout
+    assert len(reported) == 3, r.stdout
+    assert "review-5.md" in reported[2] and "Acceptance" in reported[2] and "COUNT" in reported[2], reported
     assert "review-3.md" in reported[0] and "Design" in reported[0] and "COUNT" in reported[0], reported
     assert "review-4.md" in reported[1] and "Standards" in reported[1] and "S1" in reported[1], reported
     assert lines(findings) == [
