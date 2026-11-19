@@ -511,6 +511,83 @@ with tempfile.TemporaryDirectory() as tmp:
     assert not findings.exists() or lines(findings) == [], findings.read_text()
 
 
+NOISY_ACCEPTANCE = [
+    "recipe: none — feature map entries: none",
+    "Shared evidence:",
+    "- DASH = `out/dash.log`",
+    "- GATE = `make check`. Result: green",
+    '- [PASS] "list shows tasks" — `python3 todo.py list` → 1 task (A)',
+    '- [FAIL] "story 15: the confirm step is documented" — `grep -n confirm todo.py` → no doc (A)',
+    '- [FAIL] "clear resets ids" — `python3 todo.py clear` → ids reused (A)',
+    "scope-creep:",
+    "- todo.py:41 added a --force flag nobody asked for",
+    "- todo.py:55 prints a banner nobody asked for",
+    "Environment notes, not counted:",
+    "- the build cache holds stale files",
+    "Round-1 scope-creep lines rechecked on HEAD; both are gone:",
+    "- todo.py:41 is gone",
+    "HEAD: abcdef1",
+]
+NOISY_ACCEPTANCE_FIX = """STATUS: GREEN
+ROUND: 1
+FINDINGS:
+- A1 dismissed — "story 15: the confirm step is documented" — `grep -n confirm todo.py` → no doc — Code explains itself
+- A2 fixed — 1a2b3c4 ids are never reused after clear
+- A3 follow-up — .scratch/follow-ups/issues/demo-1-force.md
+- A4 needs-human — the owner decides the banner
+- S1 fixed — 2b3c4d5 moved the import
+TESTS: green
+ALLOWED: none
+"""
+STANDARDS_WITH_NOTES = ["- none", "Verification (round 3):", "- S1 fixed, confirmed at todo.py:12",
+                        "- I found no new comments in the range"]
+
+with tempfile.TemporaryDirectory() as tmp:
+    (Path(tmp) / "repo").mkdir()
+    repo = new_repo(Path(tmp) / "repo")
+    head = git(repo, "rev-parse", "HEAD")
+    findings = repo / ".git/run-spec/findings.tsv"
+    state = Path(tmp) / "demo-spec"
+    state.mkdir()
+    (state / "review-1.md").write_text(review_report(
+        {"Acceptance": NOISY_ACCEPTANCE, "Standards": [STANDARDS_FINDING]},
+        Acceptance="COUNT: 4 blocking, 0 unverified", Standards="COUNT: 1 proven, 0 unproven"))
+    (state / "review-1-fix.md").write_text(NOISY_ACCEPTANCE_FIX)
+    (state / "review-2.md").write_text(review_report({"Standards": STANDARDS_WITH_NOTES}))
+    (state / "review-2-fix.md").write_text("STATUS: GREEN\nROUND: 2\nFINDINGS:\n- none\nTESTS: green\nALLOWED: none\n")
+    (state / "review-3.md").write_text(review_report(
+        {"Standards": [STANDARDS_FINDING], "Design": ["- [Strong] todo.py:5 shallow module. Proof: `grep -c x`",
+                                                      "- a note the reviewer left"]},
+        Standards="COUNT: 1 proven, 0 unproven", Design="COUNT: 1 proven, 0 unproven"))
+    (state / "review-3-fix.md").write_text("STATUS: GREEN\nROUND: 3\nFINDINGS:\n- S1 fixed — 3c4d5e6 moved it\n"
+                                           "- D1 dismissed — two callers\nTESTS: green\nALLOWED: none\n")
+    (state / "review-4.md").write_text(review_report(
+        {"Standards": [STANDARDS_FINDING], "Security": ["- [HIGH] todo.py:50 path traversal. Fix: reject it"]},
+        Standards="COUNT: 1 proven, 0 unproven", Security="COUNT: 1 blocking, 0 needs-human"))
+    (state / "review-4-fix.md").write_text("STATUS: GREEN\nROUND: 4\nFINDINGS:\n- SEC1 fixed — 4d5e6f7 rejects it\n"
+                                           "TESTS: green\nALLOWED: none\n")
+
+    r = runlog(repo, "findings", "--state", str(state))
+    assert (r.returncode, r.stderr) == (0, ""), r
+    reported = r.stdout.splitlines()
+    assert len(reported) == 2, r.stdout
+    assert "review-3.md" in reported[0] and "Design" in reported[0] and "COUNT" in reported[0], reported
+    assert "review-4.md" in reported[1] and "Standards" in reported[1] and "S1" in reported[1], reported
+    assert lines(findings) == [
+        finding_line(head, 1, "acceptance", "-", '[FAIL] "story 15: the confirm step is documented" — '
+                     "`grep -n confirm todo.py` → no doc (A)", "dismissed"),
+        finding_line(head, 1, "acceptance", "-", '[FAIL] "clear resets ids" — `python3 todo.py clear` → ids reused (A)',
+                     "fixed"),
+        finding_line(head, 1, "acceptance", "todo.py:41", "todo.py:41 added a --force flag nobody asked for",
+                     "follow-up"),
+        finding_line(head, 1, "acceptance", "todo.py:55", "todo.py:55 prints a banner nobody asked for",
+                     "needs-human"),
+        finding_line(head, 1, "standards", "todo.py:12", STANDARDS_FINDING[2:], "fixed"),
+        finding_line(head, 3, "standards", "todo.py:12", STANDARDS_FINDING[2:], "fixed"),
+        finding_line(head, 4, "security", "todo.py:50", "[HIGH] todo.py:50 path traversal. Fix: reject it", "fixed"),
+    ], findings.read_text()
+
+
 CORRUPT_BUFFERS = {
     "not a record": b"not a record\n",
     "missing fields": b"slug=demo-spec\thead=abcdef1\n",

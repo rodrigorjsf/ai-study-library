@@ -11,7 +11,9 @@ from route import AXES, COUNT_LINE, SECTIONS, UnreadableReport, read_review, rou
 OUTCOMES = ("fixed", "dismissed", "follow-up", "needs-human", "unproven")
 USER_AXIS = "user"
 NO_LOCATION = "-"
-NOT_FINDING_VERDICTS = ("- [PASS]", "- [UNVERIFIED]")
+SCOPE_CREEP_HEADING = "scope-creep:"
+PREFIX_AXES = {section.id_prefix: name for name, section in SECTIONS.items()}
+ID_PREFIX = re.compile(r"([A-Z]+)[0-9]+")
 LOCATION = re.compile(r"(?:\[[^\]]*\] )?(?P<location>[^\s:\"`\[]+:[0-9]+(?:-[0-9]+)?)(?=[\s:]|$)")
 OUTCOME_LINE = re.compile(rf"- (?P<id>[A-Z]+[0-9]+) (?P<outcome>{'|'.join(OUTCOMES)})(?:\s+(?P<note>.*))?")
 REVIEW_FILE = re.compile(r"review-([0-9]+)(-fix)?\.md")
@@ -42,25 +44,35 @@ def single_line(text):
     return " ".join(text.split())
 
 
-def is_finding(axis, line):
-    if not line.startswith("- ") or line.strip() == "- none":
-        return False
-    return not (axis == "Acceptance" and line.startswith(NOT_FINDING_VERDICTS))
+def finding_lines(axis, body):
+    found, under_scope_creep = [], False
+    for line in body:
+        if not line.startswith("- "):
+            under_scope_creep = line.strip() == SCOPE_CREEP_HEADING
+        elif line.strip() != "- none" and (axis != "Acceptance" or under_scope_creep or line.startswith("- [FAIL]")):
+            found.append(line)
+    return found
 
 
 def reported_findings(path):
-    read_review(path)
+    counts, _ = read_review(path)
     found = sections(Path(path).read_text(encoding="utf-8"))
-    reported = {}
+    reported, unreadable = {axis: {} for axis in AXES}, {}
     for section in AXES:
         body = found[section]
         end = next((i for i, line in enumerate(body) if COUNT_LINE.fullmatch(line)), len(body))
-        bullets = [single_line(line[2:]) for line in body[:end] if is_finding(section, line)]
+        bullets = [single_line(line[2:]) for line in finding_lines(section, body[:end])]
+        counted = counts[section].blocking + counts[section].advisory
+        if not counted:
+            continue
+        if len(bullets) != counted:
+            unreadable[section] = f"{section} has {len(bullets)} finding lines, but its COUNT line counts {counted}"
+            continue
         for number, text in enumerate(bullets, start=1):
             location = LOCATION.match(text)
-            reported[f"{SECTIONS[section].id_prefix}{number}"] = Reported(
+            reported[section][f"{SECTIONS[section].id_prefix}{number}"] = Reported(
                 SECTIONS[section].log_key, location["location"] if location else NO_LOCATION, text)
-    return reported
+    return reported, unreadable
 
 
 def fixer_outcomes(path):
@@ -98,19 +110,32 @@ def disagreement(reported, outcomes):
 
 def review_round(state, number):
     report, fix = state / f"review-{number}.md", state / f"review-{number}-fix.md"
-    reported = reported_findings(report) if report.exists() else {}
+    reported, unreadable = reported_findings(report) if report.exists() else ({axis: {} for axis in AXES}, {})
     outcomes = fixer_outcomes(fix) if fix.exists() else {}
-    mismatch = disagreement(reported, outcomes)
-    if mismatch:
-        raise UnreadableReport(f"{report}: findings do not match {fix.name}: {mismatch}")
-    return [Finding(str(number), found.axis, found.location, found.text, outcomes[id].outcome)
-            for id, found in reported.items()]
+    by_axis, stray = {axis: {} for axis in AXES}, {}
+    for id, outcome in outcomes.items():
+        axis = PREFIX_AXES.get(ID_PREFIX.fullmatch(id)[1])
+        (by_axis[axis] if axis else stray)[id] = outcome
+    findings, problems = [], []
+    for axis in AXES:
+        if axis in unreadable:
+            problems.append(f"{report}: {unreadable[axis]}")
+            continue
+        mismatch = disagreement(reported[axis], by_axis[axis])
+        if mismatch:
+            problems.append(f"{report}: {axis} findings do not match {fix.name}: {mismatch}")
+            continue
+        findings += [Finding(str(number), found.axis, found.location, found.text, by_axis[axis][id].outcome)
+                     for id, found in reported[axis].items()]
+    if stray:
+        problems.append(f"{report}: findings do not match {fix.name}: no finding for {' '.join(stray)}")
+    return findings, problems
 
 
 def user_round(state, number):
     outcomes = fixer_outcomes(state / f"user-{number}-fix.md")
     return [Finding(f"user-{number}", USER_AXIS, NO_LOCATION, outcome.note or id, outcome.outcome)
-            for id, outcome in outcomes.items()]
+            for id, outcome in outcomes.items()], []
 
 
 def state_findings(state):
@@ -120,7 +145,10 @@ def state_findings(state):
     findings, problems = [], []
     for read in reads:
         try:
-            findings += read()
+            found, skipped = read()
         except UnreadableReport as error:
             problems.append(str(error))
+        else:
+            findings += found
+            problems += skipped
     return findings, problems
