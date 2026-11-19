@@ -293,6 +293,8 @@ with tempfile.TemporaryDirectory() as tmp:
         "O comentário do `confirm` do chat descreve o comportamento novo",
         "The docstring of `foo` describes what it returns",
         "Adds JSDoc to `bar`",
+        "O comentário no topo de `confirm` descreve o fluxo sem retry",
+        "The docstring of `foo` says there is no retry",
         "The stale comment above `baz` is removed",
         "O comentário falso de `qux` é apagado",
         "Remover o comentário falso de `x`",
@@ -302,10 +304,12 @@ with tempfile.TemporaryDirectory() as tmp:
         "Prints `ok`",
     ])})
     summary, lines = surface(repo, env=env)
-    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface warnings: 3", summary
+    assert summary == f"{GITHUB_SUMMARY_PREFIX}; surface warnings: 5", summary
     assert lines == [f"#13: O comentário do `confirm` do chat descreve o comportamento novo — {COMMENT_CONFLICT}",
                      f"#13: The docstring of `foo` describes what it returns — {COMMENT_CONFLICT}",
-                     f"#13: Adds JSDoc to `bar` — {COMMENT_CONFLICT}"], lines
+                     f"#13: Adds JSDoc to `bar` — {COMMENT_CONFLICT}",
+                     f"#13: O comentário no topo de `confirm` descreve o fluxo sem retry — {COMMENT_CONFLICT}",
+                     f"#13: The docstring of `foo` says there is no retry — {COMMENT_CONFLICT}"], lines
 
 with tempfile.TemporaryDirectory() as tmp:
     repo = new_repo(tmp)

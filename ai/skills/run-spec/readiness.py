@@ -12,8 +12,10 @@ RECIPE_LOCATIONS = ((".claude/skills", "verify*"), (".claude/skills", "run-*"), 
 SEARCHED = ", ".join(f"{parent}/{pattern}/" for parent, pattern in RECIPE_LOCATIONS)
 TICKETS = pathlib.Path(__file__).resolve().parent / "tickets.py"
 CODE_SPAN = re.compile(r"`[^`]*[^`\s][^`]*`")
-COMMENT_WORD = re.compile(r"\b(?:comments?|coment[aá]rios?|docstrings?|jsdoc|javadoc)\b", re.IGNORECASE)
-REMOVAL_WORD = re.compile(r"\b(?:no|sem|remov\w*|delet\w*|dropped|drop|apag\w*|exclu\w*|retir\w*)\b", re.IGNORECASE)
+COMMENT_NOUN = r"(?:comments?|coment[aá]rios?|docstrings?|jsdoc|javadoc)"
+COMMENT_WORD = re.compile(rf"\b{COMMENT_NOUN}\b", re.IGNORECASE)
+REMOVAL_WORD = re.compile(rf"\b(?:remov\w*|delet\w*|drop(?:s|ped)?|apag\w*|exclu[ií](?:d\w*|r\w*)?|retir\w*)\b"
+                          rf"|\b(?:no|sem|nenhum)\s+(?:\w+\s+)?{COMMENT_NOUN}\b", re.IGNORECASE)
 COMMENT_CONFLICT = ("asks for a code comment, which Code explains itself forbids: it is met when no stale or misleading "
                     "comment remains there, unless the owner decides otherwise")
 
