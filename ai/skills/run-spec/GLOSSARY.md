@@ -31,7 +31,7 @@ The part of an App recipe that lists the application's features from the user's 
 _Avoid_: Site map, feature list
 
 **Scoped tests**:
-The test files a ticket's diff adds or changes, plus the existing test files that exercise the modules it changes. An implementer and a wave integration run only these; the whole suite waits for the Suite gate.
+The test files a ticket's diff adds or changes, plus the existing test files whose own imports name a module it changes. A test that reaches a changed module only through a barrel, a fixture or another module is not among them. An implementer and a wave integration run only these; the whole suite waits for the Suite gate.
 _Avoid_: Unit tests, affected tests, partial suite
 
 **Suite gate**:
