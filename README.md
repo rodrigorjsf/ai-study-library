@@ -49,6 +49,7 @@ Agent skills, each a self-contained `SKILL.md` folder. See [`ai/skills/README.md
 
 - **`coding-standards`:** generates or updates `CODING_STANDARDS.md` at a repo root from the conventions the codebase actually follows, with one heading per domain. Harness-agnostic: it reads the rule files of Claude Code, Codex, Cursor, Copilot, Gemini CLI, and Windsurf, exports the standards declared in project rule files, and points at user-level rules.
 - **`test-suite-review`:** reviews a codebase's unit tests, removes the ones that add volume without protecting the domain, reinforces where the domain is exposed, and ends green with at least 80% genuine coverage. It works in a git worktree, respects Sonar exclusions, and merges back with a ledger of every change.
+- **`bottleneck-hunt`:** finds where the wall-clock of a slow loop goes, proves the cause with a profile, and tries the fix as a measured spike. Language-agnostic, with a script that writes the time ledger of Claude Code sessions.
 - **`dream`**, **`pdf`**, **`study-plan-generator`:** memory consolidation, PDF to Markdown extraction, and study-plan generation.
 
 ## 🚀 Key Concepts

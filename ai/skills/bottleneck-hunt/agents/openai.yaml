@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bottleneck Hunt"
+  short_description: "Find where the wall-clock of a slow loop goes, prove the cause with a profile, and try the fix as a measured spike."
+policy:
+  allow_implicit_invocation: false

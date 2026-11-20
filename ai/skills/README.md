@@ -6,6 +6,7 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 |---|---|---|
 | [`coding-standards`](coding-standards/SKILL.md) | user-invoked | Generates or updates `CODING_STANDARDS.md` at a repo root from the conventions the codebase actually follows. |
 | [`test-suite-review`](test-suite-review/SKILL.md) | user-invoked | Reviews a codebase's unit tests, cuts the ones that add volume without protecting the domain, reinforces where the domain is exposed, and ends green with at least 80% genuine coverage. |
+| [`bottleneck-hunt`](bottleneck-hunt/SKILL.md) | user-invoked | Finds where the wall-clock of a slow loop goes (a test suite, a build, a gate, a request, an agent's work on a ticket), proves the cause with a profile, and tries the fix as a measured spike. |
 | [`dream`](dream/SKILL.md) | model-invoked | Memory consolidation pass over session logs and transcripts. |
 | [`memory-consolidation`](memory-consolidation/SKILL.md) | model-invoked | Spawns the background `dreamer` subagent for the same pass, with the spawn prompt it needs. |
 | [`pdf`](pdf/SKILL.md) | model-invoked | Structure-aware PDF to Markdown extraction. See [`pdf/README.md`](pdf/README.md). |
@@ -18,7 +19,7 @@ Agent skills kept in this library. Each folder is a self-contained skill: a `SKI
 | [`run-spec-correct`](run-spec-correct/SKILL.md) | user-invoked (`/run-spec-correct`) | Reads the Findings buffer that `/run-spec` fills, lists the mistake classes seen at least twice with their evidence and the highest fix level that works (architecture, types, a lint naming the fix, a test, docs), and files a follow-up issue only for the classes the owner selects, each with the criterion that the new check fails on the recorded past mistake. Installed by `run-spec/install.sh` next to `run-spec`. |
 | [`follow-up-issue`](follow-up-issue/SKILL.md) | model-invoked | Files a follow-up issue only for a suspicion or an owned external defect; everything else is absorbed into the running task. Used by `run-spec`'s agents. |
 
-The rest of this page documents `coding-standards`, `test-suite-review`, the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`) and `gauntlet-loop-claude-code`.
+The rest of this page documents `coding-standards`, `test-suite-review`, the audit trio (`repo-audit-study`, `verified-research`, `html-presentation`), `gauntlet-loop-claude-code` and `bottleneck-hunt`.
 
 ## Where the two skills come from
 
@@ -331,3 +332,22 @@ two statements made false elsewhere (this page's Cursor row, and an older loop's
 fixed. The whole loop cost about 2.4M subagent tokens. `scripts/trend.py` reproduces the raw counts
 of a real 26-round loop (round 26: 2 PASS of 12, 14 blocking) and refuses to write into that older
 layout. The rewritten skill has not yet driven a real loop.
+
+## `bottleneck-hunt`
+
+A method for finding what makes a loop slow, in any language: write the **ledger** of where the wall-clock goes from runs that already happened, rank the **offenders**, descend until one command reproduces the cost, profile it before believing a hypothesis, and try the fix as a measured **spike**. It also says how to judge a replacement (a faster toolchain, a rewrite, more parallelism) by the share of the loop it can touch.
+
+| File | What it holds |
+|---|---|
+| `SKILL.md` | the ten steps, each with its completion criterion |
+| `PROFILING.md` | the timing and CPU-profile command per runtime, how to read a profile, and how a profile misleads |
+| `session_ledger.py` | the ledger of Claude Code sessions, standard library only: per agent type, wall, model, tool and waiting time; shell time by kind of command; background commands from launch to completion |
+| `agents/openai.yaml` | Codex: no implicit invocation |
+
+It sets `disable-model-invocation: true`: it fires when you type `/bottleneck-hunt`. Install it the way the two skills above are installed.
+
+`session_ledger.py` reads Claude Code transcripts (`~/.claude/projects/<slug>/`). Cursor and Codex keep their sessions elsewhere and in another shape, so on those harnesses step 2 takes its evidence from the other sources it lists.
+
+### Status
+
+Written on 2026-11-20 from one hunt, over a TypeScript monorepo whose test suite went from 670 s to 215 s. `session_ledger.py` was run on that project's real sessions and reproduced the hunt's numbers. The skill itself has not driven a hunt yet. In `PROFILING.md` only the Vitest row was confirmed by running it; the file tells the agent to confirm each flag against the tool's `--help`.
